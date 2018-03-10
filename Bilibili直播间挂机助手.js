@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.6.0
+// @version      1.6.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
+// @supportURL   https://github.com/SeaLoong/Bilibili-LRHH
+// @updateURL    https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js
 // @include      /https?:\/\/live\.bilibili\.com\/\d+/
-// @require      https://greasyfork.org/scripts/38140-bilibili-api/code/Bilibili-API.js
+// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
 // @grant        none
 // @run-at       document-end
 // @license      MIT License
