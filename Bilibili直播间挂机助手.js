@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.5.0
+// @version      1.6.0
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @include      /https?:\/\/live\.bilibili\.com\/\d+/
@@ -54,7 +54,7 @@
 
     /* 此行以下内容请勿修改，当然你要改那我也没办法 */
 
-    var DEBUGMODE = true;
+    var DEBUGMODE = false;
     var DEBUG = function(sign, data) {
         if (!DEBUGMODE) return;
         var d = new Date();
@@ -319,9 +319,12 @@
     function solveCaptcha() {
         // 识别节奏风暴验证码(未实现)，由于OCRAD识别准确度太低，所以使用到这个函数的功能都没有启用
         // 如果会做验证码的识别可以自己在这里实现
+        /*
         var ctx = DOM.storm.canvas[0].getContext('2d');
         ctx.drawImage(DOM.storm.image[0], 0, 0, 112, 32);
         return OCRAD(ctx.getImageData(0, 0, 112, 32));
+        */
+        return null;
     }
 
     function giftIDtoFeed(gift_id) {
@@ -546,15 +549,54 @@
     window.$b
     */
     function Init() {
-        if (!API) {
-            toast('BilibiliAPI初始化失败，脚本已停用！', 'error');
-            console.error('BilibiliAPI初始化失败，脚本已停用！');
-            return;
-        }
-        if (window.frameElement) {
-            console.info('Bilibili直播间挂机助手: 已启用任意直播间抽奖，初始化子脚本！');
-            DEBUG('Init: window.frameElement', window.frameElement);
+        try {
+            if (!API) {
+                toast('BilibiliAPI初始化失败，脚本已停用！', 'error');
+                console.error('BilibiliAPI初始化失败，脚本已停用！');
+                return;
+            }
+            if (window.frameElement) {
+                console.info('Bilibili直播间挂机助手: 已启用任意直播间抽奖，初始化子脚本！');
+                DEBUG('Init: window.frameElement', window.frameElement);
+                execUntilSucceed(function() {
+                    if (window.BilibiliLive && parseInt(window.BilibiliLive.ROOMID, 10) !== 0) {
+                        if (parseInt(window.BilibiliLive.UID, 10) !== 0) {
+                            Info.short_id = window.BilibiliLive.SHORT_ROOMID;
+                            Info.uid = window.BilibiliLive.UID;
+                            Info.roomid = window.BilibiliLive.ROOMID;
+                            Info.ruid = window.BilibiliLive.ANCHOR_UID;
+                            Info.rnd = window.BilibiliLive.RND;
+                            window.toast = window.top.toast;
+                            window.room_id_list = window.top.room_id_list;
+                            window.parent.Lottery_join = window.Lottery_join;
+                            window.parent.Lottery_inited = true;
+                            DOM.storm.div = $('<div id="' + NAME + '_storm_div" style="display:none"></div>');
+                            DOM.storm.image = $('<img id="' + NAME + '_storm_image" style="display:none">');
+                            DOM.storm.canvas = $('<canvas id="' + NAME + '_storm_canvas" style="display:none"></canvas>');
+                            DOM.storm.div.append(DOM.storm.image);
+                            DOM.storm.div.append(DOM.storm.canvas);
+                            document.body.appendChild(DOM.storm.div[0]);
+                            DEBUG('Iframe: Init: Info', Info);
+                            execUntilSucceed(function() {
+                                if ($('.live-room-app.p-relative')[0]) {
+                                    document.getElementsByTagName('head')[0].innerHTML = '';
+                                    $('.live-room-app.p-relative').remove();
+                                    return true;
+                                }
+                            }, 9e3, 3e3);
+                        }
+                        return true;
+                    }
+                }, 1, 500);
+                return;
+            }
+            console.info('Bilibili直播间挂机助手: 已加载');
+            InitAlertDialogGui();
+            InitConfigGui();
+            loadConfig();
+            saveConfig();
             execUntilSucceed(function() {
+                DEBUG('Init: BilibiliLive', window.BilibiliLive);
                 if (window.BilibiliLive && parseInt(window.BilibiliLive.ROOMID, 10) !== 0) {
                     if (parseInt(window.BilibiliLive.UID, 10) !== 0) {
                         Info.short_id = window.BilibiliLive.SHORT_ROOMID;
@@ -562,148 +604,115 @@
                         Info.roomid = window.BilibiliLive.ROOMID;
                         Info.ruid = window.BilibiliLive.ANCHOR_UID;
                         Info.rnd = window.BilibiliLive.RND;
-                        window.toast = window.top.toast;
-                        window.room_id_list = window.top.room_id_list;
-                        window.parent.Lottery_join = window.Lottery_join;
-                        window.parent.Lottery_inited = true;
-                        DOM.storm.div = $('<div id="' + NAME + '_storm_div" style="display:none"></div>');
-                        DOM.storm.image = $('<img id="' + NAME + '_storm_image" style="display:none">');
-                        DOM.storm.canvas = $('<canvas id="' + NAME + '_storm_canvas" style="display:none"></canvas>');
-                        DOM.storm.div.append(DOM.storm.image);
-                        DOM.storm.div.append(DOM.storm.canvas);
-                        document.body.appendChild(DOM.storm.div[0]);
-                        DEBUG('Iframe: Init: Info', Info);
-                        execUntilSucceed(function() {
-                            if ($('.live-room-app.p-relative')[0]) {
-                                document.getElementsByTagName('head')[0].innerHTML = '';
-                                $('.live-room-app.p-relative').remove();
-                                return true;
+                        window.room_id_list[Info.short_id] = Info.roomid;
+                        if (CONFIG.USE_AWARD) {
+                            execUntilSucceed(function() {
+                                var _treasure_box = $('#gift-control-vm div.treasure-box.p-relative');
+                                if (_treasure_box[0]) {
+                                    _treasure_box.attr('id', 'old_treasure_box');
+                                    _treasure_box.hide();
+                                    DOM.treasure.div = $('<div id="' + NAME + '_treasure_div" class="treasure-box p-relative"></div>');
+                                    DOM.treasure.div_tip = $('<div id="' + NAME + '_treasure_div_tip" class="t-center b-box none-select">自动<br>领取中</div>');
+                                    DOM.treasure.div_timer = $('<div id="' + NAME + '_treasure_div_timer" class="t-center b-box none-select">0</div>');
+                                    DOM.treasure.image = $('<img id="' + NAME + '_treasure_image" style="display:none">');
+                                    DOM.treasure.canvas = $('<canvas id="' + NAME + '_treasure_canvas" style="display:none" height="40" width="120"></canvas>');
+                                    var css_text = 'max-width: 40px;padding: 2px 3px;margin-top: 3px;font-size: 12px;color: #fff;background-color: rgba(0,0,0,.5);border-radius: 10px;';
+                                    DOM.treasure.div_tip[0].style = css_text;
+                                    DOM.treasure.div_timer[0].style = css_text;
+                                    DOM.treasure.div.append(DOM.treasure.div_tip);
+                                    DOM.treasure.div.append(DOM.treasure.image);
+                                    DOM.treasure.div.append(DOM.treasure.canvas);
+                                    DOM.treasure.div_tip.after(DOM.treasure.div_timer);
+                                    _treasure_box.after(DOM.treasure.div);
+                                    interval_treasure_timer = setInterval(function() {
+                                        var t = parseInt(DOM.treasure.div_timer.text(), 10);
+                                        if (t > 0) DOM.treasure.div_timer.text((t - 1) + 's');
+                                        else DOM.treasure.div_timer.hide();
+                                    }, 1e3);
+                                    return true;
+                                }
+                            });
+                        }
+                        if (CONFIG.USE_LOTTERY) {
+                            if (CONFIG.LOTTERY_CONFIG.ALLOW_NOT_SHORT_ROOMID && Info.roomid === Info.short_id) {
+                                // 非短号直播间
+                                window.Lottery_inited = false;
+                                DOM.lottery.iframe = $('<iframe name="' + NAME + '_iframe"></iframe>');
+                                DOM.lottery.iframe[0].src = '//live.bilibili.com/2';
+                                document.body.appendChild(DOM.lottery.iframe[0]);
+                                DEBUG('Init: lottery_iframe_window', window.frames[NAME + '_iframe']);
+                            } else {
+                                window.Lottery_inited = true;
+                                DOM.storm.div = $('<div id="' + NAME + '_storm_div" style="display:none"></div>');
+                                DOM.storm.image = $('<img id="' + NAME + '_storm_image" style="display:none">');
+                                DOM.storm.canvas = $('<canvas id="' + NAME + '_storm_canvas" style="display:none"></canvas>');
+                                DOM.storm.div.append(DOM.storm.image);
+                                DOM.storm.div.append(DOM.storm.canvas);
+                                document.body.appendChild(DOM.storm.div[0]);
                             }
-                        }, 9e3, 3e3);
+                        }
+                        if (CONFIG.USE_GIFT && (CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) {
+                            API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.csrf_token).done(function(response) {
+                                DEBUG('Init: get_weared_medal', response);
+                                if (response.code === 0) {
+                                    Info.medal_target_id = response.data.target_id;
+                                    Info.today_feed = parseInt(response.data.today_feed, 10);
+                                    Info.day_limit = response.data.day_limit;
+                                    Info.old_area_id = response.data.area;
+                                    Info.area_id = response.data.area_v2_id;
+                                    Info.area_parent_id = response.data.area_v2_parent_id;
+                                    API.gift.room_gift_list(Info.roomid, Info.area_id).done(function(response) {
+                                        DEBUG('Init: room_gift_list', response);
+                                        if (response.code === 0) {
+                                            gift_list = response.data;
+                                            gift_list.forEach(function(v) {
+                                                gift_list_str += v.id + '：' + v.name + '，亲密度+' + Math.ceil(v.price / 100) + '<br>';
+                                            });
+                                        }
+                                        DEBUG('gift_list_str', gift_list_str);
+                                    });
+                                }
+                            });
+                            API.live_user.get_info_in_room(Info.roomid).done(function(response) {
+                                DEBUG('Init: get_info_in_room', response);
+                                if (response.code === 0) {
+                                    Info.silver = response.data.wallet.silver;
+                                    Info.gold = response.data.wallet.gold;
+                                    Info.mobile_verified = response.data.info.mobile_verified;
+                                }
+                            });
+                        }
+                        setTimeout(function() {
+                            DEBUG('Init: Info', Info);
+                            Toast.element = $('<div id="' + NAME + '_div_toast"></div>');
+                            Toast.element.appendTo($('#rank-list-vm'));
+                            Toast.element = Toast.element[0];
+                            var str = [];
+                            if (CONFIG.USE_SIGN) str.push('自动签到');
+                            if (CONFIG.USE_AWARD) str.push('自动领取瓜子');
+                            if (CONFIG.USE_LOTTERY) str.push('自动参加抽奖');
+                            if (CONFIG.USE_TASK) str.push('自动完成任务');
+                            if (CONFIG.USE_GIFT) str.push('自动送礼');
+                            if (CONFIG.EXCHANGE_SILVER2COIN) str.push('银瓜子换硬币');
+                            if (str.length) str = str.join('，');
+                            else str = '无';
+                            toast('助手已启用功能：' + str, 'info');
+                            console.info('Bilibili直播间挂机助手: 助手已启用功能：' + str);
+                            TaskStart();
+                        }, 3e3);
+                    } else {
+                        // 未登录
+                        toast('你还没有登录，助手无法使用！', 'caution');
+                        console.info('Bilibili直播间挂机助手: 你还没有登录，助手无法使用！');
                     }
                     return true;
                 }
             }, 1, 500);
-            return;
+        } catch (err) {
+            toast('Bilibili直播间挂机助手初始化时异常', 'error');
+            console.error('Bilibili直播间挂机助手：初始化时异常');
+            console.error(err);
         }
-        console.info('Bilibili直播间挂机助手: 已加载');
-        InitAlertDialogGui();
-        InitConfigGui();
-        loadConfig();
-        saveConfig();
-        execUntilSucceed(function() {
-            DEBUG('Init: BilibiliLive', window.BilibiliLive);
-            if (window.BilibiliLive && parseInt(window.BilibiliLive.ROOMID, 10) !== 0) {
-                if (parseInt(window.BilibiliLive.UID, 10) !== 0) {
-                    Info.short_id = window.BilibiliLive.SHORT_ROOMID;
-                    Info.uid = window.BilibiliLive.UID;
-                    Info.roomid = window.BilibiliLive.ROOMID;
-                    Info.ruid = window.BilibiliLive.ANCHOR_UID;
-                    Info.rnd = window.BilibiliLive.RND;
-                    window.room_id_list[Info.short_id] = Info.roomid;
-                    if (CONFIG.USE_AWARD) {
-                        execUntilSucceed(function() {
-                            var _treasure_box = $('#gift-control-vm div.treasure-box.p-relative');
-                            if (_treasure_box[0]) {
-                                _treasure_box.attr('id', 'old_treasure_box');
-                                _treasure_box.hide();
-                                DOM.treasure.div = $('<div id="' + NAME + '_treasure_div" class="treasure-box p-relative"></div>');
-                                DOM.treasure.div_tip = $('<div id="' + NAME + '_treasure_div_tip" class="t-center b-box none-select">自动<br>领取中</div>');
-                                DOM.treasure.div_timer = $('<div id="' + NAME + '_treasure_div_timer" class="t-center b-box none-select">0</div>');
-                                DOM.treasure.image = $('<img id="' + NAME + '_treasure_image" style="display:none">');
-                                DOM.treasure.canvas = $('<canvas id="' + NAME + '_treasure_canvas" style="display:none" height="40" width="120"></canvas>');
-                                var css_text = 'max-width: 40px;padding: 2px 3px;margin-top: 3px;font-size: 12px;color: #fff;background-color: rgba(0,0,0,.5);border-radius: 10px;';
-                                DOM.treasure.div_tip[0].style = css_text;
-                                DOM.treasure.div_timer[0].style = css_text;
-                                DOM.treasure.div.append(DOM.treasure.div_tip);
-                                DOM.treasure.div.append(DOM.treasure.image);
-                                DOM.treasure.div.append(DOM.treasure.canvas);
-                                DOM.treasure.div_tip.after(DOM.treasure.div_timer);
-                                _treasure_box.after(DOM.treasure.div);
-                                interval_treasure_timer = setInterval(function() {
-                                    var t = parseInt(DOM.treasure.div_timer.text(), 10);
-                                    if (t > 0) DOM.treasure.div_timer.text((t - 1) + 's');
-                                    else DOM.treasure.div_timer.hide();
-                                }, 1e3);
-                                return true;
-                            }
-                        });
-                    }
-                    if (CONFIG.USE_LOTTERY) {
-                        if (CONFIG.LOTTERY_CONFIG.ALLOW_NOT_SHORT_ROOMID && Info.roomid === Info.short_id) {
-                            // 非短号直播间
-                            window.Lottery_inited = false;
-                            DOM.lottery.iframe = $('<iframe name="' + NAME + '_iframe"></iframe>');
-                            DOM.lottery.iframe[0].src = '//live.bilibili.com/2';
-                            document.body.appendChild(DOM.lottery.iframe[0]);
-                            DEBUG('Init: lottery_iframe_window', window.frames[NAME + '_iframe']);
-                        } else {
-                            window.Lottery_inited = true;
-                            DOM.storm.div = $('<div id="' + NAME + '_storm_div" style="display:none"></div>');
-                            DOM.storm.image = $('<img id="' + NAME + '_storm_image" style="display:none">');
-                            DOM.storm.canvas = $('<canvas id="' + NAME + '_storm_canvas" style="display:none"></canvas>');
-                            DOM.storm.div.append(DOM.storm.image);
-                            DOM.storm.div.append(DOM.storm.canvas);
-                            document.body.appendChild(DOM.storm.div[0]);
-                        }
-                    }
-                    if (CONFIG.USE_GIFT && (CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) {
-                        API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.csrf_token).done(function(response) {
-                            DEBUG('Init: get_weared_medal', response);
-                            if (response.code === 0) {
-                                Info.medal_target_id = response.data.target_id;
-                                Info.today_feed = parseInt(response.data.today_feed, 10);
-                                Info.day_limit = response.data.day_limit;
-                                Info.old_area_id = response.data.area;
-                                Info.area_id = response.data.area_v2_id;
-                                Info.area_parent_id = response.data.area_v2_parent_id;
-                                API.gift.room_gift_list(Info.roomid, Info.area_id).done(function(response) {
-                                    DEBUG('Init: room_gift_list', response);
-                                    if (response.code === 0) {
-                                        gift_list = response.data;
-                                        gift_list.forEach(function(v) {
-                                            gift_list_str += v.id + '：' + v.name + '，亲密度+' + Math.ceil(v.price / 100) + '<br>';
-                                        });
-                                    }
-                                    DEBUG('gift_list_str', gift_list_str);
-                                });
-                            }
-                        });
-                        API.live_user.get_info_in_room(Info.roomid).done(function(response) {
-                            DEBUG('Init: get_info_in_room', response);
-                            if (response.code === 0) {
-                                Info.silver = response.data.wallet.silver;
-                                Info.gold = response.data.wallet.gold;
-                                Info.mobile_verified = response.data.info.mobile_verified;
-                            }
-                        });
-                    }
-                    setTimeout(function() {
-                        DEBUG('Init: Info', Info);
-                        Toast.element = $('<div id="' + NAME + '_div_toast"></div>');
-                        Toast.element.appendTo($('#rank-list-vm'));
-                        Toast.element = Toast.element[0];
-                        var str = [];
-                        if (CONFIG.USE_SIGN) str.push('自动签到');
-                        if (CONFIG.USE_AWARD) str.push('自动领取瓜子');
-                        if (CONFIG.USE_LOTTERY) str.push('自动参加抽奖');
-                        if (CONFIG.USE_TASK) str.push('自动完成任务');
-                        if (CONFIG.USE_GIFT) str.push('自动送礼');
-                        if (CONFIG.EXCHANGE_SILVER2COIN) str.push('银瓜子换硬币');
-                        if (str.length) str = str.join('，');
-                        else str = '无';
-                        toast('助手已启用功能：' + str, 'info');
-                        console.info('Bilibili直播间挂机助手: 助手已启用功能：' + str);
-                        TaskStart();
-                    }, 3e3);
-                } else {
-                    // 未登录
-                    toast('你还没有登录，助手无法使用！', 'caution');
-                    console.info('Bilibili直播间挂机助手: 你还没有登录，助手无法使用！');
-                }
-                return true;
-            }
-        }, 1, 500);
     }
 
     function InitAlertDialogGui() {
@@ -854,13 +863,13 @@
     }
 
     function SmallTV(room_id) {
-        API.gift.smalltv.check(room_id).done(function(response) { // 检查是否有小电视抽奖
+        API.SmallTV.check(room_id).done(function(response) { // 检查是否有小电视抽奖
             DEBUG('TaskLottery: smalltv.check', response);
             if (response.code === 0) {
                 response.data.forEach(function(v) {
                     var time = v.time;
                     if (v.status === 1) { // 可以参加
-                        API.gift.smalltv.join(room_id, v.raffleId).done(function(response) {
+                        API.SmallTV.join(room_id, v.raffleId).done(function(response) {
                             DEBUG('TaskLottery: smalltv.join', response);
                             if (response.code === 0) {
                                 setTimeout(function() {
@@ -884,13 +893,13 @@
     }
 
     function Raffle(room_id) {
-        API.activity.check(room_id).done(function(response) { // 检查是否有活动抽奖
+        API.Raffle.check(room_id).done(function(response) { // 检查是否有活动抽奖
             DEBUG('TaskLottery: activity.check', response);
             if (response.code === 0) {
                 response.data.forEach(function(v) {
                     var time = v.time;
                     if (v.status === 1) { // 可以参加
-                        API.activity.join(room_id, v.raffleId).done(function(response) {
+                        API.Raffle.join(room_id, v.raffleId).done(function(response) {
                             DEBUG('TaskLottery: activity.join', response);
                             if (response.code === 0) {
                                 // 加入成功
@@ -900,8 +909,9 @@
                                 toast('已参加直播间【' + room_id + '】的活动抽奖', 'success');
                             } else if (response.code === 65531) {
                                 // 65531: 非当前直播间或短ID直播间试图参加抽奖
-                                toast('参加活动抽奖失败，已停止活动抽奖任务', 'error');
                                 TaskLottery_Stop = true;
+                                toast('参加活动抽奖失败，已停止活动抽奖任务', 'error');
+                                console.error('Bilibili直播间挂机助手：[自动抽奖]参加活动抽奖失败，已停止');
                             }
                         });
                     } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
@@ -917,7 +927,7 @@
 
     function SmallTVNotice(room_id, raffleId, cnt) {
         if (cnt > 5) return;
-        API.gift.smalltv.notice(room_id, raffleId).done(function(response) {
+        API.SmallTV.notice(room_id, raffleId).done(function(response) {
             DEBUG('TaskLottery: smalltv.notice', response);
             if (response.code === 0) {
                 if (response.data.status === 1) {
@@ -947,7 +957,7 @@
 
     function RaffleNotice(room_id, raffleId, cnt) {
         if (cnt > 5) return;
-        API.activity.notice(room_id, raffleId).done(function(response) {
+        API.Raffle.notice(room_id, raffleId).done(function(response) {
             DEBUG('TaskLottery: activity.notice', response);
             if (response.code === 0) {
                 if (response.data.gift_id === '-1') {
@@ -1008,12 +1018,12 @@
             callback();
             return;
         }
-        API.lottery.getCaptcha(ts_ms()).done(function(response) {
+        API.SilverBox.getCaptcha(ts_ms()).done(function(response) {
             DOM.treasure.image[0].onload = function() {
                 var captcha = calcImg();
                 if (captcha) {
                     // 验证码识别成功
-                    API.FreeSilver.getAward(ts_s(), ts_s(), captcha).done(function(response) {
+                    API.SilverBox.getAward(ts_s(), ts_s(), captcha).done(function(response) {
                         DEBUG('TaskAward: getAward', response);
                         if (response.code === 0) {
                             // 领取瓜子成功
@@ -1048,7 +1058,7 @@
 
     function TaskAward_newTask() {
         if (!CONFIG.USE_AWARD) return;
-        API.FreeSilver.getCurrentTask().done(function(response) {
+        API.SilverBox.getCurrentTask().done(function(response) {
             DEBUG('TaskAward: getCurrentTask', response);
             if (response.code === 0) {
                 // 获取任务成功
@@ -1096,9 +1106,15 @@
     }
 
     function TaskAward() {
-        if (!CONFIG.USE_AWARD) return;
-        if (TaskAward_Running) Award(TaskAward_newTask, 0);
-        else TaskAward_newTask();
+        try {
+            if (!CONFIG.USE_AWARD) return;
+            if (TaskAward_Running) Award(TaskAward_newTask, 0);
+            else TaskAward_newTask();
+        } catch (err) {
+            toast('[自动领取瓜子]运行时出现异常，已停止', 'error');
+            console.error('Bilibili直播间挂机助手：[自动领取瓜子]运行时出现异常，已停止');
+            console.error(err);
+        }
     }
 
     function Lottery() {
@@ -1151,38 +1167,50 @@
     }
 
     function TaskSign() {
-        if (!CONFIG.USE_SIGN) return;
-        API.sign.GetSignInfo().done(function(response) {
-            DEBUG('TaskSign: GetSignInfo', response);
-            if (response.code === 0) {
-                if (response.data.status === 0) {
-                    // 未签到
-                    API.sign.doSign().done(function(response) {
-                        DEBUG('TaskSign: doSign', response);
-                        if (response.code === 0) {
-                            // 签到成功
-                            toast(response.data.text, 'success');
-                        } else {
-                            toast(response.data.text, 'error');
-                        }
-                    });
-                } else if (response.data.status === 1) {
-                    // 已签到
-                    toast('今日已签到：' + response.data.text, 'success');
+        try {
+            if (!CONFIG.USE_SIGN) return;
+            API.sign.GetSignInfo().done(function(response) {
+                DEBUG('TaskSign: GetSignInfo', response);
+                if (response.code === 0) {
+                    if (response.data.status === 0) {
+                        // 未签到
+                        API.sign.doSign().done(function(response) {
+                            DEBUG('TaskSign: doSign', response);
+                            if (response.code === 0) {
+                                // 签到成功
+                                toast(response.data.text, 'success');
+                            } else {
+                                toast(response.data.text, 'error');
+                            }
+                        });
+                    } else if (response.data.status === 1) {
+                        // 已签到
+                        toast('今日已签到：' + response.data.text, 'success');
+                    }
                 }
-            }
-        });
-        tommorrowRun(TaskSign);
+            });
+            tommorrowRun(TaskSign);
+        } catch (err) {
+            toast('[自动签到]运行时出现异常，已停止', 'error');
+            console.error('Bilibili直播间挂机助手：[自动签到]运行时出现异常，已停止');
+            console.error(err);
+        }
     }
 
     function TaskLottery() {
-        if (!CONFIG.USE_LOTTERY) return;
-        execUntilSucceed(function() {
-            if (window.Lottery_inited) {
-                Lottery();
-                return true;
-            }
-        }, 10e3, 1e3);
+        try {
+            if (!CONFIG.USE_LOTTERY) return;
+            execUntilSucceed(function() {
+                if (window.Lottery_inited) {
+                    Lottery();
+                    return true;
+                }
+            }, 10e3, 1e3);
+        } catch (err) {
+            toast('[自动抽奖]运行时出现异常，已停止', 'error');
+            console.error('Bilibili直播间挂机助手：[自动抽奖]运行时出现异常，已停止');
+            console.error(err);
+        }
     }
 
     function TaskReceiveAward(task_id) {
@@ -1236,8 +1264,14 @@
     }
 
     function TaskTask() {
-        if (!CONFIG.USE_TASK) return;
-        setTimeout(Task, 6e3);
+        try {
+            if (!CONFIG.USE_TASK) return;
+            setTimeout(Task, 6e3);
+        } catch (err) {
+            toast('[自动完成任务]运行时出现异常，已停止', 'error');
+            console.error('Bilibili直播间挂机助手：[自动完成任务]运行时出现异常，已停止');
+            console.error(err);
+        }
     }
 
     function Gift_send(i, remain_feed) {
@@ -1318,51 +1352,63 @@
     }
 
     function TaskGift() {
-        if (!CONFIG.USE_GIFT) return;
-        if (!(CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) return;
-        if (Info.medal_target_id !== Info.ruid) {
-            if (!CONFIG.GIFT_CONFIG.CHANGE_MEDAL) {
-                toast('已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
-                return;
-            }
-            API.i.medal(1, 25).done(function(response) {
-                DEBUG('TaskGift: medal', response);
-                if (response.code === 0) {
-                    Info.medal_list = response.data.fansMedalList;
-                    $.each(Info.medal_list, function(index, v) {
-                        if (v.target_id === Info.ruid) {
-                            API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
-                                DEBUG('TaskGift: ajaxWearFansMedal', response);
-                                toast('已自动切换为当前主播勋章', 'success');
-                                toast('请注意送礼设置，30秒后开始送礼', 'caution');
-                                setTimeout(Gift, 30e3);
-                            });
-                            return false;
-                        }
-                    });
+        try {
+            if (!CONFIG.USE_GIFT) return;
+            if (!(CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) return;
+            if (Info.medal_target_id !== Info.ruid) {
+                if (!CONFIG.GIFT_CONFIG.CHANGE_MEDAL) {
+                    toast('已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
+                    return;
                 }
-            });
-        } else {
-            toast('请注意送礼设置，30秒后开始送礼', 'caution');
-            setTimeout(Gift, 30e3);
+                API.i.medal(1, 25).done(function(response) {
+                    DEBUG('TaskGift: medal', response);
+                    if (response.code === 0) {
+                        Info.medal_list = response.data.fansMedalList;
+                        $.each(Info.medal_list, function(index, v) {
+                            if (v.target_id === Info.ruid) {
+                                API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
+                                    DEBUG('TaskGift: ajaxWearFansMedal', response);
+                                    toast('已自动切换为当前主播勋章', 'success');
+                                    toast('请注意送礼设置，30秒后开始送礼', 'caution');
+                                    setTimeout(Gift, 30e3);
+                                });
+                                return false;
+                            }
+                        });
+                    }
+                });
+            } else {
+                toast('请注意送礼设置，30秒后开始送礼', 'caution');
+                setTimeout(Gift, 30e3);
+            }
+        } catch (err) {
+            toast('[自动送礼]运行时出现异常，已停止', 'error');
+            console.error('Bilibili直播间挂机助手：[自动送礼]运行时出现异常，已停止');
+            console.error(err);
         }
     }
 
     function TaskExchange() {
-        if (!CONFIG.EXCHANGE_SILVER2COIN) return;
-        API.pay.silver2coin(Info.csrf_token).done(function(response) {
-            DEBUG('TaskExchange', response);
-            if (response.code === 0) {
-                // 兑换成功
-                toast('银瓜子兑换硬币：兑换成功', 'success');
-            } else if (response.code === 403) {
-                // 每天最多能兑换 1 个
-                toast('银瓜子兑换硬币：每天最多能兑换 1 个', 'info');
-            } else {
-                toast('银瓜子兑换硬币：' + response.msg, 'info');
-            }
-        });
-        tommorrowRun(TaskExchange);
+        try {
+            if (!CONFIG.EXCHANGE_SILVER2COIN) return;
+            API.SilverCoinExchange.silver2coin(Info.csrf_token).done(function(response) {
+                DEBUG('TaskExchange', response);
+                if (response.code === 0) {
+                    // 兑换成功
+                    toast('银瓜子兑换硬币：兑换成功', 'success');
+                } else if (response.code === 403) {
+                    // 每天最多能兑换 1 个
+                    toast('银瓜子兑换硬币：每天最多能兑换 1 个', 'info');
+                } else {
+                    toast('银瓜子兑换硬币：' + response.msg, 'info');
+                }
+            });
+            tommorrowRun(TaskExchange);
+        } catch (err) {
+            toast('[银瓜子兑换硬币]运行时出现异常，已停止', 'error');
+            console.error('Bilibili直播间挂机助手：[银瓜子兑换硬币]运行时出现异常，已停止');
+            console.error(err);
+        }
     }
 
     function TaskStart() {
