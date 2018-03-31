@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.7.0
+// @version      1.7.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1100,7 +1100,7 @@
                 if (response.code === 0) {
                     // 获取任务成功
                     if (parseInt(response.data.minute, 10) !== 0) {
-                        setTimeout(TaskAward, response.data.minute * 60e3 + 1e3);
+                        setTimeout(TaskAward.getAward, response.data.minute * 60e3 + 1e3);
                         TaskAward.running = true;
                         execUntilSucceed(function() {
                             if (DOM.treasure.div_timer) {
@@ -1134,7 +1134,7 @@
                     });
                     tommorrowRun(function() {
                         TaskAward.running = false;
-                        TaskAward();
+                        TaskAward.init();
                     });
                 } else {
                     toast('自动领取瓜子：' + response.msg, 'info');
@@ -1152,7 +1152,7 @@
                 if (!CONFIG.USE_LOTTERY) return;
                 execUntilSucceed(function() {
                     if (window.Lottery_inited) {
-                        work();
+                        TaskLottery.work();
                         return true;
                     }
                 }, 10e3, 1e3);
@@ -1185,14 +1185,14 @@
                     lottery_list.push(v);
                 }
             });
-            DEBUG('TaskLottery: work: last_list', TaskLottery.last_list.toString());
+            DEBUG('TaskLottery.work: last_list', TaskLottery.last_list.toString());
             TaskLottery.last_list = lottery_list_temp;
             lottery_list_temp = lottery_list;
             lottery_list = [];
             lottery_list_temp.forEach(function(v) {
                 if ($.inArray(v, lottery_list) === -1) lottery_list.push(v);
             });
-            DEBUG('TaskLottery: work: list', lottery_list.toString());
+            DEBUG('TaskLottery.work: list', lottery_list.toString());
             // 根据可抽奖的房间数自动调整检测周期
             if (lottery_list.length > 10) {
                 TaskLottery.period = 3;
@@ -1436,7 +1436,7 @@
                         toast('银瓜子兑换硬币：' + response.msg, 'info');
                     }
                 });
-                tommorrowRun(TaskExchange);
+                tommorrowRun(TaskExchange.init);
             } catch (err) {
                 toast('[银瓜子兑换硬币]运行时出现异常，已停止', 'error');
                 console.error('Bilibili直播间挂机助手：[银瓜子兑换硬币]运行时出现异常，已停止');
