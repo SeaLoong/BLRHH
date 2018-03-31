@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.7.1
+// @version      1.7.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1100,7 +1100,7 @@
                 if (response.code === 0) {
                     // 获取任务成功
                     if (parseInt(response.data.minute, 10) !== 0) {
-                        setTimeout(TaskAward.getAward, response.data.minute * 60e3 + 1e3);
+                        setTimeout(TaskAward.init, response.data.minute * 60e3 + 1e3);
                         TaskAward.running = true;
                         execUntilSucceed(function() {
                             if (DOM.treasure.div_timer) {
