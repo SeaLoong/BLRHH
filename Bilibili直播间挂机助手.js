@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.6.3
+// @version      1.7.0
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -127,8 +127,6 @@
     };
     var NAME = 'Bilibili-LiveRoom-HangHelper';
     var API = BilibiliAPI;
-    var TaskAward_Running = false;
-    var TaskLottery_Stop = false;
     var Toast = {
         element: null,
         list: [],
@@ -175,9 +173,6 @@
             iframe: null
         }
     };
-    var interval_treasure_timer;
-    var lottery_list_last = [],
-        lottery_check_time = 20;
     var gift_list;
     var gift_list_str = '礼物编号及对应礼物、亲密度对照表<br>';
     var Info = {
@@ -389,19 +384,21 @@
             if (short_id > 0) {
                 var room_id = window.room_id_list[short_id];
                 if (room_id > 0) {
-                    SmallTV(room_id);
-                    Raffle(room_id);
-                    // Storm(room_id);
+                    SmallTV.init(room_id);
+                    Raffle.init(room_id);
+                    ZongDu.init(room_id);
+                    // Storm.init(room_id);
                 } else {
                     API.room.room_init(short_id).done(function(response) {
-                        DEBUG('TaskLottery: room_init', response);
+                        DEBUG('window.Lottery_join: room_init', response);
                         if (response.code === 0) {
                             room_id = response.data.room_id;
                             if (response.data.short_id > 0 && response.data.short_id != short_id) window.room_id_list[response.data.short_id] = room_id;
                             window.room_id_list[short_id] = room_id;
-                            SmallTV(room_id);
-                            Raffle(room_id);
-                            // Storm(room_id);
+                            SmallTV.init(room_id);
+                            Raffle.init(room_id);
+                            ZongDu.init(room_id);
+                            // Storm.init(room_id);
                         }
                     });
                 }
@@ -627,7 +624,7 @@
                                     DOM.treasure.div.append(DOM.treasure.canvas);
                                     DOM.treasure.div_tip.after(DOM.treasure.div_timer);
                                     _treasure_box.after(DOM.treasure.div);
-                                    interval_treasure_timer = setInterval(function() {
+                                    TaskAward.treasure_timer = setInterval(function() {
                                         var t = parseInt(DOM.treasure.div_timer.text(), 10);
                                         if (t > 0) DOM.treasure.div_timer.text((t - 1) + 's');
                                         else DOM.treasure.div_timer.hide();
@@ -865,562 +862,596 @@
         });
     }
 
-    function SmallTV(room_id) {
-        API.SmallTV.check(room_id).done(function(response) { // 检查是否有小电视抽奖
-            DEBUG('TaskLottery: smalltv.check', response);
-            if (response.code === 0) {
-                response.data.forEach(function(v) {
-                    var time = v.time;
-                    if (v.status === 1) { // 可以参加
-                        API.SmallTV.join(room_id, v.raffleId).done(function(response) {
-                            DEBUG('TaskLottery: smalltv.join', response);
-                            if (response.code === 0) {
-                                setTimeout(function() {
-                                    SmallTVNotice(room_id, response.data.raffleId);
-                                }, time * 1e3 + 12e3);
-                                toast('已参加直播间【' + room_id + '】的小电视抽奖', 'success');
-                            }
-                        });
-                    } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
+    var SmallTV = {
+        init: function(roomid) {
+            API.SmallTV.check(roomid).done(function(response) { // 检查是否有小电视抽奖
+                DEBUG('SmallTV.init: SmallTV.check', response);
+                if (response.code === 0) {
+                    response.data.forEach(function(v) {
+                        var time = v.time;
+                        if (v.status === 1) { // 可以参加
+                            API.SmallTV.join(roomid, v.raffleId).done(function(response) {
+                                DEBUG('SmallTV.init: SmallTV.join', response);
+                                if (response.code === 0) {
+                                    setTimeout(function() {
+                                        SmallTV.notice(roomid, response.data.raffleId);
+                                    }, time * 1e3 + 12e3);
+                                    toast('已参加直播间【' + roomid + '】的小电视抽奖', 'success');
+                                }
+                            });
+                        } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
+                            setTimeout(function() {
+                                SmallTV.notice(roomid, response.data.raffleId);
+                            }, time * 1e3 + 12e3);
+                            toast('已参加直播间【' + roomid + '】的小电视抽奖', 'success');
+                        }
+
+                    });
+                } else if (response.code === -400) {
+                    // 没有需要提示的小电视
+                }
+            });
+        },
+        notice: function(roomid, raffleId, cnt) {
+            if (cnt > 5) return;
+            API.SmallTV.notice(roomid, raffleId).done(function(response) {
+                DEBUG('SmallTV.notice: SmallTV.notice', response);
+                if (response.code === 0) {
+                    if (response.data.status === 1) {
+                        // 非常抱歉，您错过了此次抽奖，下次记得早点来哦
+                    } else if (response.data.status === 2) {
+                        if (response.data.gift_id === '-1' && !response.data.gift_name) {
+                            toast('直播间【' + roomid + '】小电视抽奖结果：' + response.msg, 'info');
+                        } else {
+                            toast('直播间【' + roomid + '】小电视抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                        }
+                    } else if (response.data.status === 3) {
+                        // 还未开奖
                         setTimeout(function() {
-                            SmallTVNotice(room_id, response.data.raffleId);
-                        }, time * 1e3 + 12e3);
-                        toast('已参加直播间【' + room_id + '】的小电视抽奖', 'success');
-                    }
-
-                });
-            } else if (response.code === -400) {
-                // 没有需要提示的小电视
-            }
-        });
-    }
-
-    function Raffle(room_id) {
-        API.Raffle.check(room_id).done(function(response) { // 检查是否有活动抽奖
-            DEBUG('TaskLottery: activity.check', response);
-            if (response.code === 0) {
-                response.data.forEach(function(v) {
-                    var time = v.time;
-                    if (v.status === 1) { // 可以参加
-                        API.Raffle.join(room_id, v.raffleId).done(function(response) {
-                            DEBUG('TaskLottery: activity.join', response);
-                            if (response.code === 0) {
-                                // 加入成功
-                                setTimeout(function() {
-                                    RaffleNotice(room_id, response.data.raffleId);
-                                }, time * 1e3 + 24e3);
-                                toast('已参加直播间【' + room_id + '】的活动抽奖', 'success');
-                            } else if (response.code === 65531) {
-                                // 65531: 非当前直播间或短ID直播间试图参加抽奖
-                                TaskLottery_Stop = true;
-                                toast('参加活动抽奖失败，已停止活动抽奖任务', 'error');
-                                console.error('Bilibili直播间挂机助手：[自动抽奖]参加活动抽奖失败，已停止');
-                            }
-                        });
-                    } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
-                        setTimeout(function() {
-                            RaffleNotice(room_id, response.data.raffleId);
-                        }, time * 1e3 + 24e3);
-                        toast('已参加直播间【' + room_id + '】的活动抽奖', 'success');
-                    }
-                });
-            }
-        });
-    }
-
-    function SmallTVNotice(room_id, raffleId, cnt) {
-        if (cnt > 5) return;
-        API.SmallTV.notice(room_id, raffleId).done(function(response) {
-            DEBUG('TaskLottery: smalltv.notice', response);
-            if (response.code === 0) {
-                if (response.data.status === 1) {
-                    // 非常抱歉，您错过了此次抽奖，下次记得早点来哦
-                } else if (response.data.status === 2) {
-                    if (response.data.gift_id === '-1' && !response.data.gift_name) {
-                        toast('直播间【' + room_id + '】小电视抽奖结果：' + response.msg, 'info');
+                            SmallTV.notice(roomid, raffleId, cnt);
+                        }, 6e3);
                     } else {
-                        toast('直播间【' + room_id + '】小电视抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                        toast('直播间【' + roomid + '】小电视抽奖结果：' + response.msg, 'error');
                     }
-                } else if (response.data.status === 3) {
-                    // 还未开奖
+                } else {
+                    // 其他情况
                     setTimeout(function() {
-                        SmallTVNotice(room_id, raffleId, cnt);
+                        SmallTV.notice(roomid, raffleId, cnt + 1);
+                    }, 6e3);
+                }
+            });
+        }
+    };
+
+    var Raffle = {
+        init: function(roomid) {
+            API.Raffle.check(roomid).done(function(response) { // 检查是否有活动抽奖
+                DEBUG('Raffle.init: Raffle.check', response);
+                if (response.code === 0) {
+                    response.data.forEach(function(v) {
+                        var time = v.time;
+                        if (v.status === 1) { // 可以参加
+                            API.Raffle.join(roomid, v.raffleId).done(function(response) {
+                                DEBUG('Raffle.init: Raffle.join', response);
+                                if (response.code === 0) {
+                                    // 加入成功
+                                    setTimeout(function() {
+                                        Raffle.notice(roomid, response.data.raffleId);
+                                    }, time * 1e3 + 24e3);
+                                    toast('已参加直播间【' + roomid + '】的活动抽奖', 'success');
+                                } else if (response.code === 65531) {
+                                    // 65531: 非当前直播间或短ID直播间试图参加抽奖
+                                    TaskLottery.stop = true;
+                                    toast('参加活动抽奖失败，已停止活动抽奖任务', 'error');
+                                    console.error('Bilibili直播间挂机助手：[自动抽奖]参加活动抽奖失败，已停止');
+                                }
+                            });
+                        } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
+                            setTimeout(function() {
+                                Raffle.notice(roomid, response.data.raffleId);
+                            }, time * 1e3 + 24e3);
+                            toast('已参加直播间【' + roomid + '】的活动抽奖', 'success');
+                        }
+                    });
+                }
+            });
+        },
+        notice: function(roomid, raffleId, cnt) {
+            if (cnt > 5) return;
+            API.Raffle.notice(roomid, raffleId).done(function(response) {
+                DEBUG('Raffle.notice: Raffle.notice', response);
+                if (response.code === 0) {
+                    if (response.data.gift_id === '-1') {
+                        toast('直播间【' + roomid + '】活动抽奖结果：' + response.msg, 'info');
+                    } else {
+                        toast('直播间【' + roomid + '】活动抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                    }
+                } else if (response.msg === '参数错误！') {
+                    // 参数错误！
+                } else if (response.msg === '尚未开奖，请耐心等待！') {
+                    // 尚未开奖，请耐心等待！
+                    setTimeout(function() {
+                        Raffle.notice(roomid, raffleId, cnt);
                     }, 6e3);
                 } else {
-                    toast('直播间【' + room_id + '】小电视抽奖结果：' + response.msg, 'error');
-                }
-            } else {
-                // 其他情况
-                setTimeout(function() {
-                    SmallTVNotice(room_id, raffleId, cnt + 1);
-                }, 6e3);
-            }
-        });
-    }
-
-    function RaffleNotice(room_id, raffleId, cnt) {
-        if (cnt > 5) return;
-        API.Raffle.notice(room_id, raffleId).done(function(response) {
-            DEBUG('TaskLottery: activity.notice', response);
-            if (response.code === 0) {
-                if (response.data.gift_id === '-1') {
-                    toast('直播间【' + room_id + '】活动抽奖结果：' + response.msg, 'info');
-                } else {
-                    toast('直播间【' + room_id + '】活动抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
-                }
-            } else if (response.msg === '参数错误！') {
-                // 参数错误！
-            } else if (response.msg === '尚未开奖，请耐心等待！') {
-                // 尚未开奖，请耐心等待！
-                setTimeout(function() {
-                    RaffleNotice(room_id, raffleId, cnt);
-                }, 6e3);
-            } else {
-                // 其他情况
-                setTimeout(function() {
-                    RaffleNotice(room_id, raffleId, cnt + 1);
-                }, 6e3);
-            }
-        });
-    }
-
-    function Storm(room_id) {
-        API.lottery.check(room_id).done(function(response) { // 检查是否有节奏风暴
-            DEBUG('TaskLottery: lottery.check', response);
-            if (response.code === 0 && !Array.isArray(response.data) && response.data.hasJoin === 0) {
-                StormJoin(response.data.id);
-            }
-        });
-    }
-
-    function StormJoin(id, cnt) {
-        if (cnt > 5) return;
-        API.create(112, 32).done(function(response) {
-            if (response.code === 0) {
-                DOM.storm.image[0].onload = function() {
-                    var phrase = solveCaptcha(); // 识别验证码，未实现
-                    API.lottery.join(id, response.data.token, phrase, Info.csrf_token).done(function(response) {
-                        DEBUG('TaskLottery: lottery.join', response);
-                        if (response.code === 0) {
-                            toast('节奏风暴抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
-                        } else {
-                            setTimeout(function() {
-                                StormJoin(id, cnt + 1);
-                            }, 1e3);
-                        }
-                    });
-                };
-                DOM.storm.image[0].src = response.data.image;
-            }
-        });
-    }
-
-    function Award(callback, cnt) {
-        if (!CONFIG.USE_AWARD) return;
-        if (cnt > 5) {
-            callback();
-            return;
-        }
-        API.SilverBox.getCaptcha(ts_ms()).done(function(response) {
-            DOM.treasure.image[0].onload = function() {
-                var captcha = calcImg();
-                if (captcha) {
-                    // 验证码识别成功
-                    API.SilverBox.getAward(ts_s(), ts_s(), captcha).done(function(response) {
-                        DEBUG('TaskAward: getAward', response);
-                        if (response.code === 0) {
-                            // 领取瓜子成功
-                            toast('自动领取瓜子：领取了 ' + response.data.awardSilver + ' 银瓜子', 'success');
-                            callback();
-                        } else if (response.code === -903) {
-                            // -903: 已经领取过这个宝箱
-                            toast('自动领取瓜子：已经领取过这个宝箱', 'caution');
-                            callback();
-                        } else if (response.code === -902 || response.code === -901) {
-                            // -902: 验证码错误, -901: 验证码过期
-                            setTimeout(function() {
-                                Award(callback, cnt + 1);
-                            }, 1e3);
-                        } else {
-                            // 其他错误
-                            setTimeout(function() {
-                                Award(callback, cnt + 1);
-                            }, 3e3);
-                        }
-                    });
-                } else {
-                    // 验证码识别失败
+                    // 其他情况
                     setTimeout(function() {
-                        Award(callback, cnt);
-                    }, 500);
+                        Raffle.notice(roomid, raffleId, cnt + 1);
+                    }, 6e3);
                 }
-            };
-            DOM.treasure.image[0].src = response.data.img;
-        });
-    }
+            });
+        }
+    };
 
-    function TaskAward_newTask() {
-        if (!CONFIG.USE_AWARD) return;
-        API.SilverBox.getCurrentTask().done(function(response) {
-            DEBUG('TaskAward: getCurrentTask', response);
-            if (response.code === 0) {
-                // 获取任务成功
-                if (parseInt(response.data.minute, 10) !== 0) {
-                    setTimeout(TaskAward, response.data.minute * 60e3 + 1e3);
-                    TaskAward_Running = true;
+    var ZongDu = {
+        init: function(roomid) {
+            API.ZongDu.check(roomid).done(function(response) {
+                DEBUG('ZongDu.init: ZongDu.check', response);
+                if (response.code === 0 && response.data.hasOwnProperty('guard')) {
+                    response.data.guard.forEach(function(v) {
+                        if (v.status === 1) {
+                            API.ZongDu.join(roomid, v.id, Info.csrf_token).done(function(response) {
+                                DEBUG('ZongDu.init: ZongDu.join', response);
+                                if (response.code === 0) {
+                                    toast('已领取直播间【' + roomid + '】的总督奖励', 'success');
+                                    toast(response.data.message, 'success');
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    };
+
+    var Storm = {
+        init: function(roomid) {
+            API.Storm.check(roomid).done(function(response) { // 检查是否有节奏风暴
+                DEBUG('Storm.init: Storm.check', response);
+                if (response.code === 0 && !Array.isArray(response.data) && response.data.hasJoin === 0) {
+                    Storm.join(response.data.id);
+                }
+            });
+        },
+        join: function(id, cnt) {
+            if (cnt > 5) return;
+            API.create(112, 32).done(function(response) {
+                if (response.code === 0) {
+                    DOM.storm.image[0].onload = function() {
+                        var phrase = solveCaptcha(); // 识别验证码，未实现
+                        API.Storm.join(id, response.data.token, phrase, Info.csrf_token).done(function(response) {
+                            DEBUG('Storm.join: Storm.join', response);
+                            if (response.code === 0) {
+                                toast('节奏风暴抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                            } else {
+                                setTimeout(function() {
+                                    Storm.join(id, cnt + 1);
+                                }, 1e3);
+                            }
+                        });
+                    };
+                    DOM.storm.image[0].src = response.data.image;
+                }
+            });
+        }
+    };
+
+    var TaskAward = {
+        running: false,
+        treasure_timer: null,
+        init: function() {
+            try {
+                if (!CONFIG.USE_AWARD) return;
+                if (TaskAward.running) TaskAward.getAward(TaskAward.getCurrentTask, 0);
+                else TaskAward.getCurrentTask();
+            } catch (err) {
+                toast('[自动领取瓜子]运行时出现异常，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[自动领取瓜子]运行时出现异常，已停止');
+                console.error(err);
+            }
+        },
+        getAward: function(callback, cnt) {
+            if (!CONFIG.USE_AWARD) return;
+            if (cnt > 5) {
+                callback();
+                return;
+            }
+            API.SilverBox.getCaptcha(ts_ms()).done(function(response) {
+                DOM.treasure.image[0].onload = function() {
+                    var captcha = calcImg();
+                    if (captcha) {
+                        // 验证码识别成功
+                        API.SilverBox.getAward(ts_s(), ts_s(), captcha).done(function(response) {
+                            DEBUG('TaskAward.getAward: getAward', response);
+                            if (response.code === 0) {
+                                // 领取瓜子成功
+                                toast('自动领取瓜子：领取了 ' + response.data.awardSilver + ' 银瓜子', 'success');
+                                callback();
+                            } else if (response.code === -903) {
+                                // -903: 已经领取过这个宝箱
+                                toast('自动领取瓜子：已经领取过这个宝箱', 'caution');
+                                callback();
+                            } else if (response.code === -902 || response.code === -901) {
+                                // -902: 验证码错误, -901: 验证码过期
+                                setTimeout(function() {
+                                    TaskAward.getAward(callback, cnt + 1);
+                                }, 1e3);
+                            } else {
+                                // 其他错误
+                                setTimeout(function() {
+                                    TaskAward.getAward(callback, cnt + 1);
+                                }, 3e3);
+                            }
+                        });
+                    } else {
+                        // 验证码识别失败
+                        setTimeout(function() {
+                            TaskAward.getAward(callback, cnt);
+                        }, 500);
+                    }
+                };
+                DOM.treasure.image[0].src = response.data.img;
+            });
+        },
+        getCurrentTask: function() {
+            if (!CONFIG.USE_AWARD) return;
+            API.SilverBox.getCurrentTask().done(function(response) {
+                DEBUG('TaskAward.getCurrentTask: getCurrentTask', response);
+                if (response.code === 0) {
+                    // 获取任务成功
+                    if (parseInt(response.data.minute, 10) !== 0) {
+                        setTimeout(TaskAward, response.data.minute * 60e3 + 1e3);
+                        TaskAward.running = true;
+                        execUntilSucceed(function() {
+                            if (DOM.treasure.div_timer) {
+                                DOM.treasure.div_timer.text((response.data.minute * 60 + 1) + 's');
+                                DOM.treasure.div_timer.show();
+                                return true;
+                            }
+                        });
+                        execUntilSucceed(function() {
+                            if (DOM.treasure.div_tip) {
+                                DOM.treasure.div_tip.html('次数<br>' + response.data.times + '/' + response.data.max_times + '<br>银瓜子<br>' + response.data.silver);
+                                return true;
+                            }
+                        });
+                    }
+                } else if (response.code === -10017) {
+                    // 今天所有的宝箱已经领完!
+                    toast('自动领取瓜子：' + response.msg, 'info');
+                    clearInterval(TaskAward.treasure_timer);
                     execUntilSucceed(function() {
                         if (DOM.treasure.div_timer) {
-                            DOM.treasure.div_timer.text((response.data.minute * 60 + 1) + 's');
-                            DOM.treasure.div_timer.show();
+                            DOM.treasure.div_timer.hide();
                             return true;
                         }
                     });
                     execUntilSucceed(function() {
                         if (DOM.treasure.div_tip) {
-                            DOM.treasure.div_tip.html('次数<br>' + response.data.times + '/' + response.data.max_times + '<br>银瓜子<br>' + response.data.silver);
+                            DOM.treasure.div_tip.html('今日<br>已领完');
                             return true;
                         }
                     });
-                }
-            } else if (response.code === -10017) {
-                // 今天所有的宝箱已经领完!
-                toast('自动领取瓜子：' + response.msg, 'info');
-                clearInterval(interval_treasure_timer);
-                execUntilSucceed(function() {
-                    if (DOM.treasure.div_timer) {
-                        DOM.treasure.div_timer.hide();
-                        return true;
-                    }
-                });
-                execUntilSucceed(function() {
-                    if (DOM.treasure.div_tip) {
-                        DOM.treasure.div_tip.html('今日<br>已领完');
-                        return true;
-                    }
-                });
-                tommorrowRun(function() {
-                    TaskAward_Running = false;
-                    TaskAward();
-                });
-            } else {
-                toast('自动领取瓜子：' + response.msg, 'info');
-            }
-        });
-    }
-
-    function TaskAward() {
-        try {
-            if (!CONFIG.USE_AWARD) return;
-            if (TaskAward_Running) Award(TaskAward_newTask, 0);
-            else TaskAward_newTask();
-        } catch (err) {
-            toast('[自动领取瓜子]运行时出现异常，已停止', 'error');
-            console.error('Bilibili直播间挂机助手：[自动领取瓜子]运行时出现异常，已停止');
-            console.error(err);
-        }
-    }
-
-    function Lottery() {
-        if (TaskLottery_Stop) return;
-        if (!CONFIG.USE_LOTTERY) return;
-        var lottery_list = [],
-            lottery_list_temp = [],
-            overlap_index = Infinity;
-        $('div.chat-item.system-msg div.msg-content a.link').each(function(index, el) {
-            var matched = el.pathname.match(/^\/(\d+).*/);
-            if (matched && matched[1]) lottery_list_temp.push(parseInt(matched[1], 10));
-        });
-        $.each(lottery_list_temp, function(i, v) {
-            if (i === 0) {
-                var index = $.inArray(v, lottery_list_last);
-                if (index > -1) {
-                    overlap_index = lottery_list_last.length - index;
+                    tommorrowRun(function() {
+                        TaskAward.running = false;
+                        TaskAward();
+                    });
                 } else {
-                    overlap_index = 0;
+                    toast('自动领取瓜子：' + response.msg, 'info');
+                }
+            });
+        }
+    };
+
+    var TaskLottery = {
+        stop: false,
+        period: 20,
+        last_list: [],
+        init: function() {
+            try {
+                if (!CONFIG.USE_LOTTERY) return;
+                execUntilSucceed(function() {
+                    if (window.Lottery_inited) {
+                        work();
+                        return true;
+                    }
+                }, 10e3, 1e3);
+            } catch (err) {
+                toast('[自动抽奖]运行时出现异常，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[自动抽奖]运行时出现异常，已停止');
+                console.error(err);
+            }
+        },
+        work: function() {
+            if (TaskLottery.stop) return;
+            if (!CONFIG.USE_LOTTERY) return;
+            var lottery_list = [],
+                lottery_list_temp = [],
+                overlap_index = Infinity;
+            $('div.chat-item.system-msg div.msg-content a.link').each(function(index, el) {
+                var matched = el.pathname.match(/^\/(\d+).*/);
+                if (matched && matched[1]) lottery_list_temp.push(parseInt(matched[1], 10));
+            });
+            $.each(lottery_list_temp, function(i, v) {
+                if (i === 0) {
+                    var index = $.inArray(v, TaskLottery.last_list);
+                    if (index > -1) {
+                        overlap_index = TaskLottery.last_list.length - index;
+                    } else {
+                        overlap_index = 0;
+                        lottery_list.push(v);
+                    }
+                } else if (i >= overlap_index) {
                     lottery_list.push(v);
                 }
-            } else if (i >= overlap_index) {
-                lottery_list.push(v);
+            });
+            DEBUG('TaskLottery: work: last_list', TaskLottery.last_list.toString());
+            TaskLottery.last_list = lottery_list_temp;
+            lottery_list_temp = lottery_list;
+            lottery_list = [];
+            lottery_list_temp.forEach(function(v) {
+                if ($.inArray(v, lottery_list) === -1) lottery_list.push(v);
+            });
+            DEBUG('TaskLottery: work: list', lottery_list.toString());
+            // 根据可抽奖的房间数自动调整检测周期
+            if (lottery_list.length > 10) {
+                TaskLottery.period = 3;
+            } else if (lottery_list.length > 8) {
+                TaskLottery.period = 6;
+            } else if (lottery_list.length > 5) {
+                TaskLottery.period = 10;
+            } else if (lottery_list.length > 1) {
+                TaskLottery.period = 15;
+            } else {
+                TaskLottery.period = 20;
             }
-        });
-        DEBUG('TaskLottery: Lottery: last', lottery_list_last.toString());
-        lottery_list_last = lottery_list_temp;
-        lottery_list_temp = lottery_list;
-        lottery_list = [];
-        lottery_list_temp.forEach(function(v) {
-            if ($.inArray(v, lottery_list) === -1) lottery_list.push(v);
-        });
-        DEBUG('TaskLottery: Lottery: list', lottery_list.toString());
-        // 根据可抽奖的房间数自动调整检测周期
-        if (lottery_list.length > 10) {
-            lottery_check_time = 3;
-        } else if (lottery_list.length > 8) {
-            lottery_check_time = 6;
-        } else if (lottery_list.length > 5) {
-            lottery_check_time = 10;
-        } else if (lottery_list.length > 1) {
-            lottery_check_time = 15;
-        } else {
-            lottery_check_time = 20;
+            $.each(lottery_list, function(i, v) {
+                window.Lottery_join(i, v);
+            });
+            setTimeout(TaskLottery.work, TaskLottery.period * 1e3);
         }
-        $.each(lottery_list, function(i, v) {
-            window.Lottery_join(i, v);
-        });
-        setTimeout(Lottery, lottery_check_time * 1e3);
-    }
+    };
 
-    function TaskSign() {
-        try {
-            if (!CONFIG.USE_SIGN) return;
-            API.sign.GetSignInfo().done(function(response) {
-                DEBUG('TaskSign: GetSignInfo', response);
+    var TaskSign = {
+        init: function() {
+            try {
+                if (!CONFIG.USE_SIGN) return;
+                API.sign.GetSignInfo().done(function(response) {
+                    DEBUG('TaskSign.init: GetSignInfo', response);
+                    if (response.code === 0) {
+                        if (response.data.status === 0) {
+                            // 未签到
+                            API.sign.doSign().done(function(response) {
+                                DEBUG('TaskSign.init: doSign', response);
+                                if (response.code === 0) {
+                                    // 签到成功
+                                    toast(response.data.text, 'success');
+                                } else {
+                                    toast(response.data.text, 'error');
+                                }
+                            });
+                        } else if (response.data.status === 1) {
+                            // 已签到
+                            toast('今日已签到：' + response.data.text, 'success');
+                        }
+                    }
+                });
+                tommorrowRun(TaskSign.init);
+            } catch (err) {
+                toast('[自动签到]运行时出现异常，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[自动签到]运行时出现异常，已停止');
+                console.error(err);
+            }
+        }
+    };
+
+    var TaskTask = {
+        init: function() {
+            try {
+                if (!CONFIG.USE_TASK) return;
+                setTimeout(TaskTask.work, 6e3);
+            } catch (err) {
+                toast('[自动完成任务]运行时出现异常，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[自动完成任务]运行时出现异常，已停止');
+                console.error(err);
+            }
+        },
+        work: function() {
+            if (!CONFIG.USE_TASK) return;
+            toast('检查任务完成情况', 'info');
+            API.i.taskInfo().done(function(response) {
+                DEBUG('TaskTask.work: taskInfo', response);
                 if (response.code === 0) {
-                    if (response.data.status === 0) {
-                        // 未签到
-                        API.sign.doSign().done(function(response) {
-                            DEBUG('TaskSign: doSign', response);
-                            if (response.code === 0) {
-                                // 签到成功
-                                toast(response.data.text, 'success');
-                            } else {
-                                toast(response.data.text, 'error');
-                            }
-                        });
-                    } else if (response.data.status === 1) {
-                        // 已签到
-                        toast('今日已签到：' + response.data.text, 'success');
+                    for (var key in response.data) {
+                        if (response.data[key].task_id && response.data[key].status) {
+                            // 当前对象是任务且任务可完成
+                            TaskTask.receiveAward(response.data[key].task_id);
+                        }
                     }
                 }
             });
-            tommorrowRun(TaskSign);
-        } catch (err) {
-            toast('[自动签到]运行时出现异常，已停止', 'error');
-            console.error('Bilibili直播间挂机助手：[自动签到]运行时出现异常，已停止');
-            console.error(err);
-        }
-    }
-
-    function TaskLottery() {
-        try {
-            if (!CONFIG.USE_LOTTERY) return;
-            execUntilSucceed(function() {
-                if (window.Lottery_inited) {
-                    Lottery();
-                    return true;
-                }
-            }, 10e3, 1e3);
-        } catch (err) {
-            toast('[自动抽奖]运行时出现异常，已停止', 'error');
-            console.error('Bilibili直播间挂机助手：[自动抽奖]运行时出现异常，已停止');
-            console.error(err);
-        }
-    }
-
-    function TaskReceiveAward(task_id) {
-        if (!CONFIG.USE_TASK) return;
-        API.activity.receive_award(task_id, Info.csrf_token).done(function(response) {
-            DEBUG('TaskTask: receive_award', response);
-            if (response.code === 0) {
-                // 完成任务
-                toast('完成任务：' + task_id, 'success');
-            }
-        });
-    }
-
-    function Task() {
-        if (!CONFIG.USE_TASK) return;
-        toast('检查任务完成情况', 'info');
-        API.i.taskInfo().done(function(response) {
-            DEBUG('TaskTask: taskInfo', response);
-            if (response.code === 0) {
-                for (var key in response.data) {
-                    if (response.data[key].task_id && response.data[key].status) {
-                        // 当前对象是任务且任务可完成
-                        TaskReceiveAward(response.data[key].task_id);
+            API.activity.user_limit_tasks().done(function(response) {
+                DEBUG('TaskTask.work: user_limit_tasks', response);
+                if (response.code === 0) {
+                    for (var key in response.data) {
+                        if (response.data[key].task_id && response.data[key].status) {
+                            // 当前对象是任务且任务可完成
+                            TaskTask.receiveAward(response.data[key].task_id);
+                        }
                     }
                 }
-            }
-        });
-        API.activity.user_limit_tasks().done(function(response) {
-            DEBUG('TaskTask: user_limit_tasks', response);
-            if (response.code === 0) {
-                for (var key in response.data) {
-                    if (response.data[key].task_id && response.data[key].status) {
-                        // 当前对象是任务且任务可完成
-                        TaskReceiveAward(response.data[key].task_id);
+            });
+            API.activity.master_limit_tasks().done(function(response) {
+                DEBUG('TaskTask.work: master_limit_tasks', response);
+                if (response.code === 0) {
+                    for (var key in response.data) {
+                        if (response.data[key].task_id && response.data[key].status) {
+                            // 当前对象是任务且任务可完成
+                            TaskTask.receiveAward(response.data[key].task_id);
+                        }
                     }
                 }
-            }
-        });
-        API.activity.master_limit_tasks().done(function(response) {
-            DEBUG('TaskTask: master_limit_tasks', response);
-            if (response.code === 0) {
-                for (var key in response.data) {
-                    if (response.data[key].task_id && response.data[key].status) {
-                        // 当前对象是任务且任务可完成
-                        TaskReceiveAward(response.data[key].task_id);
-                    }
-                }
-            }
-        });
-        setTimeout(Task, 3600e3);
-    }
-
-    function TaskTask() {
-        try {
+            });
+            setTimeout(TaskTask.work, 3600e3);
+        },
+        receiveAward: function(task_id) {
             if (!CONFIG.USE_TASK) return;
-            setTimeout(Task, 6e3);
-        } catch (err) {
-            toast('[自动完成任务]运行时出现异常，已停止', 'error');
-            console.error('Bilibili直播间挂机助手：[自动完成任务]运行时出现异常，已停止');
-            console.error(err);
-        }
-    }
-
-    function Gift_send(i, remain_feed) {
-        i += 0;
-        if (remain_feed > 0) {
-            if (i >= Info.bag_list.length) {
-                toast('送礼结束，1小时后再次送礼', 'success');
-                setTimeout(Gift, 3600e3);
-                return;
-            }
-            var v = Info.bag_list[i];
-            v.gift_id += '';
-            if (($.inArray(v.gift_id, CONFIG.GIFT_CONFIG.ALLOW_GIFT) > -1 || !CONFIG.GIFT_CONFIG.ALLOW_GIFT.length) && // 检查ALLOW_GIFT
-                ((CONFIG.GIFT_CONFIG.SEND_GIFT.length && $.inArray(v.gift_id, CONFIG.GIFT_CONFIG.SEND_GIFT) > -1 && remain_feed > 0) || // 检查SEND_GIFT
-                    (CONFIG.GIFT_CONFIG.SEND_TODAY && v.expire_at > ts_s() && v.expire_at - ts_s() < 86400))) { // 检查SEND_TODAY和礼物到期时间
-                var feed_single = giftIDtoFeed(v.gift_id);
-                if (feed_single > 0) {
-                    var feed_num = Math.floor(remain_feed / feed_single);
-                    if (feed_num > v.gift_num) feed_num = v.gift_num;
-                    if (feed_num > 0) {
-                        API.gift.bag_send(Info.uid, v.gift_id, Info.ruid, feed_num, v.bag_id, Info.roomid, Info.rnd, Info.csrf_token).done(function(response) {
-                            DEBUG('TaskGift: bag_send', response);
-                            if (response.code === 0) {
-                                // 送礼成功
-                                Info.rnd = response.data.rnd;
-                                toast('包裹送礼成功，送出' + feed_num + '个' + v.gift_name, 'success');
-                            } else {
-                                toast('包裹送礼异常，' + response.msg, 'error');
-                            }
-                            Gift_send(i + 1, remain_feed - feed_num * feed_single);
-                        });
-                    } else {
-                        Gift_send(i + 1, remain_feed);
-                    }
-                } else {
-                    Gift_send(i + 1, remain_feed);
+            API.activity.receive_award(task_id, Info.csrf_token).done(function(response) {
+                DEBUG('TaskTask.receiveAward: receive_award', response);
+                if (response.code === 0) {
+                    // 完成任务
+                    toast('完成任务：' + task_id, 'success');
                 }
-            } else {
-                Gift_send(i + 1, remain_feed);
-            }
-        } else {
-            toast('送礼结束，今日亲密度已满', 'success');
-            tommorrowRun(TaskGift);
+            });
         }
-    }
+    };
 
-    function Gift() {
-        if (!CONFIG.USE_GIFT) return;
-        API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.csrf_token).done(function(response) {
-            if (response.code === 0) {
-                Info.medal_target_id = response.data.target_id;
+    var TaskGift = {
+        init: function() {
+            try {
+                if (!CONFIG.USE_GIFT) return;
+                if (!(CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) return;
                 if (Info.medal_target_id !== Info.ruid) {
-                    setTimeout(TaskGift, 1e3);
-                    return;
-                }
-                Info.today_feed = parseInt(response.data.today_feed, 10);
-                Info.day_limit = response.data.day_limit;
-                var remain_feed = Info.day_limit - Info.today_feed;
-                if (remain_feed > 0) {
-                    toast('今日亲密度未满，送礼开始', 'info');
-                    API.gift.bag_list().done(function(response) {
-                        DEBUG('TaskGift: bag_list', response);
+                    if (!CONFIG.GIFT_CONFIG.CHANGE_MEDAL) {
+                        toast('已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
+                        return;
+                    }
+                    API.i.medal(1, 25).done(function(response) {
+                        DEBUG('TaskGif.init: medal', response);
                         if (response.code === 0) {
-                            Info.bag_list = response.data.list;
-                            Gift_send(0, remain_feed);
-                        } else {
-                            toast('获取包裹礼物异常，' + response.msg, 'error');
+                            Info.medal_list = response.data.fansMedalList;
+                            $.each(Info.medal_list, function(index, v) {
+                                if (v.target_id === Info.ruid) {
+                                    API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
+                                        DEBUG('TaskGift.init: ajaxWearFansMedal', response);
+                                        toast('已自动切换为当前主播勋章', 'success');
+                                        toast('请注意送礼设置，30秒后开始送礼', 'caution');
+                                        setTimeout(TaskGift.work, 30e3);
+                                    });
+                                    return false;
+                                }
+                            });
                         }
                     });
                 } else {
-                    toast('今日亲密度已满', 'success');
-                    tommorrowRun(TaskGift);
+                    toast('请注意送礼设置，30秒后开始送礼', 'caution');
+                    setTimeout(TaskGift.work, 30e3);
                 }
-            } else {
-                toast('获取亲密度异常，' + response.msg, 'error');
+            } catch (err) {
+                toast('[自动送礼]运行时出现异常，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[自动送礼]运行时出现异常，已停止');
+                console.error(err);
             }
-        });
-    }
-
-    function TaskGift() {
-        try {
+        },
+        work: function() {
             if (!CONFIG.USE_GIFT) return;
-            if (!(CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) return;
-            if (Info.medal_target_id !== Info.ruid) {
-                if (!CONFIG.GIFT_CONFIG.CHANGE_MEDAL) {
-                    toast('已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
-                    return;
-                }
-                API.i.medal(1, 25).done(function(response) {
-                    DEBUG('TaskGift: medal', response);
-                    if (response.code === 0) {
-                        Info.medal_list = response.data.fansMedalList;
-                        $.each(Info.medal_list, function(index, v) {
-                            if (v.target_id === Info.ruid) {
-                                API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
-                                    DEBUG('TaskGift: ajaxWearFansMedal', response);
-                                    toast('已自动切换为当前主播勋章', 'success');
-                                    toast('请注意送礼设置，30秒后开始送礼', 'caution');
-                                    setTimeout(Gift, 30e3);
-                                });
-                                return false;
+            API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.csrf_token).done(function(response) {
+                if (response.code === 0) {
+                    Info.medal_target_id = response.data.target_id;
+                    if (Info.medal_target_id !== Info.ruid) {
+                        setTimeout(TaskGift.init, 1e3);
+                        return;
+                    }
+                    Info.today_feed = parseInt(response.data.today_feed, 10);
+                    Info.day_limit = response.data.day_limit;
+                    var remain_feed = Info.day_limit - Info.today_feed;
+                    if (remain_feed > 0) {
+                        toast('今日亲密度未满，送礼开始', 'info');
+                        API.gift.bag_list().done(function(response) {
+                            DEBUG('TaskGift.work: bag_list', response);
+                            if (response.code === 0) {
+                                Info.bag_list = response.data.list;
+                                TaskGift.send_gift(0, remain_feed);
+                            } else {
+                                toast('获取包裹礼物异常，' + response.msg, 'error');
                             }
                         });
+                    } else {
+                        toast('今日亲密度已满', 'success');
+                        tommorrowRun(TaskGift.init);
                     }
-                });
-            } else {
-                toast('请注意送礼设置，30秒后开始送礼', 'caution');
-                setTimeout(Gift, 30e3);
-            }
-        } catch (err) {
-            toast('[自动送礼]运行时出现异常，已停止', 'error');
-            console.error('Bilibili直播间挂机助手：[自动送礼]运行时出现异常，已停止');
-            console.error(err);
-        }
-    }
-
-    function TaskExchange() {
-        try {
-            if (!CONFIG.EXCHANGE_SILVER2COIN) return;
-            API.SilverCoinExchange.silver2coin(Info.csrf_token).done(function(response) {
-                DEBUG('TaskExchange', response);
-                if (response.code === 0) {
-                    // 兑换成功
-                    toast('银瓜子兑换硬币：兑换成功', 'success');
-                } else if (response.code === 403) {
-                    // 每天最多能兑换 1 个
-                    toast('银瓜子兑换硬币：每天最多能兑换 1 个', 'info');
                 } else {
-                    toast('银瓜子兑换硬币：' + response.msg, 'info');
+                    toast('获取亲密度异常，' + response.msg, 'error');
                 }
             });
-            tommorrowRun(TaskExchange);
-        } catch (err) {
-            toast('[银瓜子兑换硬币]运行时出现异常，已停止', 'error');
-            console.error('Bilibili直播间挂机助手：[银瓜子兑换硬币]运行时出现异常，已停止');
-            console.error(err);
+        },
+        send_gift: function(i, remain_feed) {
+            i += 0;
+            if (remain_feed > 0) {
+                if (i >= Info.bag_list.length) {
+                    toast('送礼结束，1小时后再次送礼', 'success');
+                    setTimeout(TaskGift.work, 3600e3);
+                    return;
+                }
+                var v = Info.bag_list[i];
+                v.gift_id += '';
+                if (($.inArray(v.gift_id, CONFIG.GIFT_CONFIG.ALLOW_GIFT) > -1 || !CONFIG.GIFT_CONFIG.ALLOW_GIFT.length) && // 检查ALLOW_GIFT
+                    ((CONFIG.GIFT_CONFIG.SEND_GIFT.length && $.inArray(v.gift_id, CONFIG.GIFT_CONFIG.SEND_GIFT) > -1 && remain_feed > 0) || // 检查SEND_GIFT
+                        (CONFIG.GIFT_CONFIG.SEND_TODAY && v.expire_at > ts_s() && v.expire_at - ts_s() < 86400))) { // 检查SEND_TODAY和礼物到期时间
+                    var feed_single = giftIDtoFeed(v.gift_id);
+                    if (feed_single > 0) {
+                        var feed_num = Math.floor(remain_feed / feed_single);
+                        if (feed_num > v.gift_num) feed_num = v.gift_num;
+                        if (feed_num > 0) {
+                            API.gift.bag_send(Info.uid, v.gift_id, Info.ruid, feed_num, v.bag_id, Info.roomid, Info.rnd, Info.csrf_token).done(function(response) {
+                                DEBUG('TaskGift.send_gift: bag_send', response);
+                                if (response.code === 0) {
+                                    // 送礼成功
+                                    Info.rnd = response.data.rnd;
+                                    toast('包裹送礼成功，送出' + feed_num + '个' + v.gift_name, 'success');
+                                } else {
+                                    toast('包裹送礼异常，' + response.msg, 'error');
+                                }
+                                TaskGift.send_gift(i + 1, remain_feed - feed_num * feed_single);
+                            });
+                        } else {
+                            TaskGift.send_gift(i + 1, remain_feed);
+                        }
+                    } else {
+                        TaskGift.send_gift(i + 1, remain_feed);
+                    }
+                } else {
+                    TaskGift.send_gift(i + 1, remain_feed);
+                }
+            } else {
+                toast('送礼结束，今日亲密度已满', 'success');
+                tommorrowRun(TaskGift.init);
+            }
         }
-    }
+    };
+
+    var TaskExchange = {
+        init: function() {
+            try {
+                if (!CONFIG.EXCHANGE_SILVER2COIN) return;
+                API.SilverCoinExchange.silver2coin(Info.csrf_token).done(function(response) {
+                    DEBUG('TaskExchange.init: silver2coin', response);
+                    if (response.code === 0) {
+                        // 兑换成功
+                        toast('银瓜子兑换硬币：兑换成功', 'success');
+                    } else if (response.code === 403) {
+                        // 每天最多能兑换 1 个
+                        toast('银瓜子兑换硬币：每天最多能兑换 1 个', 'info');
+                    } else {
+                        toast('银瓜子兑换硬币：' + response.msg, 'info');
+                    }
+                });
+                tommorrowRun(TaskExchange);
+            } catch (err) {
+                toast('[银瓜子兑换硬币]运行时出现异常，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[银瓜子兑换硬币]运行时出现异常，已停止');
+                console.error(err);
+            }
+        }
+    };
 
     function TaskStart() {
-        if (CONFIG.USE_SIGN) TaskSign();
-        if (CONFIG.USE_AWARD) TaskAward();
-        if (CONFIG.USE_LOTTERY) TaskLottery();
-        if (CONFIG.USE_TASK) TaskTask();
-        if (CONFIG.USE_GIFT) TaskGift();
-        if (CONFIG.EXCHANGE_SILVER2COIN) TaskExchange();
+        if (CONFIG.USE_SIGN) TaskSign.init();
+        if (CONFIG.USE_AWARD) TaskAward.init();
+        if (CONFIG.USE_LOTTERY) TaskLottery.init();
+        if (CONFIG.USE_TASK) TaskTask.init();
+        if (CONFIG.USE_GIFT) TaskGift.init();
+        if (CONFIG.EXCHANGE_SILVER2COIN) TaskExchange.init();
     }
 
     $(document).ready(function() {
