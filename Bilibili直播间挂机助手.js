@@ -226,10 +226,9 @@
         document.cookie = name + '=' + escape(value) + expires + '; path=/';
     }
 
-    /*
-    验证码识别算法来自互联网，作者未知
-    该算法已被简单修改
-    */
+    // 验证码识别算法来自互联网，作者未知
+    // 该算法已被简单修改
+    
     function getChar(t) {
         if (t.sum <= 50) return '-';
         if (t.sum > 120 && t.sum < 135) return '+';
@@ -248,11 +247,9 @@
     }
 
     function calcImg() {
-        /*
-         * 1.验证码图片->二维点阵
-         * 2.二维点阵->横向一维压缩
-         * 3.分析并计算
-         */
+        // 1.验证码图片->二维点阵
+        // 2.二维点阵->横向一维压缩
+        // 3.分析并计算
         var ctx = DOM.treasure.canvas[0].getContext("2d");
         ctx.drawImage(DOM.treasure.image[0], 0, 0, 120, 40);
         var pixels = ctx.getImageData(0, 0, 120, 40).data;
@@ -876,14 +873,14 @@
                                     setTimeout(function() {
                                         SmallTV.notice(roomid, response.data.raffleId);
                                     }, time * 1e3 + 12e3);
-                                    toast('已参加直播间【' + roomid + '】的小电视抽奖', 'success');
+                                    toast('[自动抽奖]已参加直播间【' + roomid + '】的小电视抽奖', 'success');
                                 }
                             });
                         } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
                             setTimeout(function() {
                                 SmallTV.notice(roomid, response.data.raffleId);
                             }, time * 1e3 + 12e3);
-                            toast('已参加直播间【' + roomid + '】的小电视抽奖', 'success');
+                            toast('[自动抽奖]已参加直播间【' + roomid + '】的小电视抽奖', 'success');
                         }
 
                     });
@@ -901,9 +898,9 @@
                         // 非常抱歉，您错过了此次抽奖，下次记得早点来哦
                     } else if (response.data.status === 2) {
                         if (response.data.gift_id === '-1' && !response.data.gift_name) {
-                            toast('直播间【' + roomid + '】小电视抽奖结果：' + response.msg, 'info');
+                            toast('[自动抽奖]直播间【' + roomid + '】小电视抽奖结果：' + response.msg, 'info');
                         } else {
-                            toast('直播间【' + roomid + '】小电视抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                            toast('[自动抽奖]直播间【' + roomid + '】小电视抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
                         }
                     } else if (response.data.status === 3) {
                         // 还未开奖
@@ -911,7 +908,7 @@
                             SmallTV.notice(roomid, raffleId, cnt);
                         }, 6e3);
                     } else {
-                        toast('直播间【' + roomid + '】小电视抽奖结果：' + response.msg, 'error');
+                        toast('[自动抽奖]直播间【' + roomid + '】小电视抽奖结果：' + response.msg, 'error');
                     }
                 } else {
                     // 其他情况
@@ -938,11 +935,11 @@
                                     setTimeout(function() {
                                         Raffle.notice(roomid, response.data.raffleId);
                                     }, time * 1e3 + 24e3);
-                                    toast('已参加直播间【' + roomid + '】的活动抽奖', 'success');
+                                    toast('[自动抽奖]已参加直播间【' + roomid + '】的活动抽奖', 'success');
                                 } else if (response.code === 65531) {
                                     // 65531: 非当前直播间或短ID直播间试图参加抽奖
                                     TaskLottery.stop = true;
-                                    toast('参加活动抽奖失败，已停止活动抽奖任务', 'error');
+                                    toast('[自动抽奖]参加活动抽奖失败，已停止活动抽奖任务', 'error');
                                     console.error('Bilibili直播间挂机助手：[自动抽奖]参加活动抽奖失败，已停止');
                                 }
                             });
@@ -950,7 +947,7 @@
                             setTimeout(function() {
                                 Raffle.notice(roomid, response.data.raffleId);
                             }, time * 1e3 + 24e3);
-                            toast('已参加直播间【' + roomid + '】的活动抽奖', 'success');
+                            toast('[自动抽奖]已参加直播间【' + roomid + '】的活动抽奖', 'success');
                         }
                     });
                 }
@@ -962,9 +959,9 @@
                 DEBUG('Raffle.notice: Raffle.notice', response);
                 if (response.code === 0) {
                     if (response.data.gift_id === '-1') {
-                        toast('直播间【' + roomid + '】活动抽奖结果：' + response.msg, 'info');
+                        toast('[自动抽奖]直播间【' + roomid + '】活动抽奖结果：' + response.msg, 'info');
                     } else {
-                        toast('直播间【' + roomid + '】活动抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                        toast('[自动抽奖]直播间【' + roomid + '】活动抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
                     }
                 } else if (response.msg === '参数错误！') {
                     // 参数错误！
@@ -993,7 +990,7 @@
                             API.ZongDu.join(roomid, v.id, Info.csrf_token).done(function(response) {
                                 DEBUG('ZongDu.init: ZongDu.join', response);
                                 if (response.code === 0) {
-                                    toast('已领取直播间【' + roomid + '】的总督奖励', 'success');
+                                    toast('[自动抽奖]已领取直播间【' + roomid + '】的总督奖励', 'success');
                                     toast(response.data.message, 'success');
                                 }
                             });
@@ -1022,7 +1019,7 @@
                         API.Storm.join(id, response.data.token, phrase, Info.csrf_token).done(function(response) {
                             DEBUG('Storm.join: Storm.join', response);
                             if (response.code === 0) {
-                                toast('节奏风暴抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                                toast('[自动抽奖]节奏风暴抽奖结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
                             } else {
                                 setTimeout(function() {
                                     Storm.join(id, cnt + 1);
@@ -1065,11 +1062,11 @@
                             DEBUG('TaskAward.getAward: getAward', response);
                             if (response.code === 0) {
                                 // 领取瓜子成功
-                                toast('自动领取瓜子：领取了 ' + response.data.awardSilver + ' 银瓜子', 'success');
+                                toast('[自动领取瓜子]领取了 ' + response.data.awardSilver + ' 银瓜子', 'success');
                                 callback();
                             } else if (response.code === -903) {
                                 // -903: 已经领取过这个宝箱
-                                toast('自动领取瓜子：已经领取过这个宝箱', 'caution');
+                                toast('[自动领取瓜子]已经领取过这个宝箱', 'caution');
                                 callback();
                             } else if (response.code === -902 || response.code === -901) {
                                 // -902: 验证码错误, -901: 验证码过期
@@ -1085,8 +1082,26 @@
                         });
                     } else {
                         // 验证码识别失败
+                        if (cnt > 4) {
+                            clearInterval(TaskAward.treasure_timer);
+                            execUntilSucceed(function() {
+                                if (DOM.treasure.div_timer) {
+                                    DOM.treasure.div_timer.hide();
+                                    return true;
+                                }
+                            });
+                            execUntilSucceed(function() {
+                                if (DOM.treasure.div_tip) {
+                                    DOM.treasure.div_tip.html('功能<br>异常');
+                                    return true;
+                                }
+                            });
+                            toast('[自动领取瓜子]验证码识别失败，已停止', 'error');
+                            console.error('Bilibili直播间挂机助手：[自动领取瓜子]验证码识别失败，已停止');
+                            return;
+                        }
                         setTimeout(function() {
-                            TaskAward.getAward(callback, cnt);
+                            TaskAward.getAward(callback, cnt + 1);
                         }, 500);
                     }
                 };
@@ -1118,7 +1133,7 @@
                     }
                 } else if (response.code === -10017) {
                     // 今天所有的宝箱已经领完!
-                    toast('自动领取瓜子：' + response.msg, 'info');
+                    toast('[自动领取瓜子]' + response.msg, 'info');
                     clearInterval(TaskAward.treasure_timer);
                     execUntilSucceed(function() {
                         if (DOM.treasure.div_timer) {
@@ -1137,7 +1152,7 @@
                         TaskAward.init();
                     });
                 } else {
-                    toast('自动领取瓜子：' + response.msg, 'info');
+                    toast('[自动领取瓜子]' + response.msg, 'info');
                 }
             });
         }
@@ -1232,7 +1247,7 @@
                             });
                         } else if (response.data.status === 1) {
                             // 已签到
-                            toast('今日已签到：' + response.data.text, 'success');
+                            toast('[自动签到]今日已签到：' + response.data.text, 'success');
                         }
                     }
                 });
@@ -1258,7 +1273,7 @@
         },
         work: function() {
             if (!CONFIG.USE_TASK) return;
-            toast('检查任务完成情况', 'info');
+            toast('[自动完成任务]检查任务完成情况', 'info');
             API.i.taskInfo().done(function(response) {
                 DEBUG('TaskTask.work: taskInfo', response);
                 if (response.code === 0) {
@@ -1300,7 +1315,7 @@
                 DEBUG('TaskTask.receiveAward: receive_award', response);
                 if (response.code === 0) {
                     // 完成任务
-                    toast('完成任务：' + task_id, 'success');
+                    toast('[自动完成任务]完成任务：' + task_id, 'success');
                 }
             });
         }
@@ -1313,7 +1328,7 @@
                 if (!(CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) return;
                 if (Info.medal_target_id !== Info.ruid) {
                     if (!CONFIG.GIFT_CONFIG.CHANGE_MEDAL) {
-                        toast('已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
+                        toast('[自动送礼]已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
                         return;
                     }
                     API.i.medal(1, 25).done(function(response) {
@@ -1324,8 +1339,8 @@
                                 if (v.target_id === Info.ruid) {
                                     API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
                                         DEBUG('TaskGift.init: ajaxWearFansMedal', response);
-                                        toast('已自动切换为当前主播勋章', 'success');
-                                        toast('请注意送礼设置，30秒后开始送礼', 'caution');
+                                        toast('[自动送礼]已自动切换为当前主播勋章', 'success');
+                                        toast('[自动送礼]请注意送礼设置，30秒后开始送礼', 'caution');
                                         setTimeout(TaskGift.work, 30e3);
                                     });
                                     return false;
@@ -1334,7 +1349,7 @@
                         }
                     });
                 } else {
-                    toast('请注意送礼设置，30秒后开始送礼', 'caution');
+                    toast('[自动送礼]请注意送礼设置，30秒后开始送礼', 'caution');
                     setTimeout(TaskGift.work, 30e3);
                 }
             } catch (err) {
@@ -1356,22 +1371,22 @@
                     Info.day_limit = response.data.day_limit;
                     var remain_feed = Info.day_limit - Info.today_feed;
                     if (remain_feed > 0) {
-                        toast('今日亲密度未满，送礼开始', 'info');
+                        toast('[自动送礼]今日亲密度未满，送礼开始', 'info');
                         API.gift.bag_list().done(function(response) {
                             DEBUG('TaskGift.work: bag_list', response);
                             if (response.code === 0) {
                                 Info.bag_list = response.data.list;
                                 TaskGift.send_gift(0, remain_feed);
                             } else {
-                                toast('获取包裹礼物异常，' + response.msg, 'error');
+                                toast('[自动送礼]获取包裹礼物异常，' + response.msg, 'error');
                             }
                         });
                     } else {
-                        toast('今日亲密度已满', 'success');
+                        toast('[自动送礼]今日亲密度已满', 'success');
                         tommorrowRun(TaskGift.init);
                     }
                 } else {
-                    toast('获取亲密度异常，' + response.msg, 'error');
+                    toast('[自动送礼]获取亲密度异常，' + response.msg, 'error');
                 }
             });
         },
@@ -1379,7 +1394,7 @@
             i += 0;
             if (remain_feed > 0) {
                 if (i >= Info.bag_list.length) {
-                    toast('送礼结束，1小时后再次送礼', 'success');
+                    toast('[自动送礼]送礼结束，1小时后再次送礼', 'success');
                     setTimeout(TaskGift.work, 3600e3);
                     return;
                 }
@@ -1398,9 +1413,9 @@
                                 if (response.code === 0) {
                                     // 送礼成功
                                     Info.rnd = response.data.rnd;
-                                    toast('包裹送礼成功，送出' + feed_num + '个' + v.gift_name, 'success');
+                                    toast('[自动送礼]包裹送礼成功，送出' + feed_num + '个' + v.gift_name, 'success');
                                 } else {
-                                    toast('包裹送礼异常，' + response.msg, 'error');
+                                    toast('[自动送礼]包裹送礼异常，' + response.msg, 'error');
                                 }
                                 TaskGift.send_gift(i + 1, remain_feed - feed_num * feed_single);
                             });
@@ -1414,7 +1429,7 @@
                     TaskGift.send_gift(i + 1, remain_feed);
                 }
             } else {
-                toast('送礼结束，今日亲密度已满', 'success');
+                toast('[自动送礼]送礼结束，今日亲密度已满', 'success');
                 tommorrowRun(TaskGift.init);
             }
         }
@@ -1428,12 +1443,12 @@
                     DEBUG('TaskExchange.init: silver2coin', response);
                     if (response.code === 0) {
                         // 兑换成功
-                        toast('银瓜子兑换硬币：兑换成功', 'success');
+                        toast('[银瓜子兑换硬币]银瓜子兑换硬币：兑换成功', 'success');
                     } else if (response.code === 403) {
                         // 每天最多能兑换 1 个
-                        toast('银瓜子兑换硬币：每天最多能兑换 1 个', 'info');
+                        toast('[银瓜子兑换硬币]银瓜子兑换硬币：每天最多能兑换 1 个', 'info');
                     } else {
-                        toast('银瓜子兑换硬币：' + response.msg, 'info');
+                        toast('[银瓜子兑换硬币]银瓜子兑换硬币：' + response.msg, 'info');
                     }
                 });
                 tommorrowRun(TaskExchange.init);
