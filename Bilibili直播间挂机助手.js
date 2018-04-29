@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.7.3
+// @version      1.8.0
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -9,6 +9,7 @@
 // @updateURL    https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js
 // @include      /https?:\/\/live\.bilibili\.com\/\d+/
 // @require      https://greasyfork.org/scripts/38140-bilibili-api/code/Bilibili-API.js
+// @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
 // @grant        none
 // @run-at       document-end
 // @license      MIT License
@@ -21,9 +22,10 @@
     var CONFIG = {
         USE_SIGN: true, // 自动签到
         USE_AWARD: true, // 自动领取瓜子
-        USE_LOTTERY: true, // 自动参加抽奖
+        USE_LOTTERY: false, // 自动参加抽奖
         LOTTERY_CONFIG: {
-            ALLOW_NOT_SHORT_ROOMID: true // 允许在非短房间号直播间进行抽奖(挂在2号直播间)
+            ALLOW_NOT_SHORT_ROOMID: true, // 允许在非短ID直播间进行抽奖
+            AGENT_ROOMID: 2 // 代理抽奖直播间ID，必须为短ID直播间，否则无法正常抽奖(用于绕过B站限制，最好选择长期无人直播间，默认为2号直播间)
         },
         USE_TASK: true, // 自动完成任务
         USE_GIFT: false, // 自动送礼物
@@ -57,7 +59,7 @@
 
     /* 此行以下内容请勿修改，当然你要改那我也没办法 */
 
-    var DEBUGMODE = false;
+    var DEBUGMODE = true;
     var DEBUG = function(sign, data) {
         if (!DEBUGMODE) return;
         var d = new Date();
@@ -67,9 +69,10 @@
     var CONFIG_DEFAULT = {
         USE_SIGN: true,
         USE_AWARD: true,
-        USE_LOTTERY: true,
+        USE_LOTTERY: false,
         LOTTERY_CONFIG: {
-            ALLOW_NOT_SHORT_ROOMID: true
+            ALLOW_NOT_SHORT_ROOMID: true,
+            AGENT_ROOMID: 2
         },
         USE_TASK: true,
         USE_GIFT: false,
@@ -88,7 +91,8 @@
         USE_AWARD: '自动领取瓜子',
         USE_LOTTERY: '自动参加抽奖',
         LOTTERY_CONFIG: '抽奖设置',
-        ALLOW_NOT_SHORT_ROOMID: '允许在任意直播间抽奖(实验)',
+        ALLOW_NOT_SHORT_ROOMID: '允许在任意直播间抽奖',
+        AGENT_ROOMID: '代理抽奖直播间ID',
         USE_TASK: '自动完成任务',
         USE_GIFT: '自动送礼物',
         GIFT_CONFIG: '送礼设置',
@@ -101,13 +105,19 @@
         EXCHANGE_SILVER2COIN: '银瓜子换硬币'
     };
     var CONFIG_PLACEHOLDER_LIST = {
+        AGENT_ROOMID: '房间号(必须为短ID,默认为2)',
         SHORT_ROOMID: '为0则自动检测勋章',
         SEND_GIFT: "为空则默认不送",
         ALLOW_GIFT: '为空则允许所有'
     };
     var CONFIG_HELP_LIST = {
-        USE_LOTTERY: '设置是否自动参加抽奖功能，包括小电视抽奖、活动(即B站当前进行的活动)抽奖',
-        ALLOW_NOT_SHORT_ROOMID: '(实验性)允许在任意直播间进行抽奖(实际上是挂在2号直播间参加抽奖)<br>注意：会消耗更多的系统资源',
+        USE_LOTTERY: '设置是否自动参加抽奖功能，包括小电视抽奖、活动(即B站当前进行的活动)抽奖<br>注意：有封号风险，暂时无法解决',
+        ALLOW_NOT_SHORT_ROOMID: function() {
+            return '允许在任意直播间进行抽奖(实际上是挂在 ' + CONFIG.LOTTERY_CONFIG.AGENT_ROOMID + ' 号直播间参加抽奖)<br>注意：会消耗更多的系统资源';
+        },
+        AGENT_ROOMID: function() {
+            return '代理抽奖直播间ID，必须为短ID直播间，否则无法正常抽奖(用于绕过B站限制，最好选择长期无人直播间，默认为2号直播间)<br>当前设置为 ' + CONFIG.LOTTERY_CONFIG.AGENT_ROOMID;
+        },
         SHORT_ROOMID: '送礼物的直播间ID(即地址中live.bilibili.com/后面的数字), 设置为0则表示自动检查当前主播勋章',
         CHANGE_MEDAL: '设置是否允许“当有当前主播勋章，且当前佩戴的勋章不是当前主播勋章时自动切换为当前主播勋章”',
         SEND_GIFT: function() {
@@ -224,91 +234,6 @@
             expires = '; expires=' + date.toUTCString();
         }
         document.cookie = name + '=' + escape(value) + expires + '; path=/';
-    }
-
-    // 验证码识别算法来自互联网，作者未知
-    // 该算法已被简单修改
-    
-    function getChar(t) {
-        if (t.sum <= 50) return '-';
-        if (t.sum > 120 && t.sum < 135) return '+';
-        if (t.sum > 155 && t.sum < 162) return 1;
-        if (t.sum > 189 && t.sum < 195) return 7;
-        if (t.sum > 228 && t.sum < 237) return 4;
-        if (t.sum > 250 && t.sum < 260) return 2;
-        if (t.sum > 286 && t.sum < 296) return 3;
-        if (t.sum > 303 && t.sum < 313) return 5;
-        if (t.sum > 335 && t.sum < 342) return 8;
-        if (t.sum > 343 && t.sum < 350) {
-            if (t.first > 24 && t.last > 24) return 0;
-            if (t.first < 24 && t.last > 24) return 9;
-            if (t.first > 24 && t.last < 24) return 6;
-        }
-    }
-
-    function calcImg() {
-        // 1.验证码图片->二维点阵
-        // 2.二维点阵->横向一维压缩
-        // 3.分析并计算
-        var ctx = DOM.treasure.canvas[0].getContext("2d");
-        ctx.drawImage(DOM.treasure.image[0], 0, 0, 120, 40);
-        var pixels = ctx.getImageData(0, 0, 120, 40).data;
-        var pix = [];
-        var i = 0;
-        var j = 0;
-        var n = 0;
-        for (i = 1; i <= 40; i++) {
-            pix[i] = [];
-            for (j = 1; j <= 120; j++) {
-                var c = 1;
-                if (pixels[n] - (-pixels[n + 1]) - (-pixels[n + 2]) > 200) {
-                    c = 0;
-                }
-                n += 4;
-                pix[i][j] = c;
-            }
-        }
-        //二维点阵pix[40][120]
-        var line = [];
-        line[0] = 0;
-        for (i = 1; i <= 120; i++) {
-            line[i] = 0;
-            for (j = 1; j <= 40; j++) {
-                line[i] += pix[j][i];
-            }
-        }
-        //一维line[120]
-        var temp = [];
-        n = 0;
-        for (i = 1; i <= 120; i++) {
-            if (line[i] > 0 && line[i - 1] === 0) {
-                n++;
-                temp[n] = {};
-                temp[n].first = line[i];
-                temp[n].sum = 0;
-            }
-            if (line[i] > 0) {
-                temp[n].sum += line[i];
-            }
-            if (line[i - 1] > 0 && line[i] === 0) {
-                temp[n].last = line[i - 1];
-            }
-        }
-        if (n === 4) {
-            var result = 0;
-            var a = getChar(temp[1]) * 10 - (-getChar(temp[2]));
-            var b = getChar(temp[4]);
-            if (getChar(temp[3]) === '+') {
-                result = a - (-b);
-            } else {
-                result = a - b;
-            }
-            DEBUG('TaskAward: calcImg: 识别验证码: ' + getChar(temp[1]) + getChar(temp[2]) + ' ' + getChar(temp[3]) + ' ' + getChar(temp[4]) + ' = ' + result);
-            return result;
-        } else {
-            DEBUG('TaskAward: calcImg: 识别验证码失败');
-            return null;
-        }
     }
 
     function solveCaptcha() {
@@ -635,7 +560,8 @@
                                 // 非短号直播间
                                 window.Lottery_inited = false;
                                 DOM.lottery.iframe = $('<iframe name="' + NAME + '_iframe"></iframe>');
-                                DOM.lottery.iframe[0].src = '//live.bilibili.com/2';
+                                if (!CONFIG.LOTTERY_CONFIG.AGENT_ROOMID) CONFIG.LOTTERY_CONFIG.AGENT_ROOMID = 2;
+                                DOM.lottery.iframe[0].src = '//live.bilibili.com/' + CONFIG.LOTTERY_CONFIG.AGENT_ROOMID;
                                 document.body.appendChild(DOM.lottery.iframe[0]);
                                 DEBUG('Init: lottery_iframe_window', window.frames[NAME + '_iframe']);
                             } else {
@@ -1034,13 +960,16 @@
     };
 
     var TaskAward = {
-        running: false,
         treasure_timer: null,
         init: function() {
+            if (!CONFIG.USE_AWARD) return;
+            if (!OCRAD) {
+                toast('[自动领取瓜子]OCRAD初始化失败，已停止', 'error');
+                console.error('Bilibili直播间挂机助手：[自动领取瓜子]OCRAD初始化失败，已停止');
+                return;
+            }
             try {
-                if (!CONFIG.USE_AWARD) return;
-                if (TaskAward.running) TaskAward.getAward(TaskAward.getCurrentTask, 0);
-                else TaskAward.getCurrentTask();
+                TaskAward.getCurrentTask();
             } catch (err) {
                 toast('[自动领取瓜子]运行时出现异常，已停止', 'error');
                 console.error('Bilibili直播间挂机助手：[自动领取瓜子]运行时出现异常，已停止');
@@ -1053,60 +982,50 @@
                 callback();
                 return;
             }
-            API.SilverBox.getCaptcha(ts_ms()).done(function(response) {
-                DOM.treasure.image[0].onload = function() {
-                    var captcha = calcImg();
-                    if (captcha) {
-                        // 验证码识别成功
-                        API.SilverBox.getAward(ts_s(), ts_s(), captcha).done(function(response) {
-                            DEBUG('TaskAward.getAward: getAward', response);
-                            if (response.code === 0) {
-                                // 领取瓜子成功
-                                toast('[自动领取瓜子]领取了 ' + response.data.awardSilver + ' 银瓜子', 'success');
-                                callback();
-                            } else if (response.code === -903) {
-                                // -903: 已经领取过这个宝箱
-                                toast('[自动领取瓜子]已经领取过这个宝箱', 'caution');
-                                callback();
-                            } else if (response.code === -902 || response.code === -901) {
-                                // -902: 验证码错误, -901: 验证码过期
-                                setTimeout(function() {
-                                    TaskAward.getAward(callback, cnt + 1);
-                                }, 1e3);
-                            } else {
-                                // 其他错误
-                                setTimeout(function() {
-                                    TaskAward.getAward(callback, cnt + 1);
-                                }, 3e3);
-                            }
-                        });
-                    } else {
-                        // 验证码识别失败
-                        if (cnt > 4) {
-                            clearInterval(TaskAward.treasure_timer);
-                            execUntilSucceed(function() {
-                                if (DOM.treasure.div_timer) {
-                                    DOM.treasure.div_timer.hide();
-                                    return true;
-                                }
-                            });
-                            execUntilSucceed(function() {
-                                if (DOM.treasure.div_tip) {
-                                    DOM.treasure.div_tip.html('功能<br>异常');
-                                    return true;
-                                }
-                            });
-                            toast('[自动领取瓜子]验证码识别失败，已停止', 'error');
-                            console.error('Bilibili直播间挂机助手：[自动领取瓜子]验证码识别失败，已停止');
-                            return;
+            TaskAward.calcCaptcha(function(captcha) {
+                if (captcha) {
+                    // 验证码识别成功
+                    API.SilverBox.getAward(ts_s(), ts_s(), captcha).done(function(response) {
+                        DEBUG('TaskAward.getAward: getAward', response);
+                        if (response.code === 0) {
+                            // 领取瓜子成功
+                            toast('[自动领取瓜子]领取了 ' + response.data.awardSilver + ' 银瓜子', 'success');
+                            callback();
+                        } else if (response.code === -903) {
+                            // -903: 已经领取过这个宝箱
+                            toast('[自动领取瓜子]已经领取过这个宝箱', 'caution');
+                            callback();
+                        } else if (response.code === -902 || response.code === -901) {
+                            // -902: 验证码错误, -901: 验证码过期
+                            setTimeout(function() {
+                                TaskAward.getAward(callback, cnt);
+                            }, 1e3);
+                        } else {
+                            // 其他错误
+                            setTimeout(function() {
+                                TaskAward.getAward(callback, cnt + 1);
+                            }, 1e3);
                         }
-                        setTimeout(function() {
-                            TaskAward.getAward(callback, cnt + 1);
-                        }, 500);
-                    }
-                };
-                DOM.treasure.image[0].src = response.data.img;
-            });
+                    });
+                } else {
+                    // 验证码识别失败
+                    clearInterval(TaskAward.treasure_timer);
+                    execUntilSucceed(function() {
+                        if (DOM.treasure.div_timer) {
+                            DOM.treasure.div_timer.hide();
+                            return true;
+                        }
+                    });
+                    execUntilSucceed(function() {
+                        if (DOM.treasure.div_tip) {
+                            DOM.treasure.div_tip.html('功能<br>异常');
+                            return true;
+                        }
+                    });
+                    toast('[自动领取瓜子]验证码识别失败，已停止', 'error');
+                    console.error('Bilibili直播间挂机助手：[自动领取瓜子]验证码识别失败，已停止');
+                }
+            }, 0);
         },
         getCurrentTask: function() {
             if (!CONFIG.USE_AWARD) return;
@@ -1115,8 +1034,9 @@
                 if (response.code === 0) {
                     // 获取任务成功
                     if (parseInt(response.data.minute, 10) !== 0) {
-                        setTimeout(TaskAward.init, response.data.minute * 60e3 + 1e3);
-                        TaskAward.running = true;
+                        setTimeout(function() {
+                            TaskAward.getAward(TaskAward.getCurrentTask, 0);
+                        }, response.data.minute * 60e3 + 1e3);
                         execUntilSucceed(function() {
                             if (DOM.treasure.div_timer) {
                                 DOM.treasure.div_timer.text((response.data.minute * 60 + 1) + 's');
@@ -1148,13 +1068,165 @@
                         }
                     });
                     tommorrowRun(function() {
-                        TaskAward.running = false;
                         TaskAward.init();
                     });
                 } else {
                     toast('[自动领取瓜子]' + response.msg, 'info');
                 }
             });
+        },
+        calcCaptcha: function(callback, cnt) {
+            if (!CONFIG.USE_AWARD) return;
+            if (cnt > 30) { // 允许验证码无法识别的次数
+                callback(null);
+                return;
+            }
+            // 实现功能类似 https://github.com/zacyu/bilibili-helper/blob/master/src/bilibili_live.js 中Live.treasure.init()的验证码处理部分
+            // 需要ES6
+            API.SilverBox.getCaptcha(ts_ms()).done(function(response) {
+                if (response.code === 0) {
+                    DOM.treasure.image[0].onload = function() {
+                        let ctx = DOM.treasure.canvas[0].getContext("2d");
+                        ctx.font = '40px agencyfbbold';
+                        ctx.textBaseline = 'top';
+                        ctx.clearRect(0, 0, DOM.treasure.canvas[0].width, DOM.treasure.canvas[0].height);
+                        ctx.drawImage(DOM.treasure.image[0], 0, 0);
+                        let grayscaleMap = TaskAward.OCR.getGrayscaleMap(ctx);
+                        let filterMap = TaskAward.OCR.orderFilter2In3x3(grayscaleMap);
+                        ctx.clearRect(0, 0, 120, 40);
+                        for (let i = 0; i < filterMap.length; ++i) {
+                            let gray = filterMap[i];
+                            ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
+                            ctx.fillRect(i % 120, Math.round(i / 120), 1, 1);
+                        }
+                        try {
+                            let question = TaskAward.correctQuestion(OCRAD(ctx.getImageData(0, 0, 120, 40)));
+                            DEBUG('TaskAward.calcCaptcha', 'question= ' + question);
+                            let answer = TaskAward.eval(question);
+                            DEBUG('TaskAward.calcCaptcha', 'answer= ' + answer);
+                            if (answer !== undefined) {
+                                // toast('[自动领取瓜子]验证码识别结果：' + question + ' = ' + answer, 'info');
+                                console.info('Bilibili直播间挂机助手：[自动领取瓜子]验证码识别结果：' + question + ' = ' + answer);
+                                callback(answer);
+                            } else {
+                                throw new Error('验证码识别失败');
+                            }
+                        } catch (err) {
+                            setTimeout(function() {
+                                TaskAward.calcCaptcha(callback, cnt + 1);
+                            }, 300);
+                        }
+                    };
+                    DOM.treasure.image[0].src = response.data.img;
+                }
+            });
+        },
+        // 对B站验证码进行处理，需要ES6
+        // 代码来源：https://github.com/zacyu/bilibili-helper/blob/master/src/bilibili_live.js
+        // 未作修改
+        OCR: {
+            getGrayscaleMap: (context, rate = 235, width = 120, height = 40) => {
+                function getGrayscale(x, y) {
+                    const pixel = context.getImageData(x, y, 1, 1).data;
+                    return pixel ? (77 * pixel[0] + 150 * pixel[1] + 29 * pixel[2] + 128) >> 8 : 0;
+                }
+                const map = [];
+                for (let y = 0; y < height; y++) { // line y
+                    for (let x = 0; x < width; x++) { // column x
+                        const gray = getGrayscale(x, y);
+                        map.push(gray > rate ? gray : 0);
+                    }
+                }
+                return map;
+            },
+            orderFilter2In3x3: (grayscaleMap, n = 9, width = 120, height = 40) => {
+                const gray = (x, y) => (x + y * width >= 0) ? grayscaleMap[x + y * width] : 255;
+                const map = [];
+                const length = grayscaleMap.length;
+                const catchNumber = n - 1;
+                for (let i = 0; i < length; ++i) {
+                    const [x, y] = [i % width, Math.floor(i / width)];
+                    const matrix = new Array(9);
+                    matrix[0] = gray(x - 1, y - 1);
+                    matrix[1] = gray(x + 0, y - 1);
+                    matrix[2] = gray(x + 1, y - 1);
+                    matrix[3] = gray(x - 1, y + 0);
+                    matrix[4] = gray(x + 0, y + 0);
+                    matrix[5] = gray(x + 1, y + 0);
+                    matrix[6] = gray(x - 1, y + 1);
+                    matrix[7] = gray(x + 0, y + 1);
+                    matrix[8] = gray(x + 1, y + 1);
+                    matrix.sort((a, b) => a - b);
+                    map.push(matrix[catchNumber]);
+                }
+                return map;
+            },
+            execMap: (connectMap, rate = 4) => {
+                const map = [];
+                const connectMapLength = connectMap.length;
+                for (let i = 0; i < connectMapLength; ++i) {
+                    let blackPoint = 0;
+                    const [x, y] = [i % 120, Math.round(i / 120)];
+                    const top = connectMap[i - 120];
+                    const topLeft = connectMap[i - 120 - 1];
+                    const topRight = connectMap[i - 120 + 1];
+                    const left = connectMap[i - 1];
+                    const right = connectMap[i + 1];
+                    const bottom = connectMap[i + 120];
+                    const bottomLeft = connectMap[i + 120 - 1];
+                    const bottomRight = connectMap[i + 120 + 1];
+                    if (top) blackPoint += 1;
+                    if (topLeft) blackPoint += 1;
+                    if (topRight) blackPoint += 1;
+                    if (left) blackPoint += 1;
+                    if (right) blackPoint += 1;
+                    if (bottom) blackPoint += 1;
+                    if (bottomLeft) blackPoint += 1;
+                    if (bottomRight) blackPoint += 1;
+                    if (blackPoint > rate) map.push(1);
+                    else map.push(0);
+                }
+                return map;
+            }
+        },
+        eval: (fn) => {
+            let Fn = Function;
+            return new Fn('return ' + fn)();
+        },
+        // 修正OCRAD识别结果，需要ES6
+        // 代码来源：https://github.com/zacyu/bilibili-helper/blob/master/src/bilibili_live.js
+        // 修改部分：
+        // 1.将correctStr声明在correctQuestion函数内部，并修改相关引用
+        // 2.在correctStr中增加'>': 3
+        correctQuestion: (question) => {
+            var correctStr = {
+                'g': 9,
+                'z': 2,
+                'Z': 2,
+                'o': 0,
+                'l': 1,
+                'B': 8,
+                'O': 0,
+                'S': 6,
+                's': 6,
+                'i': 1,
+                'I': 1,
+                '.': '-',
+                '_': 4,
+                'b': 6,
+                'R': 8,
+                '|': 1,
+                'D': 0,
+                '>': 3
+            };
+            var q = '',
+                question = question.trim();
+            for (let i in question) {
+                let a = correctStr[question[i]];
+                q += (a != undefined ? a : question[i]);
+            }
+            if (q[2] == '4') q[2] = '+';
+            return q;
         }
     };
 
