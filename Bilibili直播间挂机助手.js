@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.8.3
+// @version      1.8.4
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1090,7 +1090,7 @@
         },
         calcCaptcha: function(callback, cnt) {
             if (!CONFIG.USE_AWARD) return;
-            if (cnt > 30) { // 允许验证码无法识别的次数
+            if (cnt > 300) { // 允许验证码无法识别的次数
                 callback(null);
                 return;
             }
