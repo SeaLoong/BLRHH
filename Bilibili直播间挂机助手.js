@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.8.1
+// @version      1.8.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -303,7 +303,7 @@
 
     window.Lottery_join = function(i, url) {
         setTimeout(function() {
-            short_id = parseInt(url, 10);
+            var short_id = parseInt(url, 10);
             if (short_id > 0) {
                 $.get('//live.bilibili.com/' + url); // 模拟访问房间，url中有visit_id参数，不确定是否与抽奖封号有关
                 var room_id = window.room_id_list[short_id];
