@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.8.0
+// @version      1.8.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -59,7 +59,7 @@
 
     /* 此行以下内容请勿修改，当然你要改那我也没办法 */
 
-    var DEBUGMODE = true;
+    var DEBUGMODE = false;
     var DEBUG = function(sign, data) {
         if (!DEBUGMODE) return;
         var d = new Date();
@@ -111,7 +111,7 @@
         ALLOW_GIFT: '为空则允许所有'
     };
     var CONFIG_HELP_LIST = {
-        USE_LOTTERY: '设置是否自动参加抽奖功能，包括小电视抽奖、活动(即B站当前进行的活动)抽奖<br>注意：有封号风险，暂时无法解决',
+        USE_LOTTERY: '设置是否自动参加抽奖功能，包括小电视抽奖、活动(即B站当前进行的活动)抽奖<br>注意：有封号风险，已尝试规避',
         ALLOW_NOT_SHORT_ROOMID: function() {
             return '允许在任意直播间进行抽奖(实际上是挂在 ' + CONFIG.LOTTERY_CONFIG.AGENT_ROOMID + ' 号直播间参加抽奖)<br>注意：会消耗更多的系统资源';
         },
@@ -301,9 +301,11 @@
         Toast.list.push(a);
     };
 
-    window.Lottery_join = function(i, short_id) {
+    window.Lottery_join = function(i, url) {
         setTimeout(function() {
+            short_id = parseInt(url, 10);
             if (short_id > 0) {
+                $.get('//live.bilibili.com/' + url); // 模拟访问房间，url中有visit_id参数，不确定是否与抽奖封号有关
                 var room_id = window.room_id_list[short_id];
                 if (room_id > 0) {
                     SmallTV.init(room_id);
@@ -315,12 +317,16 @@
                         DEBUG('window.Lottery_join: room_init', response);
                         if (response.code === 0) {
                             room_id = response.data.room_id;
-                            if (response.data.short_id > 0 && response.data.short_id != short_id) window.room_id_list[response.data.short_id] = room_id;
-                            window.room_id_list[short_id] = room_id;
-                            SmallTV.init(room_id);
-                            Raffle.init(room_id);
-                            ZongDu.init(room_id);
-                            // Storm.init(room_id);
+                            if (response.data.encrypted || response.data.is_hidden || response.data.is_locked || response.data.is_portrait || response.data.pwd_verified) {
+                                toast('[自动抽奖]疑似钓鱼直播间【' + room_id + '】，不参加该直播间的抽奖', 'caution');
+                            } else {
+                                if (response.data.short_id > 0 && response.data.short_id != short_id) window.room_id_list[response.data.short_id] = room_id;
+                                window.room_id_list[short_id] = room_id;
+                                SmallTV.init(room_id);
+                                Raffle.init(room_id);
+                                ZongDu.init(room_id);
+                                // Storm.init(room_id);
+                            }
                         }
                     });
                 }
@@ -1257,7 +1263,9 @@
                 overlap_index = Infinity;
             $('div.chat-item.system-msg div.msg-content a.link').each(function(index, el) {
                 var matched = el.pathname.match(/^\/(\d+).*/);
-                if (matched && matched[1]) lottery_list_temp.push(parseInt(matched[1], 10));
+                if (matched && matched[1]) {
+                    lottery_list_temp.push(matched[0]);
+                }
             });
             $.each(lottery_list_temp, function(i, v) {
                 if (i === 0) {
