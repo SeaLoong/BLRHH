@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili-API
 // @namespace    SeaLoong
-// @version      1.1.1
+// @version      1.2.0
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -22,9 +22,6 @@ var BilibiliAPI = {
         }
     },
     SilverCoinExchange: {
-        coin2silver_old: function(coin) {
-            return BilibiliAPI.coin2silver(coin);
-        },
         coin2silver: function(num, csrf_token, platform) {
             return BilibiliAPI.pay.coin2silver(num, csrf_token, platform);
         },
@@ -36,11 +33,11 @@ var BilibiliAPI = {
         check: function(roomid) {
             return BilibiliAPI.gift.smalltv.check(roomid);
         },
-        join: function(roomid, raffleId) {
-            return BilibiliAPI.gift.smalltv.join(roomid, raffleId);
+        join: function(roomid, raffleId, csrf_token, visit_id, type) {
+            return BilibiliAPI.gift.smalltv.join(roomid, raffleId, csrf_token, visit_id, type);
         },
-        notice: function(roomid, raffleId) {
-            return BilibiliAPI.gift.smalltv.notice(roomid, raffleId);
+        notice: function(raffleId, type) {
+            return BilibiliAPI.gift.smalltv.notice(raffleId, type);
         }
     },
     Raffle: {
@@ -333,7 +330,7 @@ var BilibiliAPI = {
                 url: 'gift/v2/gift/bag_list'
             });
         },
-        send: function(uid, gift_id, ruid, gift_num, coin_type, biz_id, rnd, csrf_token, platform, biz_code, storm_beat_id) {
+        send: function(uid, gift_id, ruid, gift_num, coin_type, biz_id, rnd, csrf_token, visit_id, platform, biz_code, storm_beat_id, price) {
             // 消耗瓜子送礼
             return BilibiliAPI.ajax({
                 type: 'POST',
@@ -350,12 +347,14 @@ var BilibiliAPI = {
                     biz_id: biz_id, //roomid
                     rnd: rnd,
                     storm_beat_id: storm_beat_id || 0,
-                    // metadata: metadata,
-                    csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token
+                    metadata: '',
+                    price: price || 0,
+                    csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
+                    visit_id: visit_id
                 }
             });
         },
-        bag_send: function(uid, gift_id, ruid, gift_num, bag_id, biz_id, rnd, csrf_token, platform, biz_code, storm_beat_id) {
+        bag_send: function(uid, gift_id, ruid, gift_num, bag_id, biz_id, rnd, csrf_token, visit_id, platform, biz_code, storm_beat_id, price) {
             // 送出包裹中的礼物
             return BilibiliAPI.ajax({
                 type: 'POST',
@@ -371,9 +370,16 @@ var BilibiliAPI = {
                     biz_id: biz_id, //roomid
                     rnd: rnd,
                     storm_beat_id: storm_beat_id || 0,
-                    // metadata: metadata,
-                    csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token
+                    metadata: '',
+                    price: price || 0,
+                    csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
+                    visit_id: visit_id
                 }
+            });
+        },
+        gift_config: function() {
+            return BilibiliAPI.ajax({
+                url: 'gift/v3/live/gift_config'
             });
         },
         heart_gift_receive: function(roomid, area_v2_id) {
@@ -409,9 +415,8 @@ var BilibiliAPI = {
                 }
             });
         },
-        smalltv: {
+        smalltv_v2: { // 旧小电视API，封号风险
             check: function(roomid) {
-                // 检查是否有小电视
                 return BilibiliAPI.ajax({
                     url: 'gift/v2/smalltv/check',
                     data: {
@@ -420,7 +425,6 @@ var BilibiliAPI = {
                 });
             },
             join: function(roomid, raffleId) {
-                // 参加小电视抽奖
                 return BilibiliAPI.ajax({
                     url: 'gift/v2/smalltv/join',
                     data: {
@@ -430,11 +434,42 @@ var BilibiliAPI = {
                 });
             },
             notice: function(roomid, raffleId) {
-                // 领取小电视抽奖奖励
                 return BilibiliAPI.ajax({
                     url: 'gift/v2/smalltv/notice',
                     data: {
                         roomid: roomid,
+                        raffleId: raffleId
+                    }
+                });
+            }
+        },
+        smalltv: { // 新小电视API
+            check: function(roomid) {
+                return BilibiliAPI.ajax({
+                    url: 'gift/v3/smalltv/check',
+                    data: {
+                        roomid: roomid
+                    }
+                });
+            },
+            join: function(roomid, raffleId, csrf_token, visit_id, type) {
+                return BilibiliAPI.ajax({
+                    type: 'POST',
+                    url: 'gift/v3/smalltv/join',
+                    data: {
+                        roomid: roomid,
+                        raffleId: raffleId,
+                        type: type || 'Gift',
+                        csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
+                        visit_id: visit_id
+                    }
+                });
+            },
+            notice: function(raffleId, type) {
+                return BilibiliAPI.ajax({
+                    url: 'gift/v3/smalltv/notice',
+                    data: {
+                        type: type || 'small_tv',
                         raffleId: raffleId
                     }
                 });
@@ -551,7 +586,7 @@ var BilibiliAPI = {
                 url: 'live_user/v1/UserInfo/get_info_in_room?roomid=' + roomid
             });
         },
-        get_weared_medal: function(uid, target_id, csrf_token, source) {
+        get_weared_medal: function(uid, target_id, visit_id, csrf_token, source) {
             return BilibiliAPI.ajax({
                 type: 'POST',
                 url: 'live_user/v1/UserInfo/get_weared_medal',
@@ -559,8 +594,14 @@ var BilibiliAPI = {
                     source: source || 1,
                     uid: uid,
                     target_id: target_id, // roomid
+                    visit_id: visit_id,
                     csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token
                 }
+            });
+        },
+        governorShow: function(target_id) {
+            return BilibiliAPI.ajax({
+                url: 'live_user/v1/Master/governorShow?target_id=' + target_id
             });
         }
     },
@@ -706,12 +747,13 @@ var BilibiliAPI = {
                 }
             });
         },
-        room_entry_action: function(room_id, csrf_token, platform) {
+        room_entry_action: function(room_id, visit_id, csrf_token, platform) {
             return BilibiliAPI.ajax({
                 type: 'POST',
                 url: 'room/v1/Room/room_entry_action',
                 data: {
                     room_id: room_id,
+                    visit_id: visit_id,
                     platform: platform || 'pc',
                     csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token
                 }

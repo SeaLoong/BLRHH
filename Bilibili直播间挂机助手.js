@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.8.4
+// @version      1.9.0
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -305,9 +305,10 @@
     window.Lottery_join = function(i, short_id) {
         setTimeout(function() {
             if (short_id > 0) {
-                $.get('//live.bilibili.com/' + short_id + '?visit_id=' + Info.visit_id); // 模拟访问房间，visit_id不确定是否与抽奖封号有关
+                // $.get('//live.bilibili.com/' + short_id + '?visit_id=' + Info.visit_id); // 模拟访问房间，visit_id不确定是否与抽奖封号有关
                 var room_id = window.room_id_list[short_id];
                 if (room_id > 0) {
+                    API.room.room_entry_action(room_id, Info.visit_id, Info.csrf_token); // 模拟访问房间
                     SmallTV.init(room_id);
                     Raffle.init(room_id);
                     ZongDu.init(room_id);
@@ -322,6 +323,7 @@
                             } else {
                                 if (response.data.short_id > 0 && response.data.short_id != short_id) window.room_id_list[response.data.short_id] = room_id;
                                 window.room_id_list[short_id] = room_id;
+                                API.room.room_entry_action(room_id, Info.visit_id, Info.csrf_token); // 模拟访问房间
                                 SmallTV.init(room_id);
                                 Raffle.init(room_id);
                                 ZongDu.init(room_id);
@@ -585,7 +587,7 @@
                             }
                         }
                         if (CONFIG.USE_GIFT && (CONFIG.GIFT_CONFIG.SHORT_ROOMID === 0 || CONFIG.GIFT_CONFIG.SHORT_ROOMID === Info.short_id)) {
-                            API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.csrf_token).done(function(response) {
+                            API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.visit_id, Info.csrf_token).done(function(response) {
                                 DEBUG('Init: get_weared_medal', response);
                                 if (response.code === 0) {
                                     Info.medal_target_id = response.data.target_id;
@@ -594,8 +596,8 @@
                                     Info.old_area_id = response.data.area;
                                     Info.area_id = response.data.area_v2_id;
                                     Info.area_parent_id = response.data.area_v2_parent_id;
-                                    API.gift.room_gift_list(Info.roomid, Info.area_id).done(function(response) {
-                                        DEBUG('Init: room_gift_list', response);
+                                    API.gift.gift_config().done(function(response) {
+                                        DEBUG('Init: gift_config', response);
                                         if (response.code === 0) {
                                             gift_list = response.data;
                                             gift_list.forEach(function(v) {
@@ -606,6 +608,7 @@
                                     });
                                 }
                             });
+                            /*
                             API.live_user.get_info_in_room(Info.roomid).done(function(response) {
                                 DEBUG('Init: get_info_in_room', response);
                                 if (response.code === 0) {
@@ -614,6 +617,7 @@
                                     Info.mobile_verified = response.data.info.mobile_verified;
                                 }
                             });
+                            */
                         }
                         setTimeout(function() {
                             DEBUG('Init: Info', Info);
@@ -797,19 +801,31 @@
 
     var SmallTV = {
         init: function(roomid) {
+            if (TaskLottery.stop) return;
             API.SmallTV.check(roomid).done(function(response) { // 检查是否有小电视抽奖
                 DEBUG('SmallTV.init: SmallTV.check', response);
                 if (response.code === 0) {
-                    response.data.forEach(function(v) {
+                    response.data.list.forEach(function(v) {
                         var time = v.time;
                         if (v.status === 1) { // 可以参加
-                            API.SmallTV.join(roomid, v.raffleId).done(function(response) {
+                            API.SmallTV.join(roomid, v.raffleId, Info.csrf_token, Info.visit_id).done(function(response) {
                                 DEBUG('SmallTV.init: SmallTV.join', response);
                                 if (response.code === 0) {
                                     setTimeout(function() {
                                         SmallTV.notice(roomid, response.data.raffleId);
                                     }, time * 1e3 + 12e3);
                                     toast('[自动抽奖]已参加直播间【' + roomid + '】的小电视抽奖', 'success');
+                                } else if (response.code === 400) {
+                                    TaskLottery.stop = true;
+                                    toast('[自动抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                    console.error('Bilibili直播间挂机助手：[自动抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止');
+                                } else if (response.code === 65531) {
+                                    // 65531: 非当前直播间或短ID直播间试图参加抽奖
+                                    TaskLottery.stop = true;
+                                    toast('[自动抽奖]参加活动抽奖失败，已停止活动抽奖任务', 'error');
+                                    console.error('Bilibili直播间挂机助手：[自动抽奖]参加活动抽奖失败，已停止');
+                                } else {
+                                    toast('[自动抽奖]' + response.msg, 'error');
                                 }
                             });
                         } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
@@ -818,7 +834,6 @@
                             }, time * 1e3 + 12e3);
                             toast('[自动抽奖]已参加直播间【' + roomid + '】的小电视抽奖', 'success');
                         }
-
                     });
                 } else if (response.code === -400) {
                     // 没有需要提示的小电视
@@ -826,8 +841,9 @@
             });
         },
         notice: function(roomid, raffleId, cnt) {
+            if (TaskLottery.stop) return;
             if (cnt > 5) return;
-            API.SmallTV.notice(roomid, raffleId).done(function(response) {
+            API.SmallTV.notice(raffleId).done(function(response) {
                 DEBUG('SmallTV.notice: SmallTV.notice', response);
                 if (response.code === 0) {
                     if (response.data.status === 1) {
@@ -858,6 +874,7 @@
 
     var Raffle = {
         init: function(roomid) {
+            if (TaskLottery.stop) return;
             API.Raffle.check(roomid).done(function(response) { // 检查是否有活动抽奖
                 DEBUG('Raffle.init: Raffle.check', response);
                 if (response.code === 0) {
@@ -872,11 +889,17 @@
                                         Raffle.notice(roomid, response.data.raffleId);
                                     }, time * 1e3 + 24e3);
                                     toast('[自动抽奖]已参加直播间【' + roomid + '】的活动抽奖', 'success');
+                                } else if (response.code === 400) {
+                                    TaskLottery.stop = true;
+                                    toast('[自动抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                    console.error('Bilibili直播间挂机助手：[自动抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止');
                                 } else if (response.code === 65531) {
                                     // 65531: 非当前直播间或短ID直播间试图参加抽奖
                                     TaskLottery.stop = true;
                                     toast('[自动抽奖]参加活动抽奖失败，已停止活动抽奖任务', 'error');
                                     console.error('Bilibili直播间挂机助手：[自动抽奖]参加活动抽奖失败，已停止');
+                                } else {
+                                    toast('[自动抽奖]' + response.msg, 'error');
                                 }
                             });
                         } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
@@ -890,6 +913,7 @@
             });
         },
         notice: function(roomid, raffleId, cnt) {
+            if (TaskLottery.stop) return;
             if (cnt > 5) return;
             API.Raffle.notice(roomid, raffleId).done(function(response) {
                 DEBUG('Raffle.notice: Raffle.notice', response);
@@ -918,6 +942,7 @@
 
     var ZongDu = {
         init: function(roomid) {
+            if (TaskLottery.stop) return;
             API.ZongDu.check(roomid).done(function(response) {
                 DEBUG('ZongDu.init: ZongDu.check', response);
                 if (response.code === 0 && response.data.hasOwnProperty('guard')) {
@@ -939,6 +964,7 @@
 
     var Storm = {
         init: function(roomid) {
+            if (TaskLottery.stop) return;
             API.Storm.check(roomid).done(function(response) { // 检查是否有节奏风暴
                 DEBUG('Storm.init: Storm.check', response);
                 if (response.code === 0 && !Array.isArray(response.data) && response.data.hasJoin === 0) {
@@ -947,6 +973,7 @@
             });
         },
         join: function(id, cnt) {
+            if (TaskLottery.stop) return;
             if (cnt > 5) return;
             API.create(112, 32).done(function(response) {
                 if (response.code === 0) {
@@ -1013,8 +1040,26 @@
                             setTimeout(function() {
                                 TaskAward.getAward(callback, cnt);
                             }, 1e3);
+                        } else if (response.code === 400) {
+                            // 400: 访问被拒绝
+                            clearInterval(TaskAward.treasure_timer);
+                            execUntilSucceed(function() {
+                                if (DOM.treasure.div_timer) {
+                                    DOM.treasure.div_timer.hide();
+                                    return true;
+                                }
+                            });
+                            execUntilSucceed(function() {
+                                if (DOM.treasure.div_tip) {
+                                    DOM.treasure.div_tip.html('拒绝<br>访问');
+                                    return true;
+                                }
+                            });
+                            toast('[自动领取瓜子]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                            console.error('Bilibili直播间挂机助手：[自动领取瓜子]访问被拒绝，您的帐号可能已经被封禁，已停止');
                         } else {
                             // 其他错误
+                            toast('[自动领取瓜子]' + response.msg, 'caution');
                             setTimeout(function() {
                                 TaskAward.getAward(callback, cnt + 1);
                             }, 1e3);
@@ -1412,6 +1457,7 @@
     };
 
     var TaskGift = {
+        time: 0,
         init: function() {
             try {
                 if (!CONFIG.USE_GIFT) return;
@@ -1421,21 +1467,30 @@
                         toast('[自动送礼]已佩戴的勋章不是当前主播勋章，送礼功能停止', 'caution');
                         return;
                     }
-                    API.i.medal(1, 25).done(function(response) {
-                        DEBUG('TaskGif.init: medal', response);
+                    API.feed.IsUserFollow(Info.ruid).done(function(response) {
+                        DEBUG('TaskGift.init: IsUserFollow', response);
                         if (response.code === 0) {
-                            Info.medal_list = response.data.fansMedalList;
-                            $.each(Info.medal_list, function(index, v) {
-                                if (v.target_id === Info.ruid) {
-                                    API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
-                                        DEBUG('TaskGift.init: ajaxWearFansMedal', response);
-                                        toast('[自动送礼]已自动切换为当前主播勋章', 'success');
-                                        toast('[自动送礼]请注意送礼设置，30秒后开始送礼', 'caution');
-                                        setTimeout(TaskGift.work, 30e3);
-                                    });
-                                    return false;
-                                }
-                            });
+                            if (response.data.follow) {
+                                API.i.medal(1, 25).done(function(response) {
+                                    DEBUG('TaskGif.init: medal', response);
+                                    if (response.code === 0) {
+                                        Info.medal_list = response.data.fansMedalList;
+                                        $.each(Info.medal_list, function(index, v) {
+                                            if (v.target_id === Info.ruid) {
+                                                API.i.ajaxWearFansMedal(v.medal_id).done(function(response) {
+                                                    DEBUG('TaskGift.init: ajaxWearFansMedal', response);
+                                                    toast('[自动送礼]已自动切换为当前主播勋章', 'success');
+                                                    toast('[自动送礼]请注意送礼设置，30秒后开始送礼', 'caution');
+                                                    setTimeout(TaskGift.work, 30e3);
+                                                });
+                                                return false;
+                                            }
+                                        });
+                                    }
+                                });
+                            } else {
+                                toast('[自动送礼]无当前主播勋章，停止送礼', 'info');
+                            }
                         }
                     });
                 } else {
@@ -1450,7 +1505,7 @@
         },
         work: function() {
             if (!CONFIG.USE_GIFT) return;
-            API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.csrf_token).done(function(response) {
+            API.live_user.get_weared_medal(Info.uid, Info.roomid, Info.visit_id, Info.csrf_token).done(function(response) {
                 if (response.code === 0) {
                     Info.medal_target_id = response.data.target_id;
                     if (Info.medal_target_id !== Info.ruid) {
@@ -1466,6 +1521,7 @@
                             DEBUG('TaskGift.work: bag_list', response);
                             if (response.code === 0) {
                                 Info.bag_list = response.data.list;
+                                TaskGift.time = response.data.time;
                                 TaskGift.send_gift(0, remain_feed);
                             } else {
                                 toast('[自动送礼]获取包裹礼物异常，' + response.msg, 'error');
@@ -1490,15 +1546,16 @@
                 }
                 var v = Info.bag_list[i];
                 v.gift_id += '';
+                if (TaskGift.time <= 0) TaskGift.time = ts_ms();
                 if (($.inArray(v.gift_id, CONFIG.GIFT_CONFIG.ALLOW_GIFT) > -1 || !CONFIG.GIFT_CONFIG.ALLOW_GIFT.length) && // 检查ALLOW_GIFT
                     ((CONFIG.GIFT_CONFIG.SEND_GIFT.length && $.inArray(v.gift_id, CONFIG.GIFT_CONFIG.SEND_GIFT) > -1 && remain_feed > 0) || // 检查SEND_GIFT
-                        (CONFIG.GIFT_CONFIG.SEND_TODAY && v.expire_at > ts_s() && v.expire_at - ts_s() < 86400))) { // 检查SEND_TODAY和礼物到期时间
+                        (CONFIG.GIFT_CONFIG.SEND_TODAY && v.expire_at > TaskGift.time && v.expire_at - TaskGift.time < 86400))) { // 检查SEND_TODAY和礼物到期时间
                     var feed_single = giftIDtoFeed(v.gift_id);
                     if (feed_single > 0) {
                         var feed_num = Math.floor(remain_feed / feed_single);
                         if (feed_num > v.gift_num) feed_num = v.gift_num;
                         if (feed_num > 0) {
-                            API.gift.bag_send(Info.uid, v.gift_id, Info.ruid, feed_num, v.bag_id, Info.roomid, Info.rnd, Info.csrf_token).done(function(response) {
+                            API.gift.bag_send(Info.uid, v.gift_id, Info.ruid, feed_num, v.bag_id, Info.roomid, Info.rnd, Info.csrf_token, Info.visit_id).done(function(response) {
                                 DEBUG('TaskGift.send_gift: bag_send', response);
                                 if (response.code === 0) {
                                     // 送礼成功
