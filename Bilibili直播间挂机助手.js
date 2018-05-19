@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.9.3
+// @version      1.9.4
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1312,7 +1312,6 @@
     var TaskLottery = {
         stop: false,
         period: 20,
-        // last_list: [],
         init: function() {
             try {
                 if (!CONFIG.USE_LOTTERY) return;
@@ -1331,38 +1330,14 @@
         work: function() {
             if (TaskLottery.stop) return;
             if (!CONFIG.USE_LOTTERY) return;
-            var lottery_list = [],
-                // lottery_list_temp = [],
-                overlap_index = Infinity;
+            var lottery_list = [];
             $('div.chat-item.system-msg div.msg-content a.link').each(function(index, el) {
                 var matched = el.href.match(/\/(\d+)(\?visit_id=?.*)?/);
                 if (matched && matched[1] && !matched[2]) {
-                    lottery_list.push(matched[1]);
                     el.href += '?visit_id=' + Info.visit_id;
+                    if ($.inArray(matched[1], lottery_list) === -1) lottery_list.push(matched[1]);
                 }
             });
-            /*
-            $.each(lottery_list_temp, function(i, v) {
-                if (i === 0) {
-                    var index = $.inArray(v, TaskLottery.last_list);
-                    if (index > -1) {
-                        overlap_index = TaskLottery.last_list.length - index;
-                    } else {
-                        overlap_index = 0;
-                        lottery_list.push(v);
-                    }
-                } else if (i >= overlap_index) {
-                    lottery_list.push(v);
-                }
-            });
-            DEBUG('TaskLottery.work: last_list', TaskLottery.last_list.toString());
-            TaskLottery.last_list = lottery_list_temp;
-            lottery_list_temp = lottery_list;
-            lottery_list = [];
-            lottery_list_temp.forEach(function(v) {
-                if ($.inArray(v, lottery_list) === -1) lottery_list.push(v);
-            });
-            */
             DEBUG('TaskLottery.work: list', lottery_list.toString());
             $.each(lottery_list, function(i, v) {
                 window.Lottery_join(i, v);
