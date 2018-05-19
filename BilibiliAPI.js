@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili-API
 // @namespace    SeaLoong
-// @version      1.2.0
+// @version      1.2.1
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -77,7 +77,7 @@ var BilibiliAPI = {
             BilibiliAPI.cnt_frequently_ajax = 0;
         }
         BilibiliAPI.last_ajax = Date.now();
-        if (BilibiliAPI.cnt_frequently_ajax > 10) throw new Error('调用Bilibili API太快，可能出现了bug');
+        if (BilibiliAPI.cnt_frequently_ajax > 20) throw new Error('调用Bilibili API太快，可能出现了bug');
         if (settings.xhrFields) {
             jQuery.extend(settings.xhrFields, {
                 withCredentials: true
@@ -101,13 +101,14 @@ var BilibiliAPI = {
             url: '//www.bilibili.com/plus/widget/ajaxGetCaptchaKey.php?js'
         });
     },
-    msg: function(roomid, csrf_token) {
+    msg: function(roomid, csrf_token, visit_id) {
         return BilibiliAPI.ajax({
             type: 'POST',
             url: 'ajax/msg',
             data: {
                 roomid: roomid,
-                csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token
+                csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
+                visit_id: visit_id
             }
         });
     },
@@ -259,6 +260,21 @@ var BilibiliAPI = {
         user_limit_tasks: function() {
             return BilibiliAPI.ajax({
                 url: 'activity/v1/task/user_limit_tasks'
+            });
+        }
+    },
+    fans_medal: {
+        get_fans_medal_info: function(uid, target_id, csrf_token, visit_id) {
+            return BilibiliAPI.ajax({
+                type: 'POST',
+                url: 'fans_medal/v1/fans_medal/get_fans_medal_info',
+                data: {
+                    source: source || 1,
+                    uid: uid,
+                    target_id: target_id,
+                    csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
+                    visit_id: visit_id
+                }
             });
         }
     },
@@ -415,7 +431,7 @@ var BilibiliAPI = {
                 }
             });
         },
-        smalltv_v2: { // 旧小电视API，封号风险
+        smalltv_v2: { // 旧小电视API
             check: function(roomid) {
                 return BilibiliAPI.ajax({
                     url: 'gift/v2/smalltv/check',
@@ -459,7 +475,7 @@ var BilibiliAPI = {
                     data: {
                         roomid: roomid,
                         raffleId: raffleId,
-                        type: type || 'Gift',
+                        type: type || 'Gift', // 'Gift_20003'
                         csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
                         visit_id: visit_id
                     }
@@ -593,7 +609,7 @@ var BilibiliAPI = {
                 data: {
                     source: source || 1,
                     uid: uid,
-                    target_id: target_id, // roomid
+                    target_id: target_id, // ruid
                     visit_id: visit_id,
                     csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token
                 }
