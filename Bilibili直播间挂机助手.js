@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.9.2
+// @version      1.9.3
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -836,10 +836,12 @@
                                 }
                             });
                         } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
+                            /*
                             setTimeout(function() {
                                 SmallTV.notice(roomid, type, response.data.raffleId);
                             }, time * 1e3 + 12e3);
                             toast('[自动抽奖]已参加直播间【' + roomid + '】的小电视/摩天大楼抽奖', 'success');
+                            */
                         }
                     });
                 } else if (response.code === -400) {
@@ -917,10 +919,12 @@
                                 }
                             });
                         } else if (v.status === 2 && v.time > 0) { // 已参加且未开奖
+                            /*
                             setTimeout(function() {
                                 Raffle.notice(roomid, response.data.raffleId);
                             }, time * 1e3 + 24e3);
                             toast('[自动抽奖]已参加直播间【' + roomid + '】的活动抽奖', 'success');
+                            */
                         }
                     });
                 }
