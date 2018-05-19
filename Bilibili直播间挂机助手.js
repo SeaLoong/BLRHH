@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.9.1
+// @version      1.9.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -301,11 +301,12 @@
                 // 模拟访问房间
                 var room_id = window.room_id_list[short_id];
                 if (room_id > 0) {
-                    goToRoom(room_id);
-                    SmallTV.init(room_id);
-                    Raffle.init(room_id);
-                    ZongDu.init(room_id);
-                    // Storm.init(room_id);
+                    goToRoom(room_id).done(function() {
+                        SmallTV.init(room_id);
+                        Raffle.init(room_id);
+                        ZongDu.init(room_id);
+                        // Storm.init(room_id);
+                    });
                 } else {
                     API.room.room_init(short_id).done(function(response) {
                         DEBUG('window.Lottery_join: room_init', response);
@@ -313,14 +314,16 @@
                             room_id = response.data.room_id;
                             if (response.data.encrypted || response.data.is_hidden || response.data.is_locked || response.data.pwd_verified) {
                                 toast('[自动抽奖]疑似钓鱼直播间【' + room_id + '】，不参加该直播间的抽奖', 'caution');
+                                console.warn('[自动抽奖]疑似钓鱼直播间【' + room_id + '】');
                             } else {
                                 if (response.data.short_id > 0 && response.data.short_id != short_id) window.room_id_list[response.data.short_id] = room_id;
                                 window.room_id_list[short_id] = room_id;
-                                goToRoom(room_id);
-                                SmallTV.init(room_id);
-                                Raffle.init(room_id);
-                                ZongDu.init(room_id);
-                                // Storm.init(room_id);
+                                goToRoom(room_id).done(function() {
+                                    SmallTV.init(room_id);
+                                    Raffle.init(room_id);
+                                    ZongDu.init(room_id);
+                                    // Storm.init(room_id);
+                                });
                             }
                         }
                     });
@@ -331,7 +334,7 @@
 
     function goToRoom(room_id) {
         $.get('//live.bilibili.com/' + room_id + '?visit_id=' + Info.visit_id);
-        API.room.room_init(room_id).done(function(response) {
+        return API.room.room_init(room_id).done(function(response) {
             DEBUG('goToRoom: room_init', response);
             if (response.code === 0) {
                 room_id = response.data.room_id;
