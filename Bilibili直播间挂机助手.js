@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.9.4
+// @version      1.9.5
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1453,9 +1453,12 @@
                 if (response.code === 0) {
                     // 完成任务
                     toast('[自动完成任务]完成任务：' + task_id, 'success');
+                } else if (response.code === -400) {
+                    // 奖励已领取
+                    // toast('[自动完成任务]' + task_id + '：' + response.msg, 'info');
                 } else {
-                    toast('[自动完成任务]完成任务时异常', 'caution');
-                    console.warn('[自动签到]完成任务时异常');
+                    toast('[自动完成任务]' + task_id + '：' + response.msg, 'caution');
+                    console.warn('Bilibili直播间挂机助手：[自动完成任务]' + task_id + '：' + response.msg);
                 }
             });
         }
