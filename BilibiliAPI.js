@@ -475,7 +475,7 @@ var BilibiliAPI = {
                     data: {
                         roomid: roomid,
                         raffleId: raffleId,
-                        type: type || 'Gift', // 'Gift_20003'
+                        type: type || 'Gift', // 'GIFT_20003'
                         csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
                         visit_id: visit_id
                     }
