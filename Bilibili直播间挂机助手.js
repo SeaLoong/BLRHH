@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      1.9.5
+// @version      1.9.6
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
 // @supportURL   https://github.com/SeaLoong/Bilibili-LRHH/issues
 // @updateURL    https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js
+// @downloadURL  https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js
 // @include      /https?:\/\/live\.bilibili\.com\/\d+/
 // @require      https://greasyfork.org/scripts/38140-bilibili-api/code/Bilibili-API.js
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
@@ -564,12 +565,12 @@
                                         if (_treasure_box[0]) {
                                             _treasure_box.attr('id', 'old_treasure_box');
                                             _treasure_box.hide();
-                                            DOM.treasure.div = $('<div id="' + NAME + '_treasure_div" class="treasure-box p-relative"></div>');
+                                            DOM.treasure.div = $('<div id="' + NAME + '_treasure_div" class="treasure-box p-relative" style="display: inline-block;float: left;padding: 22px 0 0 15px;"></div>');
                                             DOM.treasure.div_tip = $('<div id="' + NAME + '_treasure_div_tip" class="t-center b-box none-select">自动<br>领取中</div>');
                                             DOM.treasure.div_timer = $('<div id="' + NAME + '_treasure_div_timer" class="t-center b-box none-select">0</div>');
                                             DOM.treasure.image = $('<img id="' + NAME + '_treasure_image" style="display:none">');
                                             DOM.treasure.canvas = $('<canvas id="' + NAME + '_treasure_canvas" style="display:none" height="40" width="120"></canvas>');
-                                            var css_text = 'max-width: 40px;padding: 2px 3px;margin-top: 3px;font-size: 12px;color: #fff;background-color: rgba(0,0,0,.5);border-radius: 10px;';
+                                            var css_text = 'width: 40px;padding: 2px 3px;margin-top: 3px;font-size: 12px;color: #fff;background-color: rgba(0,0,0,.5);border-radius: 10px;';
                                             DOM.treasure.div_tip[0].style = css_text;
                                             DOM.treasure.div_timer[0].style = css_text;
                                             DOM.treasure.div.append(DOM.treasure.div_tip);
