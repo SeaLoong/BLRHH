@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili-API
 // @namespace    SeaLoong
-// @version      1.2.1
+// @version      1.2.2
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -260,6 +260,19 @@ var BilibiliAPI = {
         user_limit_tasks: function() {
             return BilibiliAPI.ajax({
                 url: 'activity/v1/task/user_limit_tasks'
+            });
+        }
+    },
+    av: {
+        getTimestamp: function(csrf_token, visit_id, platform) {
+            return BilibiliAPI.ajax({
+                type: 'POST',
+                url: 'av/v1/Time/getTimestamp',
+                data: {
+                    platform: platform || 'pc',
+                    csrf_token: typeof csrf_token === 'function' ? csrf_token() : csrf_token,
+                    visit_id: visit_id
+                }
             });
         }
     },
