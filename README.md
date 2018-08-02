@@ -3,7 +3,8 @@
 ![ECMAScript2016](https://img.shields.io/badge/ECMAScript-2016-green.svg?longCache=true) ![TamperMonkey](https://img.shields.io/badge/TamperMonkey-pass-green.svg?longCache=true) ![Chromium_67](https://img.shields.io/badge/Chromium_67-pass-green.svg?longCache=true) ![Firefox_61](https://img.shields.io/badge/Firefox_61-pass-green.svg?longCache=true)
  [![Issues](https://img.shields.io/github/issues/SeaLoong/Bilibili-LRHH.svg)](https://github.com/SeaLoong/Bilibili-LRHH/issues)
 
-> 该脚本为TamperMonkey脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不能保证正常运行
+> 该脚本为TamperMonkey脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不能保证正常运行  
+> 当脚本无法正常运行时，请把广告拦截插件关闭后重试
 
 -----------------
 
@@ -46,6 +47,11 @@
 -----------------
 
 ## 更新日志
+> ###  2018-08-03 (Version 2.0.1)
+>     优化了自动抽奖->礼物抽奖的参与方式
+>     增加了移动端心跳5分钟后自动进行一次完成任务的功能
+>     修复了自动送礼不能持续运行的问题
+>     增加了保存设置时会自动修正设置的功能
 > ###  2018-08-02 (Version 2.0.0)
 >     增加了自动应援团签到的功能
 >     增加了移动端心跳的功能(可配合自动完成任务来完成双端观看)
