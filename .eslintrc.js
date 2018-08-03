@@ -6,7 +6,7 @@ module.exports = {
     },
     "extends": "eslint-config-standard",
     "parserOptions": {
-        "ecmaVersion": 2015,
+        "ecmaVersion": 2016,
         "sourceType": "module"
     },
     "rules": {

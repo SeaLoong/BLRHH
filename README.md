@@ -1,6 +1,6 @@
 # Bilibili直播间挂机助手/Bilibili-LRHH/BLRHH
 
-![ECMAScript2016](https://img.shields.io/badge/ECMAScript-2016-green.svg?longCache=true) ![TamperMonkey](https://img.shields.io/badge/TamperMonkey-pass-green.svg?longCache=true) ![Chromium_67](https://img.shields.io/badge/Chromium_67-pass-green.svg?longCache=true) ![Firefox_61](https://img.shields.io/badge/Firefox_61-pass-green.svg?longCache=true)
+![ECMAScript 5](https://img.shields.io/badge/ECMAScript_5-unsupport-red.svg?longCache=true) ![ECMAScript 6](https://img.shields.io/badge/ECMAScript_6-pass-green.svg?longCache=true) ![TamperMonkey 4.6](https://img.shields.io/badge/TamperMonkey_4.6-pass-green.svg?longCache=true) ![Chromium 67](https://img.shields.io/badge/Chromium_67-pass-green.svg?longCache=true) ![Firefox 61](https://img.shields.io/badge/Firefox_61-pass-green.svg?longCache=true)
  [![Issues](https://img.shields.io/github/issues/SeaLoong/Bilibili-LRHH.svg)](https://github.com/SeaLoong/Bilibili-LRHH/issues)
 
 > 该脚本为TamperMonkey脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不能保证正常运行  
@@ -11,7 +11,7 @@
 ## 如何使用
 1. 见[GreasyFork](https://greasyfork.org/zh-CN) 首页说明
 2. 进入[Bilibili直播间挂机助手](https://greasyfork.org/zh-CN/scripts/37095-bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B)页面，点击"安装此脚本"即可从GreasyFork更新此脚本
-3. 或者点击上方的[Bilibili直播间挂机助手](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js)，将代码复制下来。然后从脚本管理器中新建一个脚本，将自动生成的内容删除，粘贴复制的代码即可从Github更新此脚本
+3. 或者点击[Bilibili直播间挂机助手](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js)，将代码复制下来。然后从脚本管理器中新建一个脚本，将自动生成的内容删除，粘贴复制的代码即可从Github更新此脚本
 
 -----------------
 
@@ -30,6 +30,8 @@
 ## 注意
     自动抽奖功能有封号风险，使用前请做好心理准备
     挂在直播间过久极有可能导致页面崩溃(吃内存过多)
+    开启自动抽奖->礼物抽奖功能后，很容易在控制台看到许多Error，这些大多是B站的脚本错误，不用理会
+    要检索此脚本的控制台输出只要过滤显示带有"[BLRHH]"字样的输出即可
 
 -----------------
 
@@ -47,6 +49,9 @@
 -----------------
 
 ## 更新日志
+> ###  2018-08-03 (Version 2.0.2)
+>     修复了自动抽奖->礼物抽奖在运行时会出现其他直播间声音的问题
+>     优化了自动抽奖->礼物抽奖的参与方式
 > ###  2018-08-03 (Version 2.0.1)
 >     优化了自动抽奖->礼物抽奖的参与方式
 >     增加了移动端心跳5分钟后自动进行一次完成任务的功能
@@ -79,7 +84,6 @@
 > ### 2018-03-10
 >     在Github上创建脚本仓库
 >     更新领取银瓜子的功能
-> -----------------
 > ### 2018-02-15
 >     修正了节奏风暴有关功能的实现逻辑
 >     在GreasyFork上删除脚本

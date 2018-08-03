@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.1
+// @version      2.0.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -90,6 +90,36 @@
                 // 拒绝所有非API的ajax访问
                 if (settings.url.indexOf('api.live.bilibili.com') === -1) request.abort();
             });
+            // 拦截弹幕服务器连接
+            let webSocketConstructor = WebSocket.prototype.constructor;
+            WebSocket.prototype.constructor = (url, protocols) => {
+                if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
+                throw new Error('弹幕服务器连接已拦截 by ' + NAME);
+            };
+            // 拦截直播流
+            // let windowFetch = window.fetch;
+            window.fetch = () => new Promise(() => {
+                throw new Error('子脚本fetch已拦截 by ' + NAME);
+            });
+            // 清空页面元素和节点
+            try {
+                $('html').remove();
+            } catch (err) {};
+            // 读取父脚本数据
+            window.toast = window.parent.toast;
+            Info = window.parent[NAME].Info;
+            CONFIG = window.parent[NAME].CONFIG;
+            CACHE = window.parent[NAME].CACHE;
+            window[NAME].promise.sync.then(() => {
+                Info = window.parent[NAME].Info;
+                CONFIG = window.parent[NAME].CONFIG;
+                CACHE = window.parent[NAME].CACHE;
+                window[NAME].promise.sync = $.Deferred();
+            });
+            window[NAME].Lottery = {
+                list: []
+            };
+            // 正式执行子脚本
             const Lottery = {
                 ws: undefined,
                 Gift: {
@@ -142,7 +172,6 @@
                         obj.raffleId = parseInt(obj.raffleId, 10); // 有时候会出现raffleId是string的情况(破站)
                         // raffleId过滤，防止重复参加
                         if (window[NAME].Lottery.list.some(v => v === obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
-
                         const p = $.Deferred(); // 这个Promise在notice之后resolve，如果设置不提示则直接resolve
                         const p1 = $.Deferred(); // 这个Promise在延时时间到的时候resolve
                         p1.then(() => {
@@ -259,45 +288,13 @@
                     }
                 }
             };
-            let empty_innerHTML_cnt = 0;
-            let timer_clear = setInterval(() => {
-                try {
-                    if (document.body.innerHTML === '') empty_innerHTML_cnt++;
-                    document.body.innerHTML = '';
-                    document.getElementsByTagName('head')[0].innerHTML = '';
-                    if (empty_innerHTML_cnt > 10) {
-                        if (timer_clear) clearInterval(timer_clear);
-                        timer_clear = undefined;
-                    }
-                } catch (err) {};
-            }, 1e3);
-            try {
-                document.body.innerHTML = '';
-                document.getElementsByTagName('head')[0].innerHTML = '';
-            } catch (err) {};
-            window.toast = window.parent.toast;
-            Info = window.parent[NAME].Info;
-            CONFIG = window.parent[NAME].CONFIG;
-            CACHE = window.parent[NAME].CACHE;
-            // 读取父脚本数据
-            window[NAME].promise.sync.then(() => {
-                Info = window.parent[NAME].Info;
-                CONFIG = window.parent[NAME].CONFIG;
-                CACHE = window.parent[NAME].CACHE;
-                window[NAME].promise.sync = $.Deferred();
-            });
-            window[NAME].Lottery = {
-                list: []
-            };
             let timer_next, timer_max_time;
             let new_raffle = false;
             let run_finished = false;
             let raffleList = [];
             const finish = () => {
-                Lottery.ws.close();
+                if (Lottery.ws.readyState === WebSocket.OPEN) Lottery.ws.close();
                 Lottery.ws = undefined;
-                if (timer_clear) clearInterval(timer_clear);
-                timer_clear = undefined;
                 window[NAME].promise.finish.resolve();
             };
             Lottery.ws = new API.DanmuWebSocket(Info.uid, window[NAME].roomid);
@@ -447,7 +444,7 @@
                                     list.forEach((v) => {
                                         v.style.top = (parseInt(v.style.top, 10) - 40) + 'px';
                                     });
-                                    a.parentNode.removeChild(a);
+                                    $(a).remove();
                                 }, 200);
                             }, timeout);
                         };
@@ -644,7 +641,11 @@
                         GIFT_ALLOWED: () => ('设置允许送的礼物类型编号(任何未在此列表的礼物一定不会被送出!)，多个请用英文逗号(,)隔开，为空则表示允许送出所有类型的礼物<br><br>' + Info.gift_list_str),
                         SEND_TODAY: '送出包裹中今天到期的礼物(会送出"默认礼物类型"之外的礼物，若今日亲密度已满则不送)'
                     },
-                    SILVER2COIN: '用银瓜子兑换硬币(每天每个接口各能兑换一次)<br>新接口：700银瓜子兑换1个硬币<br>旧接口：1400银瓜子兑换1个硬币',
+                    SILVER2COIN: '用银瓜子兑换硬币(每天每个接口各能兑换一次)',
+                    SILVER2COIN_CONFIG: {
+                        USE_NEW: '新接口：700银瓜子兑换1个硬币',
+                        USE_OLD: '旧接口：1400银瓜子兑换1个硬币<br>该接口已经不能使用'
+                    },
                     AUTO_DAILYREWARD: '(该功能未实现)',
                     SHOW_TOAST: '选择是否显示浮动提示，但提示信息依旧会在控制台显示'
                 },
@@ -903,7 +904,7 @@
                         if (Object.prototype.toString.call(CACHE) !== '[object Object]') throw new Error();
                     } catch (err) {
                         CACHE = {
-                            last_aid: 162
+                            last_aid: 163
                         };
                         localStorage.setItem(NAME + '_CACHE', JSON.stringify(CACHE));
                     }
@@ -1805,14 +1806,14 @@
             create: (roomid) => {
                 // roomid过滤，防止创建多个同样roomid的iframe
                 if (window[NAME].Lottery.iframeList.some(v => v.contentWindow[NAME].roomid === roomid)) return;
-                const iframe = $('<iframe></iframe>')[0];
+                const iframe = $('<iframe style="display: none;"></iframe>')[0];
                 iframe.src = '//live.bilibili.com/' + roomid + '?visit_id=' + Info.visit_id;
                 document.body.appendChild(iframe);
                 const p = $.Deferred();
                 p.then(() => {
                     $.each(window[NAME].Lottery.iframeList, (i, v) => {
                         if (v.contentWindow[NAME].roomid === roomid) {
-                            document.body.removeChild(v);
+                            $(v).remove();
                             window[NAME].Lottery.iframeList.splice(i, 1);
                             return false;
                         }
@@ -1863,23 +1864,27 @@
                                     timer_same_roomid_maxtime = undefined;
                                     Lottery.create(last_roomid);
                                 } else {
-                                    // 连续收到抽奖消息等待9s
-                                    timer_last_roomid = setTimeout(() => {
-                                        // 过9s没抽奖消息的处理
-                                        if (timer_same_roomid_maxtime) clearTimeout(timer_same_roomid_maxtime);
-                                        timer_same_roomid_maxtime = undefined;
-                                        timer_last_roomid = undefined;
-                                        Lottery.create(obj.real_roomid);
-                                    }, 9e3);
-                                    // 同一直播间等待150s
-                                    timer_same_roomid_maxtime = setTimeout(() => {
-                                        // 过150s还是同一个直播间的处理
-                                        if (timer_last_roomid) clearTimeout(timer_last_roomid);
-                                        timer_last_roomid = undefined;
-                                        timer_same_roomid_maxtime = undefined;
-                                        Lottery.create(obj.real_roomid);
-                                    }, 150e3);
+                                    if (!timer_same_roomid_maxtime) {
+                                        // 同一直播间等待150s
+                                        timer_same_roomid_maxtime = setTimeout(() => {
+                                            // 过150s还是同一个直播间的处理
+                                            if (timer_last_roomid) clearTimeout(timer_last_roomid);
+                                            timer_last_roomid = undefined;
+                                            timer_same_roomid_maxtime = undefined;
+                                            Lottery.create(obj.real_roomid);
+                                            last_roomid = undefined;
+                                        }, 150e3);
+                                    }
                                 }
+                                // 连续收到抽奖消息等待9s
+                                timer_last_roomid = setTimeout(() => {
+                                    // 过9s没抽奖消息的处理
+                                    if (timer_same_roomid_maxtime) clearTimeout(timer_same_roomid_maxtime);
+                                    timer_same_roomid_maxtime = undefined;
+                                    timer_last_roomid = undefined;
+                                    Lottery.create(obj.real_roomid);
+                                    last_roomid = undefined;
+                                }, 9e3);
                                 last_roomid = obj.real_roomid;
                                 break;
                             case 'GUARD_MSG':
