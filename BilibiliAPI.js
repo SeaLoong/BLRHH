@@ -89,8 +89,7 @@ var BilibiliAPI = {
             url: (settings.url.substr(0, 2) === '//' ? '' : '//api.live.bilibili.com/') + settings.url,
             method: settings.method || 'GET',
             crossDomain: true,
-            dataType: settings.dataType || 'json',
-            timeout: 5000
+            dataType: settings.dataType || 'json'
         });
         return jQuery.ajax(settings);
     },

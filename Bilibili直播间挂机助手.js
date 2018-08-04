@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.3
+// @version      2.0.4
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -944,6 +944,15 @@
             run: () => {
                 try {
                     if (!CONFIG.AUTO_SIGN) return;
+                    if (CACHE.sign_ts) {
+                        const d = new Date(CACHE.sign_ts);
+                        d.setHours(0, 0, 0, 0);
+                        if (ts_ms() - d.valueOf() < 86400e3) {
+                            // 同一天，不再检查签到
+                            runTommorrow(Sign.run);
+                            return;
+                        }
+                    }
                     API.sign.doSign().then((response) => {
                         DEBUG('Sign.run: doSign', response);
                         if (response.code === 0) {
@@ -954,6 +963,7 @@
                         } else {
                             window.toast('[自动签到]' + response.data.text, 'caution');
                         }
+                        CACHE.sign_ts = ts_ms();
                         runTommorrow(Sign.run);
                     }, () => {
                         window.toast('[自动签到]签到失败，请检查网络', 'error');
@@ -995,9 +1005,19 @@
             run: () => {
                 try {
                     if (!CONFIG.AUTO_GROUP_SIGN) return;
+                    if (CACHE.group_sign_ts) {
+                        const d = new Date(CACHE.group_sign_ts);
+                        d.setHours(0, 0, 0, 0);
+                        if (ts_ms() - d.valueOf() < 86400e3) {
+                            // 同一天，不再检查应援团签到
+                            runTommorrow(GroupSign.run, 6);
+                            return;
+                        }
+                    }
                     GroupSign.getGroups().then((list) => {
                         GroupSign.signInList(list);
                     }).always(() => {
+                        CACHE.group_sign_ts = ts_ms();
                         runTommorrow(GroupSign.run, 6);
                     });
                 } catch (err) {
@@ -1011,11 +1031,21 @@
             run: () => {
                 try {
                     if (!CONFIG.SILVER2COIN) return;
+                    if (CACHE.exchange_ts) {
+                        const d = new Date(CACHE.exchange_ts);
+                        d.setHours(0, 0, 0, 0);
+                        if (ts_ms() - d.valueOf() < 86400e3) {
+                            // 同一天，不再兑换硬币
+                            runTommorrow(Exchange.run);
+                            return;
+                        }
+                    }
                     let p1 = $.Deferred().resolve();
                     let p2 = $.Deferred().resolve();
                     if (CONFIG.SILVER2COIN_CONFIG.USE_NEW) p1 = Exchange.silver2coin();
                     if (CONFIG.SILVER2COIN_CONFIG.USE_OLD) p2 = Exchange.silver2coin_old();
                     $.when(p1, p2).always(() => {
+                        CACHE.exchange_ts = ts_ms();
                         runTommorrow(Exchange.run);
                     });
                 } catch (err) {
@@ -1105,9 +1135,10 @@
         }; // Once Run every day
         */
         const Task = {
+            interval: 3600e3,
             double_watch_task: false,
             run_timer: undefined,
-            run: () => {
+            run: (refer = undefined) => {
                 try {
                     if (!CONFIG.AUTO_TASK) return;
                     if (!Info.mobile_verify) {
@@ -1115,6 +1146,15 @@
                         return;
                     }
                     if (Task.run_timer) clearTimeout(Task.run_timer);
+                    if (CACHE.task_ts && refer !== 'MobileHeartbeat') {
+                        const d = new Date(CACHE.task_ts);
+                        d.setHours(0, 0, 0, 0);
+                        const diff = ts_ms() - d.valueOf();
+                        if (diff < Task.interval) {
+                            Task.run_timer = setTimeout(Task.run, diff);
+                            return;
+                        }
+                    }
                     const func = (response) => {
                         for (const key in response.data) {
                             if (typeof response.data[key] === 'object') {
@@ -1126,7 +1166,8 @@
                     };
                     window.toast('[自动完成任务]检查任务完成情况', 'info');
                     API.i.taskInfo().then(func).always(() => {
-                        Task.run_timer = setTimeout(Task.run, 3600e3);
+                        CACHE.task_ts = ts_ms();
+                        Task.run_timer = setTimeout(Task.run, Task.interval);
                     });
                 } catch (err) {
                     window.toast('[自动完成任务]运行时出现异常，已停止', 'error');
@@ -1153,6 +1194,7 @@
         }; // Once Run every hour
 
         const Gift = {
+            interval: 3600e3,
             run_timer: undefined,
             ruid: undefined,
             room_id: undefined,
@@ -1191,6 +1233,15 @@
                 try {
                     if (!CONFIG.AUTO_GIFT || (CONFIG.AUTO_GIFT && CONFIG.AUTO_GIFT_CONFIG.ROOMID <= 0)) return;
                     if (Gift.run_timer) clearTimeout(Gift.run_timer);
+                    if (CACHE.gift_ts) {
+                        const d = new Date(CACHE.gift_ts);
+                        d.setHours(0, 0, 0, 0);
+                        const diff = ts_ms() - d.valueOf();
+                        if (diff < Gift.interval) {
+                            Gift.run_timer = setTimeout(Gift.run, diff);
+                            return;
+                        }
+                    }
                     const func = () => {
                         window.toast('[自动送礼]送礼失败，请检查网络', 'error');
                     };
@@ -1204,6 +1255,7 @@
                                     Gift.ruid = v.target_id;
                                     Gift.remain_feed = v.day_limit - v.today_feed;
                                     Gift.getBagList().then(() => {
+                                        CACHE.gift_ts = ts_ms();
                                         if (CONFIG.AUTO_GIFT_CONFIG.IGNORE_FEED) {
                                             window.toast('[自动送礼]忽略今日亲密度上限，送礼开始', 'info');
                                             Gift.sendGift();
@@ -1230,7 +1282,7 @@
             sendGift: (i = 0) => {
                 if (i >= Gift.bag_list.length) {
                     window.toast('[自动送礼]送礼结束，1小时后再次送礼', 'info');
-                    Gift.run_timer = setTimeout(Gift.run, 3600e3);
+                    Gift.run_timer = setTimeout(Gift.run, Gift.interval);
                     return $.Deferred().resolve();
                 }
                 if (Gift.remain_feed <= 0 && !CONFIG.AUTO_GIFT_CONFIG.IGNORE_FEED) {
@@ -1274,7 +1326,7 @@
             run: () => {
                 try {
                     if (!CONFIG.MOBILE_HEARTBEAT) return;
-                    if (MobileHeartbeat.run_timer && !Task.double_watch_task) Task.run();
+                    if (MobileHeartbeat.run_timer && !Task.double_watch_task) Task.run('MobileHeartbeat');
                     if (MobileHeartbeat.run_timer) clearTimeout(MobileHeartbeat.run_timer);
                     API.HeartBeat.mobile().always(() => {
                         MobileHeartbeat.run_timer = setTimeout(MobileHeartbeat.run, 300e3);
@@ -1384,6 +1436,14 @@
             run: () => {
                 try {
                     if (!CONFIG.AUTO_TREASUREBOX || !TreasureBox.timer) return;
+                    if (CACHE.treasure_box_ts) {
+                        const d = new Date(CACHE.treasure_box_ts);
+                        d.setHours(0, 0, 0, 0);
+                        if (ts_ms() - d.valueOf() < 86400e3) {
+                            runTommorrow(TreasureBox.run);
+                            return;
+                        }
+                    }
                     TreasureBox.getCurrentTask().then((response) => {
                         if (response.code === 0) {
                             // 获取任务成功
@@ -1408,6 +1468,7 @@
                             // 今天所有的宝箱已经领完!
                             TreasureBox.setMsg('今日<br>已领完');
                             // window.toast('[自动领取瓜子]' + response.msg, 'info');
+                            CACHE.treasure_box_ts = ts_ms();
                             runTommorrow(TreasureBox.run);
                         } else {
                             window.toast('[自动领取瓜子]' + response.msg, 'caution');
@@ -1834,6 +1895,11 @@
             run: () => {
                 try {
                     if (!CONFIG.AUTO_LOTTERY) return;
+                    if (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY) Lottery.MaterialObject.run();
+                    if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY && !CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) {
+                        window.toast('[自动抽奖]不需要连接弹幕服务器', 'info');
+                        return;
+                    }
                     window[NAME].Lottery = {
                         stop: false, // 标记是否停止抽奖
                         iframeList: [] // 记录已经创建的iframe
@@ -1969,7 +2035,6 @@
                             default:
                         }
                     });
-                    if (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY) Lottery.MaterialObject.run();
                 } catch (err) {
                     window.toast('[自动抽奖]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
