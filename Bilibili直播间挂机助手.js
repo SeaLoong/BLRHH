@@ -964,6 +964,7 @@
                             window.toast('[自动签到]' + response.data.text, 'caution');
                         }
                         CACHE.sign_ts = ts_ms();
+                        Essential.Cache.save();
                         runTommorrow(Sign.run);
                     }, () => {
                         window.toast('[自动签到]签到失败，请检查网络', 'error');
@@ -1018,6 +1019,7 @@
                         GroupSign.signInList(list);
                     }).always(() => {
                         CACHE.group_sign_ts = ts_ms();
+                        Essential.Cache.save();
                         runTommorrow(GroupSign.run, 6);
                     });
                 } catch (err) {
@@ -1046,6 +1048,7 @@
                     if (CONFIG.SILVER2COIN_CONFIG.USE_OLD) p2 = Exchange.silver2coin_old();
                     $.when(p1, p2).always(() => {
                         CACHE.exchange_ts = ts_ms();
+                        Essential.Cache.save();
                         runTommorrow(Exchange.run);
                     });
                 } catch (err) {
@@ -1167,6 +1170,7 @@
                     window.toast('[自动完成任务]检查任务完成情况', 'info');
                     API.i.taskInfo().then(func).always(() => {
                         CACHE.task_ts = ts_ms();
+                        Essential.Cache.save();
                         Task.run_timer = setTimeout(Task.run, Task.interval);
                     });
                 } catch (err) {
@@ -1256,6 +1260,7 @@
                                     Gift.remain_feed = v.day_limit - v.today_feed;
                                     Gift.getBagList().then(() => {
                                         CACHE.gift_ts = ts_ms();
+                                        Essential.Cache.save();
                                         if (CONFIG.AUTO_GIFT_CONFIG.IGNORE_FEED) {
                                             window.toast('[自动送礼]忽略今日亲密度上限，送礼开始', 'info');
                                             Gift.sendGift();
@@ -1469,6 +1474,7 @@
                             TreasureBox.setMsg('今日<br>已领完');
                             // window.toast('[自动领取瓜子]' + response.msg, 'info');
                             CACHE.treasure_box_ts = ts_ms();
+                            Essential.Cache.save();
                             runTommorrow(TreasureBox.run);
                         } else {
                             window.toast('[自动领取瓜子]' + response.msg, 'caution');
