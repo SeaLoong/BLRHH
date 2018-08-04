@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.2
+// @version      2.0.3
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -18,11 +18,13 @@
 // ==/UserScript==
 
 /*
-若遇到脚本加载需要很久且自动领取瓜子功能不能正常使用，请尝试将上面的
+若遇到脚本加载需要很久且不能正常使用，请尝试替换require源，然后刷新页面重新加载脚本
+[greasyfork源]
+// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
-替换为
+[github源]
+// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
 // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
-然后刷新页面重新加载脚本
 */
 
 (function BLRHH() {
@@ -1846,6 +1848,7 @@
                     }, undefined, (obj) => {
                         switch (obj.cmd) {
                             case 'SYS_MSG':
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                                 if (window[NAME].Lottery.stop || obj.real_roomid === undefined) break;
                                 if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_QUESTIONABLE_LOTTERY) {
                                     if (obj.broadcast_type === 1) break;
@@ -1888,13 +1891,16 @@
                                 last_roomid = obj.real_roomid;
                                 break;
                             case 'GUARD_MSG':
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
                                 if (obj.roomid === undefined) break;
                                 Lottery.Guard.run(obj.roomid);
                                 break;
                             case 'GUARD_BUY':
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
                                 Lottery.Guard.run(Info.roomid);
                                 break;
                             case 'RAFFLE_START':
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                                 if (window[NAME].Lottery.stop) break;
                                 API.Lottery.Gift.join(Info.roomid, obj.data.raffleId, Info.csrf_token, Info.visit_id).then((response) => {
                                     switch (response.code) {
@@ -1921,6 +1927,7 @@
                                 });
                                 break;
                             case 'RAFFLE_END':
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                                 if (window[NAME].Lottery.stop) break;
                                 API.Lottery.Gift.notice(obj.data.raffleId, obj.data.type).then((response) => {
                                     DEBUG('Lottery.Gift.notice: API.Lottery.Gift.notice', response);
