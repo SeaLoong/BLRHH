@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.4
+// @version      2.0.5
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1141,7 +1141,8 @@
             interval: 3600e3,
             double_watch_task: false,
             run_timer: undefined,
-            run: (refer = undefined) => {
+            MobileHeartbeat: false,
+            run: () => {
                 try {
                     if (!CONFIG.AUTO_TASK) return;
                     if (!Info.mobile_verify) {
@@ -1149,15 +1150,14 @@
                         return;
                     }
                     if (Task.run_timer) clearTimeout(Task.run_timer);
-                    if (CACHE.task_ts && refer !== 'MobileHeartbeat') {
-                        const d = new Date(CACHE.task_ts);
-                        d.setHours(0, 0, 0, 0);
-                        const diff = ts_ms() - d.valueOf();
+                    if (CACHE.task_ts && !Task.MobileHeartbeat) {
+                        const diff = ts_ms() - new Date(CACHE.task_ts);
                         if (diff < Task.interval) {
                             Task.run_timer = setTimeout(Task.run, diff);
                             return;
                         }
                     }
+                    if (Task.MobileHeartbeat) Task.MobileHeartbeat = false;
                     const func = (response) => {
                         for (const key in response.data) {
                             if (typeof response.data[key] === 'object') {
@@ -1238,9 +1238,7 @@
                     if (!CONFIG.AUTO_GIFT || (CONFIG.AUTO_GIFT && CONFIG.AUTO_GIFT_CONFIG.ROOMID <= 0)) return;
                     if (Gift.run_timer) clearTimeout(Gift.run_timer);
                     if (CACHE.gift_ts) {
-                        const d = new Date(CACHE.gift_ts);
-                        d.setHours(0, 0, 0, 0);
-                        const diff = ts_ms() - d.valueOf();
+                        const diff = ts_ms() - new Date(CACHE.gift_ts);
                         if (diff < Gift.interval) {
                             Gift.run_timer = setTimeout(Gift.run, diff);
                             return;
@@ -1331,7 +1329,10 @@
             run: () => {
                 try {
                     if (!CONFIG.MOBILE_HEARTBEAT) return;
-                    if (MobileHeartbeat.run_timer && !Task.double_watch_task) Task.run('MobileHeartbeat');
+                    if (MobileHeartbeat.run_timer && !Task.double_watch_task) {
+                        Task.MobileHeartbeat = true;
+                        Task.run();
+                    }
                     if (MobileHeartbeat.run_timer) clearTimeout(MobileHeartbeat.run_timer);
                     API.HeartBeat.mobile().always(() => {
                         MobileHeartbeat.run_timer = setTimeout(MobileHeartbeat.run, 300e3);
@@ -1445,6 +1446,7 @@
                         const d = new Date(CACHE.treasure_box_ts);
                         d.setHours(0, 0, 0, 0);
                         if (ts_ms() - d.valueOf() < 86400e3) {
+                            TreasureBox.setMsg('今日<br>已领完');
                             runTommorrow(TreasureBox.run);
                             return;
                         }
