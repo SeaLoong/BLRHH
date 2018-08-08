@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.5
+// @version      2.0.6
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -96,12 +96,12 @@
             let webSocketConstructor = WebSocket.prototype.constructor;
             WebSocket.prototype.constructor = (url, protocols) => {
                 if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
-                throw new Error('弹幕服务器连接已拦截 by ' + NAME);
+                throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
             };
             // 拦截直播流
             // let windowFetch = window.fetch;
             window.fetch = () => new Promise(() => {
-                throw new Error('子脚本fetch已拦截 by ' + NAME);
+                throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
             });
             // 清空页面元素和节点
             try {
@@ -116,7 +116,8 @@
                 Info = window.parent[NAME].Info;
                 CONFIG = window.parent[NAME].CONFIG;
                 CACHE = window.parent[NAME].CACHE;
-                window[NAME].promise.sync = $.Deferred();
+                // 这里不能直接重置window[NAME].promise.sync为新的promise，要回到主脚本中重置
+                window[NAME].promise.syncFinish.resolve();
             });
             window[NAME].Lottery = {
                 list: []
@@ -172,6 +173,7 @@
                         if (i >= raffleList.length) return $.Deferred().resolve();
                         const obj = raffleList[i];
                         obj.raffleId = parseInt(obj.raffleId, 10); // 有时候会出现raffleId是string的情况(破站)
+                        if (isNaN(obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
                         // raffleId过滤，防止重复参加
                         if (window[NAME].Lottery.list.some(v => v === obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
                         const p = $.Deferred(); // 这个Promise在notice之后resolve，如果设置不提示则直接resolve
@@ -377,7 +379,6 @@
             let t = new Date();
             t.setDate(t.getDate() + 1);
             t.setHours(0 + extraHours, 1, 0, 0);
-            t.toString();
             setTimeout(callback, t.valueOf() - Date.now());
         };
 
@@ -538,10 +539,6 @@
                         IGNORE_FEED: false
                     },
                     SILVER2COIN: false,
-                    SILVER2COIN_CONFIG: {
-                        USE_NEW: true,
-                        USE_OLD: true
-                    },
                     AUTO_DAILYREWARD: true,
                     AUTO_DAILYREWARD_CONFIG: {
                         LOGIN: true,
@@ -586,10 +583,6 @@
                         IGNORE_FEED: '忽略今日亲密度上限'
                     },
                     SILVER2COIN: '银瓜子换硬币',
-                    SILVER2COIN_CONFIG: {
-                        USE_NEW: '使用新接口',
-                        USE_OLD: '使用旧接口'
-                    },
                     AUTO_DAILYREWARD: '自动每日奖励(未实现)',
                     AUTO_DAILYREWARD_CONFIG: {
                         LOGIN: '登录',
@@ -643,11 +636,7 @@
                         GIFT_ALLOWED: () => ('设置允许送的礼物类型编号(任何未在此列表的礼物一定不会被送出!)，多个请用英文逗号(,)隔开，为空则表示允许送出所有类型的礼物<br><br>' + Info.gift_list_str),
                         SEND_TODAY: '送出包裹中今天到期的礼物(会送出"默认礼物类型"之外的礼物，若今日亲密度已满则不送)'
                     },
-                    SILVER2COIN: '用银瓜子兑换硬币(每天每个接口各能兑换一次)',
-                    SILVER2COIN_CONFIG: {
-                        USE_NEW: '新接口：700银瓜子兑换1个硬币',
-                        USE_OLD: '旧接口：1400银瓜子兑换1个硬币<br>该接口已经不能使用'
-                    },
+                    SILVER2COIN: '用银瓜子兑换硬币，每天只能兑换一次<br>700银瓜子兑换1个硬币',
                     AUTO_DAILYREWARD: '(该功能未实现)',
                     SHOW_TOAST: '选择是否显示浮动提示，但提示信息依旧会在控制台显示'
                 },
@@ -842,6 +831,7 @@
                                 break;
                             case 'number':
                                 cfg[item] = parseFloat(e.val());
+                                if (isNaN(cfg[item])) cfg[item] = 0;
                                 break;
                             case 'boolean':
                                 cfg[item] = e.is(':checked');
@@ -852,6 +842,7 @@
                                 else cfg[item] = value.split(',');
                                 cfg[item].forEach((v, i) => {
                                     cfg[item][i] = parseFloat(v);
+                                    if (isNaN(cfg[item][i])) cfg[item][i] = 0;
                                 });
                                 break;
                             case 'object':
@@ -905,9 +896,7 @@
                         CACHE = JSON.parse(localStorage.getItem(NAME + '_CACHE'));
                         if (Object.prototype.toString.call(CACHE) !== '[object Object]') throw new Error();
                     } catch (err) {
-                        CACHE = {
-                            last_aid: 163
-                        };
+                        CACHE = {};
                         localStorage.setItem(NAME + '_CACHE', JSON.stringify(CACHE));
                     }
                     DEBUG('Essential.Cache.load: CACHE', CACHE);
@@ -929,6 +918,12 @@
                         window[NAME].CACHE = CACHE;
                         if (window[NAME].Lottery && window[NAME].Lottery.iframeList) {
                             window[NAME].Lottery.iframeList.forEach((v) => {
+                                v.contentWindow[NAME].promise.syncFinish = $.Deferred(); // 同步完成后，被resolve
+                                v.contentWindow[NAME].promise.syncFinish.always(() => {
+                                    // 同步完成后，创建新的promise
+                                    v.contentWindow[NAME].promise.sync = $.Deferred();
+                                    v.contentWindow[NAME].promise.syncFinish = $.Deferred();
+                                });
                                 v.contentWindow[NAME].promise.sync.resolve();
                             });
                         }
@@ -1042,11 +1037,7 @@
                             return;
                         }
                     }
-                    let p1 = $.Deferred().resolve();
-                    let p2 = $.Deferred().resolve();
-                    if (CONFIG.SILVER2COIN_CONFIG.USE_NEW) p1 = Exchange.silver2coin();
-                    if (CONFIG.SILVER2COIN_CONFIG.USE_OLD) p2 = Exchange.silver2coin_old();
-                    $.when(p1, p2).always(() => {
+                    Exchange.silver2coin().always(() => {
                         CACHE.exchange_ts = ts_ms();
                         Essential.Cache.save();
                         runTommorrow(Exchange.run);
@@ -1061,33 +1052,16 @@
                     DEBUG('Exchange.silver2coin: API.SilverCoinExchange.silver2coin', response);
                     if (response.code === 0) {
                         // 兑换成功
-                        window.toast('[银瓜子换硬币][新接口]兑换成功', 'success');
+                        window.toast('[银瓜子换硬币]' + response.msg, 'success');
                     } else if (response.code === 403) {
                         // 每天最多能兑换 1 个
                         // 银瓜子余额不足
-                        window.toast('[银瓜子换硬币][新接口]' + response.msg, 'info');
+                        // window.toast('[银瓜子换硬币]' + response.msg, 'info');
                     } else {
-                        window.toast('[银瓜子换硬币][新接口]' + response.msg, 'caution');
+                        window.toast('[银瓜子换硬币]' + response.msg, 'caution');
                     }
                 }, () => {
-                    window.toast('[银瓜子换硬币][新接口]兑换失败，请检查网络', 'error');
-                });
-            },
-            silver2coin_old: () => {
-                return API.Exchange.old.silver2coin(Info.csrf_token).then((response) => {
-                    DEBUG('Exchange.silver2coin_old: API.SilverCoinExchange.old.silver2coin', response);
-                    if (response.code === 0) {
-                        // 兑换成功
-                        window.toast('[银瓜子换硬币][旧接口]兑换成功', 'success');
-                    } else if (response.code === -403) {
-                        // 每天最多能兑换 1 个
-                        // 银瓜子余额不足
-                        window.toast('[银瓜子换硬币][旧接口]' + response.msg, 'info');
-                    } else {
-                        window.toast('[银瓜子换硬币][旧接口]' + response.msg, 'caution');
-                    }
-                }, () => {
-                    window.toast('[银瓜子换硬币][旧接口]兑换失败，请检查网络', 'error');
+                    window.toast('[银瓜子换硬币]兑换失败，请检查网络', 'error');
                 });
             }
         }; // Once Run every day
@@ -1396,6 +1370,7 @@
                         }
                         TreasureBox.timer = setInterval(() => {
                             let t = parseInt(TreasureBox.DOM.div_timer.text(), 10);
+                            if (isNaN(t)) t = 0;
                             if (t > 0) TreasureBox.DOM.div_timer.text((t - 1) + 's');
                             else TreasureBox.DOM.div_timer.hide();
                         }, 1e3);
@@ -1460,7 +1435,7 @@
                                     // 验证码识别完成
                                     TreasureBox.getAward(captcha).then(() => {
                                         TreasureBox.run();
-                                    }); // 领取成功
+                                    });
                                 });
                             });
                             let t = response.data.time_end - ts_s() + 1;
@@ -1498,7 +1473,8 @@
                 TreasureBox.DOM.div_tip.html(htmltext);
             },
             getAward: (captcha, cnt = 0) => {
-                if (!CONFIG.AUTO_TREASUREBOX || cnt > 3) return $.Deferred().reject();
+                if (!CONFIG.AUTO_TREASUREBOX) return $.Deferred().reject();
+                if (cnt > 3) return $.Deferred().resolve(); // 3次时间未到，重新运行任务
                 return API.TreasureBox.getAward(ts_s(), ts_s(), captcha).then((response) => {
                     DEBUG('TreasureBox.getAward: getAward', response);
                     switch (response.code) {
@@ -1760,6 +1736,7 @@
                 },
                 check: (aid, valid = false) => {
                     aid = parseInt(aid || (CACHE.last_aid + 1), 10);
+                    if (isNaN(aid)) aid = 163;
                     DEBUG('Lottery.MaterialObject.check: aid:', aid);
                     return API.Lottery.MaterialObject.getStatus(aid).then((response) => {
                         if (response.code === 0) {
@@ -2075,7 +2052,7 @@
                                 if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0 || !window.__statisObserver) return false;
                                 clearTimeout(timer_p2);
                                 timer_p2 = undefined;
-                                if (parseInt(window.BilibiliLive.UID, 10) === 0) {
+                                if (parseInt(window.BilibiliLive.UID, 10) === 0 || isNaN(parseInt(window.BilibiliLive.UID, 10))) {
                                     window.toast('你还没有登录，助手无法使用！', 'caution');
                                     p.reject();
                                     return true;
