@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.6
+// @version      2.0.7
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -520,7 +520,8 @@
                             DELAY_MIN: 5,
                             DELAY_MAX: 10,
                             DISCARD_RATE: 0.01,
-                            IGNORE_QUESTIONABLE_LOTTERY: true
+                            IGNORE_QUESTIONABLE_LOTTERY: true,
+                            REFRESH_INTERVAL: 60
                         },
                         GUARD_AWARD: true,
                         MATERIAL_OBJECT_LOTTERY: true,
@@ -564,7 +565,8 @@
                             DELAY_MIN: '最小延时',
                             DELAY_MAX: '最大延时',
                             DISCARD_RATE: '丢弃率',
-                            IGNORE_QUESTIONABLE_LOTTERY: '忽略存疑的抽奖'
+                            IGNORE_QUESTIONABLE_LOTTERY: '忽略存疑的抽奖',
+                            REFRESH_INTERVAL: '刷新间隔'
                         },
                         GUARD_AWARD: '总督领奖',
                         MATERIAL_OBJECT_LOTTERY: '实物抽奖',
@@ -600,7 +602,8 @@
                         GIFT_LOTTERY_CONFIG: {
                             DELAY_MIN: '单位(秒)',
                             DELAY_MAX: '单位(秒)',
-                            DISCARD_RATE: '0~1的数值'
+                            DISCARD_RATE: '0~1的数值',
+                            REFRESH_INTERVAL: '单位(分钟)'
                         },
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
                             CHECK_INTERVAL: '单位(分钟)'
@@ -622,7 +625,8 @@
                             DELAY_MIN: '延时参加抽奖的最小值，为了不漏抽奖，限制在0~10之间，单位为秒',
                             DELAY_MAX: '延时参加抽奖的最大值，为了不漏抽奖，限制在0~20之间，单位为秒',
                             DISCARD_RATE: '丢弃每个抽奖的概率，数值在0~1之间',
-                            IGNORE_QUESTIONABLE_LOTTERY: '对部分礼物抽奖广播的数据存在疑问，勾选后不参加这部分抽奖'
+                            IGNORE_QUESTIONABLE_LOTTERY: '对部分礼物抽奖广播的数据存在疑问，勾选后不参加这部分抽奖',
+                            REFRESH_INTERVAL: '设置页面自动刷新的时间间隔，设置为0则不启用，单位为分钟<br>太久导致页面崩溃将无法正常运行脚本'
                         },
                         MATERIAL_OBJECT_LOTTERY: '部分房间设有实物奖励抽奖，脚本使用穷举的方式检查是否有实物抽奖<br>请注意中奖后记得及时填写相关信息领取实物奖励',
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
@@ -860,6 +864,7 @@
                     else if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DELAY_MAX > 20) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DELAY_MAX = 20;
                     if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DISCARD_RATE < 0) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DISCARD_RATE = 0;
                     else if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DISCARD_RATE > 1) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DISCARD_RATE = 1;
+                    if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL < 0) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = 0;
                     if (config.AUTO_GIFT_CONFIG.ROOMID < 0) config.AUTO_GIFT_CONFIG.ROOMID = 0;
                     return config;
                 },
@@ -903,7 +908,6 @@
                 },
                 save: () => {
                     DEBUG('Essential.Cache.save: CACHE', CACHE);
-                    Essential.DataSync.sync();
                     localStorage.setItem(NAME + '_CACHE', JSON.stringify(CACHE));
                 }
             },
@@ -2020,6 +2024,11 @@
                             default:
                         }
                     });
+                    if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL > 0) {
+                        setTimeout(() => {
+                            window.location.reload(true);
+                        }, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL * 60e3);
+                    }
                 } catch (err) {
                     window.toast('[自动抽奖]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -2031,92 +2040,120 @@
             try {
                 const promiseInit = $.Deferred();
                 Essential.init().then(() => {
-                    window.toast('正在初始化脚本...', 'info');
-                    const InitData = () => {
-                        const p = $.Deferred();
-                        let initFailed = false;
-                        const p2 = $.Deferred();
-                        p2.then(() => {
-                            initFailed = true;
-                        });
-                        let timer_p2 = setTimeout(() => p2.resolve(), 10e3);
-                        runUntilSucceed(() => {
-                            try {
-                                if (initFailed) {
-                                    timer_p2 = undefined;
-                                    window.toast('初始化用户数据、直播间数据超时，请关闭广告拦截插件后重试', 'error');
-                                    p.reject();
-                                    return true;
-                                }
-                                DEBUG('Init: InitData: BilibiliLive', window.BilibiliLive);
-                                if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0 || !window.__statisObserver) return false;
-                                clearTimeout(timer_p2);
-                                timer_p2 = undefined;
-                                if (parseInt(window.BilibiliLive.UID, 10) === 0 || isNaN(parseInt(window.BilibiliLive.UID, 10))) {
-                                    window.toast('你还没有登录，助手无法使用！', 'caution');
-                                    p.reject();
-                                    return true;
-                                }
-                                const getCookie = (name) => {
-                                    let arr;
-                                    const reg = new RegExp('(^| )' + name + '=([^;]*)(;|$)');
-                                    if ((arr = document.cookie.match(reg))) {
-                                        return unescape(arr[2]);
-                                    } else {
-                                        return null;
-                                    }
-                                };
-                                Info.short_id = window.BilibiliLive.SHORT_ROOMID;
-                                Info.roomid = window.BilibiliLive.ROOMID;
-                                Info.uid = window.BilibiliLive.UID;
-                                Info.ruid = window.BilibiliLive.ANCHOR_UID;
-                                Info.rnd = window.BilibiliLive.RND;
-                                Info.csrf_token = getCookie('bili_jct');
-                                Info.visit_id = window.__statisObserver.__visitId;
-                                const p1 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
-                                    DEBUG('InitData: get_info_in_room', response);
-                                    Info.silver = response.data.wallet.silver;
-                                    Info.gold = response.data.wallet.gold;
-                                    Info.mobile_verify = response.data.info.mobile_verify;
-                                    Info.identification = response.data.info.identification;
-                                });
-                                const p2 = API.gift.gift_config().then((response) => {
-                                    DEBUG('InitData: gift_config', response);
-                                    Info.gift_list = response.data;
-                                    Info.gift_list.forEach((v, i) => {
-                                        if (i % 3 === 0) Info.gift_list_str += '<br>';
-                                        Info.gift_list_str += v.id + '：' + v.name;
-                                        if (i < Info.gift_list.length - 1) Info.gift_list_str += '，';
-                                    });
-                                });
-                                $.when(p1, p2).then(() => {
-                                    Essential.DataSync.sync();
-                                    p.resolve();
-                                }, () => {
-                                    window.toast('初始化用户数据、直播间数据失败', 'error');
-                                    p.reject();
-                                });
-                                return true;
-                            } catch (err) {
-                                if (timer_p2) clearTimeout(timer_p2);
-                                window.toast('初始化用户数据、直播间数据时出现异常', 'error');
-                                console.error('[' + NAME + ']', err);
-                                p.reject();
-                                return true;
+                    const uniqueCheck = () => {
+                        const p1 = $.Deferred();
+                        if (ts_s() - CACHE.unique_check >= 0 && ts_s() - CACHE.unique_check <= 10) {
+                            // 其他脚本正在运行
+                            return p1.reject();
+                        }
+                        // 没有其他脚本正在运行
+                        return p1.resolve();
+                    };
+                    uniqueCheck().then(() => {
+                        let timer_unique;
+                        const uniqueMark = () => {
+                            CACHE.unique_check = ts_s();
+                            Essential.Cache.save();
+                            timer_unique = setTimeout(uniqueMark, 2e3);
+                        };
+                        window.addEventListener('unload', () => {
+                            if (timer_unique) {
+                                clearTimeout(timer_unique);
+                                CACHE.unique_check = 0;
+                                Essential.Cache.save();
                             }
-                        }, 1, 500);
-                        return p;
-                    };
-                    const InitFunctions = () => {
-                        const promiseInitFunctions = $.Deferred();
-                        $.when(TreasureBox.init()).then(() => promiseInitFunctions.resolve(), () => promiseInitFunctions.reject());
-                        return promiseInitFunctions;
-                    };
-                    InitData().then(() => {
-                        InitFunctions().then(() => {
-                            promiseInit.resolve();
+                        });
+                        uniqueMark();
+                        window.toast('正在初始化脚本...', 'info');
+                        const InitData = () => {
+                            const p = $.Deferred();
+                            let initFailed = false;
+                            const p2 = $.Deferred();
+                            p2.then(() => {
+                                initFailed = true;
+                            });
+                            let timer_p2 = setTimeout(() => p2.resolve(), 10e3);
+                            runUntilSucceed(() => {
+                                try {
+                                    if (initFailed) {
+                                        timer_p2 = undefined;
+                                        window.toast('初始化用户数据、直播间数据超时，请关闭广告拦截插件后重试', 'error');
+                                        p.reject();
+                                        return true;
+                                    }
+                                    DEBUG('Init: InitData: BilibiliLive', window.BilibiliLive);
+                                    if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0 || !window.__statisObserver) return false;
+                                    clearTimeout(timer_p2);
+                                    timer_p2 = undefined;
+                                    if (parseInt(window.BilibiliLive.UID, 10) === 0 || isNaN(parseInt(window.BilibiliLive.UID, 10))) {
+                                        window.toast('你还没有登录，助手无法使用！', 'caution');
+                                        p.reject();
+                                        return true;
+                                    }
+                                    const getCookie = (name) => {
+                                        let arr;
+                                        const reg = new RegExp('(^| )' + name + '=([^;]*)(;|$)');
+                                        if ((arr = document.cookie.match(reg))) {
+                                            return unescape(arr[2]);
+                                        } else {
+                                            return null;
+                                        }
+                                    };
+                                    Info.short_id = window.BilibiliLive.SHORT_ROOMID;
+                                    Info.roomid = window.BilibiliLive.ROOMID;
+                                    Info.uid = window.BilibiliLive.UID;
+                                    Info.ruid = window.BilibiliLive.ANCHOR_UID;
+                                    Info.rnd = window.BilibiliLive.RND;
+                                    Info.csrf_token = getCookie('bili_jct');
+                                    Info.visit_id = window.__statisObserver.__visitId;
+                                    const p1 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
+                                        DEBUG('InitData: get_info_in_room', response);
+                                        Info.silver = response.data.wallet.silver;
+                                        Info.gold = response.data.wallet.gold;
+                                        Info.mobile_verify = response.data.info.mobile_verify;
+                                        Info.identification = response.data.info.identification;
+                                    });
+                                    const p2 = API.gift.gift_config().then((response) => {
+                                        DEBUG('InitData: gift_config', response);
+                                        Info.gift_list = response.data;
+                                        Info.gift_list.forEach((v, i) => {
+                                            if (i % 3 === 0) Info.gift_list_str += '<br>';
+                                            Info.gift_list_str += v.id + '：' + v.name;
+                                            if (i < Info.gift_list.length - 1) Info.gift_list_str += '，';
+                                        });
+                                    });
+                                    $.when(p1, p2).then(() => {
+                                        Essential.DataSync.sync();
+                                        p.resolve();
+                                    }, () => {
+                                        window.toast('初始化用户数据、直播间数据失败', 'error');
+                                        p.reject();
+                                    });
+                                    return true;
+                                } catch (err) {
+                                    if (timer_p2) clearTimeout(timer_p2);
+                                    window.toast('初始化用户数据、直播间数据时出现异常', 'error');
+                                    console.error('[' + NAME + ']', err);
+                                    p.reject();
+                                    return true;
+                                }
+                            }, 1, 500);
+                            return p;
+                        };
+                        const InitFunctions = () => {
+                            const promiseInitFunctions = $.Deferred();
+                            $.when(TreasureBox.init()).then(() => promiseInitFunctions.resolve(), () => promiseInitFunctions.reject());
+                            return promiseInitFunctions;
+                        };
+                        InitData().then(() => {
+                            InitFunctions().then(() => {
+                                promiseInit.resolve();
+                            }, () => promiseInit.reject());
                         }, () => promiseInit.reject());
-                    }, () => promiseInit.reject());
+                    }, () => {
+                        window.toast('有其他直播间页面的脚本正在运行，本页面脚本停止运行', 'caution');
+                        promiseInit.reject();
+                    });
                 });
                 return promiseInit;
             } catch (err) {
