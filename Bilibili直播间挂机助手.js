@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.7
+// @version      2.0.8
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -67,13 +67,9 @@
         gift_list_str: '礼物对照表'
     };
 
-    const ts_s = () => {
-        return Math.floor(Date.now() / 1000);
-    };
+    const ts_s = () => Math.floor(Date.now() / 1000);
 
-    const ts_ms = () => {
-        return Date.now();
-    };
+    const ts_ms = () => Date.now();
 
     const runUntilSucceed = (callback, delay = 1, period = 100) => {
         setTimeout(() => {
@@ -87,22 +83,27 @@
 
     if (isSubScript()) {
         try {
-            window.stop();
-            $(document).ajaxSend((event, request, settings) => {
-                // 拒绝所有非API的ajax访问
-                if (settings.url.indexOf('api.live.bilibili.com') === -1) request.abort();
-            });
-            // 拦截弹幕服务器连接
-            let webSocketConstructor = WebSocket.prototype.constructor;
-            WebSocket.prototype.constructor = (url, protocols) => {
-                if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
-                throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
-            };
-            // 拦截直播流
-            // let windowFetch = window.fetch;
-            window.fetch = () => new Promise(() => {
-                throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
-            });
+            try {
+                window.stop();
+                $(document).ajaxSend((event, request, settings) => {
+                    // 拒绝所有非API的ajax访问
+                    if (settings.url.indexOf('api.live.bilibili.com') === -1) request.abort();
+                });
+            } catch (err) {};
+            try {
+                // 拦截弹幕服务器连接
+                const webSocketConstructor = WebSocket.prototype.constructor;
+                WebSocket.prototype.constructor = (url, protocols) => {
+                    if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
+                    throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
+                };
+            } catch (err) {};
+            try {
+                // 拦截直播流
+                window.fetch = () => new Promise(() => {
+                    throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
+                });
+            } catch (err) {};
             // 清空页面元素和节点
             try {
                 $('html').remove();
@@ -375,10 +376,10 @@
             window[NAME].promise.finish.resolve();
         }
     } else {
-        const runTommorrow = (callback, extraHours = 0) => {
-            let t = new Date();
+        const runTommorrow = (callback) => {
+            const t = new Date();
             t.setDate(t.getDate() + 1);
-            t.setHours(0 + extraHours, 1, 0, 0);
+            t.setHours(0, 0, 30, 0); // 加30s的延迟
             setTimeout(callback, t.valueOf() - Date.now());
         };
 
@@ -435,7 +436,7 @@
                                     console.log('[' + NAME + ']' + d + msg);
                             }
                             if (!CONFIG.SHOW_TOAST) return;
-                            let a = $('<div class="link-toast ' + type + ' fixed"><span class="toast-text">' + msg + '</span></div>')[0];
+                            const a = $('<div class="link-toast ' + type + ' fixed"><span class="toast-text">' + msg + '</span></div>')[0];
                             document.body.appendChild(a);
                             a.style.top = document.body.scrollTop + list.length * 40 + 10 + 'px';
                             a.style.left = document.body.offsetWidth + document.body.scrollLeft - a.offsetWidth - 5 + 'px';
@@ -462,31 +463,31 @@
             AlertDialog: {
                 init: () => {
                     try {
-                        let div_background = $('<div id="' + NAME + '_alertdialog"/>');
+                        const div_background = $('<div id="' + NAME + '_alertdialog"/>');
                         div_background[0].style = 'display: table;position: fixed;height: 100%;width: 100%;top: 0;left: 0;font-size: 12px;z-index: 10000;background-color: rgba(0,0,0,.5);';
-                        let div_position = $('<div/>');
+                        const div_position = $('<div/>');
                         div_position[0].style = 'display: table-cell;vertical-align: middle;';
-                        let div_style = $('<div/>');
+                        const div_style = $('<div/>');
                         div_style[0].style = 'position: relative;top: 50%;width: 40%;padding: 16px;border-radius: 5px;background-color: #fff;margin: 0 auto;';
                         div_position.append(div_style);
                         div_background.append(div_position);
 
-                        let div_title = $('<div/>');
+                        const div_title = $('<div/>');
                         div_title[0].style = 'position: relative;padding-bottom: 12px;';
-                        let div_title_span = $('<span>提示</span>');
+                        const div_title_span = $('<span>提示</span>');
                         div_title_span[0].style = 'margin: 0;color: #23ade5;font-size: 16px;';
                         div_title.append(div_title_span);
                         div_style.append(div_title);
 
-                        let div_content = $('<div/>');
+                        const div_content = $('<div/>');
                         div_content[0].style = 'display: inline-block;vertical-align: top;font-size: 14px;';
                         div_style.append(div_content);
 
-                        let div_button = $('<div/>');
+                        const div_button = $('<div/>');
                         div_button[0].style = 'position: relative;height: 32px;margin-top: 12px;';
                         div_style.append(div_button);
 
-                        let button_ok = $('<button><span>确定</span></button>');
+                        const button_ok = $('<button><span>确定</span></button>');
                         button_ok[0].style = 'position: absolute;height: 100%;min-width: 68px;right: 0;background-color: #23ade5;color: #fff;border-radius: 4px;font-size: 14px;border: 0;cursor: pointer;';
                         div_button.append(button_ok);
 
@@ -658,7 +659,7 @@
                             return obj[itemname];
                         };
                         const recur = (cfg, element, parentname = undefined) => {
-                            for (let item in cfg) {
+                            for (const item in cfg) {
                                 let itemname;
                                 if (parentname) itemname = parentname + '-' + item;
                                 else itemname = item;
@@ -702,7 +703,7 @@
                                 if (!$('#sidebar-vm div.side-bar-cntr')[0]) return false;
                                 // 加载css
                                 const addCSS = (context) => {
-                                    let style = document.createElement('style');
+                                    const style = document.createElement('style');
                                     style.type = 'text/css';
                                     style.innerHTML = context;
                                     document.getElementsByTagName('head')[0].appendChild(style);
@@ -712,37 +713,37 @@
                                     '.' + NAME + '_input_checkbox {vertical-align: bottom;}' +
                                     '.' + NAME + '_input_text {margin: -2px 0 -2px 4px;padding: 0;}');
                                 // 绘制右下角按钮
-                                let div_button_span = $('<span>挂机助手设置</span>');
+                                const div_button_span = $('<span>挂机助手设置</span>');
                                 div_button_span[0].style = 'font-size: 12px;line-height: 16px;color: #0080c6;';
-                                let div_button = $('<div/>');
+                                const div_button = $('<div/>');
                                 div_button[0].style = 'cursor: pointer;text-align: center;padding: 0px;';
-                                let div_side_bar = $('<div/>');
+                                const div_side_bar = $('<div/>');
                                 div_side_bar[0].style = 'width: 56px;height: 32px;overflow: hidden;position: fixed;right: 0px;bottom: 10%;padding: 4px 4px;background-color: rgb(255, 255, 255);z-index: 10001;border-radius: 8px 0px 0px 8px;box-shadow: rgba(0, 85, 255, 0.0980392) 0px 0px 20px 0px;border: 1px solid rgb(233, 234, 236);';
                                 div_button.append(div_button_span);
                                 div_side_bar.append(div_button);
                                 $('#sidebar-vm div.side-bar-cntr').first().after(div_side_bar);
                                 // 绘制设置界面
-                                let div_position = $('<div/>');
+                                const div_position = $('<div/>');
                                 div_position[0].style = 'display: none;position: fixed;height: 300px;width: 300px;bottom: 5%;z-index: 9999;';
-                                let div_style = $('<div/>');
+                                const div_style = $('<div/>');
                                 div_style[0].style = 'display: block;overflow: hidden;height: 300px;width: 300px;border-radius: 8px;box-shadow: rgba(106, 115, 133, 0.219608) 0px 6px 12px 0px;border: 1px solid rgb(233, 234, 236);background-color: rgb(255, 255, 255);';
                                 div_position.append(div_style);
                                 document.body.appendChild(div_position[0]);
                                 // 绘制标题栏及按钮
-                                let div_title = $('<div/>');
+                                const div_title = $('<div/>');
                                 div_title[0].style = 'display: block;border-bottom: 1px solid #E6E6E6;height: 35px;line-height: 35px;margin: 0;padding: 0;overflow: hidden;';
-                                let div_title_span = $('<span style="float: left;display: inline;padding-left: 8px;font: 700 14px/35px SimSun;">Bilibili直播间挂机助手</span>');
-                                let div_title_button = $('<div/>');
+                                const div_title_span = $('<span style="float: left;display: inline;padding-left: 8px;font: 700 14px/35px SimSun;">Bilibili直播间挂机助手</span>');
+                                const div_title_button = $('<div/>');
                                 div_title_button[0].style = 'float: right;display: inline;padding-right: 8px;';
-                                let div_button_reset = $('<div style="display: inline;"><span class="' + NAME + '_clickable">重置</span></div>');
+                                const div_button_reset = $('<div style="display: inline;"><span class="' + NAME + '_clickable">重置</span></div>');
                                 div_title_button.append(div_button_reset);
                                 div_title.append(div_title_span);
                                 div_title.append(div_title_button);
                                 div_style.append(div_title);
                                 // 绘制设置项内容
-                                let div_context_position = $('<div/>');
+                                const div_context_position = $('<div/>');
                                 div_context_position[0].style = 'display: block;position: absolute;top: 36px;width: 100%;height: calc(100% - 36px);';
-                                let div_context = $('<div/>');
+                                const div_context = $('<div/>');
                                 div_context[0].style = 'height: 100%;overflow: auto;padding: 0 12px;margin: 0px;';
                                 div_context_position.append(div_context);
                                 div_style.append(div_context_position);
@@ -795,11 +796,11 @@
                     }
                 },
                 recurLoad: (cfg, parentname = undefined) => {
-                    for (let item in cfg) {
+                    for (const item in cfg) {
                         let itemname;
                         if (parentname) itemname = parentname + '-' + item;
                         else itemname = item;
-                        let e = $('#' + NAME + '_config_' + itemname);
+                        const e = $('#' + NAME + '_config_' + itemname);
                         if (!e[0]) continue;
                         switch ($.type(cfg[item])) {
                             case 'number':
@@ -821,13 +822,13 @@
                     }
                 },
                 recurSave: (config, parentname = undefined) => {
-                    let cfg = JSON.parse(JSON.stringify(config || Essential.Config.CONFIG_DEFAULT));
+                    const cfg = JSON.parse(JSON.stringify(config || Essential.Config.CONFIG_DEFAULT));
                     if (Object.prototype.toString.call(cfg) !== '[object Object]') return cfg;
-                    for (let item in cfg) {
+                    for (const item in cfg) {
                         let itemname;
                         if (parentname) itemname = parentname + '-' + item;
                         else itemname = item;
-                        let e = $('#' + NAME + '_config_' + itemname);
+                        const e = $('#' + NAME + '_config_' + itemname);
                         if (!e[0]) continue;
                         switch ($.type(cfg[item])) {
                             case 'string':
@@ -1010,7 +1011,7 @@
                         d.setHours(0, 0, 0, 0);
                         if (ts_ms() - d.valueOf() < 86400e3) {
                             // 同一天，不再检查应援团签到
-                            runTommorrow(GroupSign.run, 6);
+                            runTommorrow(GroupSign.run);
                             return;
                         }
                     }
@@ -1019,7 +1020,7 @@
                     }).always(() => {
                         CACHE.group_sign_ts = ts_ms();
                         Essential.Cache.save();
-                        runTommorrow(GroupSign.run, 6);
+                        runTommorrow(GroupSign.run);
                     });
                 } catch (err) {
                     window.toast('[自动应援团签到]运行时出现异常，已停止', 'error');
@@ -1272,11 +1273,11 @@
                     return $.Deferred().resolve();
                 }
                 if (Gift.time <= 0) Gift.time = ts_ms();
-                let v = Gift.bag_list[i];
+                const v = Gift.bag_list[i];
                 if (($.inArray(v.gift_id, CONFIG.AUTO_GIFT_CONFIG.GIFT_ALLOWED) > -1 || !CONFIG.AUTO_GIFT_CONFIG.GIFT_ALLOWED.length) && // 检查GIFT_ALLOWED
                     ($.inArray(v.gift_id, CONFIG.AUTO_GIFT_CONFIG.GIFT_DEFAULT) > -1 || // 检查GIFT_DEFAULT
                         (CONFIG.AUTO_GIFT_CONFIG.SEND_TODAY && v.expire_at > Gift.time && v.expire_at - Gift.time < 86400))) { // 检查SEND_TODAY和礼物到期时间
-                    let feed = Gift.getFeedByGiftID(v.gift_id);
+                    const feed = Gift.getFeedByGiftID(v.gift_id);
                     if (feed > 0) {
                         let feed_num = Math.floor(Gift.remain_feed / feed);
                         if (feed_num > v.gift_num) feed_num = v.gift_num;
@@ -1344,12 +1345,12 @@
                         treasure_box = treasure_box.first();
                         treasure_box.attr('id', 'old_treasure_box');
                         treasure_box.hide();
-                        let div = $('<div id="' + NAME + '_treasure_div" class="treasure-box p-relative" style="min-width: 46px;display: inline-block;float: left;padding: 22px 0 0 15px;"></div>');
+                        const div = $('<div id="' + NAME + '_treasure_div" class="treasure-box p-relative" style="min-width: 46px;display: inline-block;float: left;padding: 22px 0 0 15px;"></div>');
                         TreasureBox.DOM.div_tip = $('<div id="' + NAME + '_treasure_div_tip" class="t-center b-box none-select">自动<br>领取中</div>');
                         TreasureBox.DOM.div_timer = $('<div id="' + NAME + '_treasure_div_timer" class="t-center b-box none-select">0</div>');
                         TreasureBox.DOM.image = $('<img id="' + NAME + '_treasure_image" style="display:none">');
                         TreasureBox.DOM.canvas = $('<canvas id="' + NAME + '_treasure_canvas" style="display:none" height="40" width="120"></canvas>');
-                        let css_text = 'min-width: 40px;padding: 2px 3px;margin-top: 3px;font-size: 12px;color: #fff;background-color: rgba(0,0,0,.5);border-radius: 10px;';
+                        const css_text = 'min-width: 40px;padding: 2px 3px;margin-top: 3px;font-size: 12px;color: #fff;background-color: rgba(0,0,0,.5);border-radius: 10px;';
                         TreasureBox.DOM.div_tip[0].style = css_text;
                         TreasureBox.DOM.div_timer[0].style = css_text;
                         div.append(TreasureBox.DOM.div_tip);
@@ -1380,23 +1381,23 @@
                         }, 1e3);
                         TreasureBox.DOM.image[0].onload = () => {
                             // 实现功能类似 https://github.com/zacyu/bilibili-helper/blob/master/src/bilibili_live.js 中Live.treasure.init()的验证码处理部分
-                            let ctx = TreasureBox.DOM.canvas[0].getContext('2d');
+                            const ctx = TreasureBox.DOM.canvas[0].getContext('2d');
                             ctx.font = '40px agencyfbbold';
                             ctx.textBaseline = 'top';
                             ctx.clearRect(0, 0, TreasureBox.DOM.canvas[0].width, TreasureBox.DOM.canvas[0].height);
                             ctx.drawImage(TreasureBox.DOM.image[0], 0, 0);
-                            let grayscaleMap = TreasureBox.captcha.OCR.getGrayscaleMap(ctx);
-                            let filterMap = TreasureBox.captcha.OCR.orderFilter2In3x3(grayscaleMap);
+                            const grayscaleMap = TreasureBox.captcha.OCR.getGrayscaleMap(ctx);
+                            const filterMap = TreasureBox.captcha.OCR.orderFilter2In3x3(grayscaleMap);
                             ctx.clearRect(0, 0, 120, 40);
                             for (let i = 0; i < filterMap.length; ++i) {
-                                let gray = filterMap[i];
+                                const gray = filterMap[i];
                                 ctx.fillStyle = `rgb(${gray}, ${gray}, ${gray})`;
                                 ctx.fillRect(i % 120, Math.round(i / 120), 1, 1);
                             }
                             try {
-                                let question = TreasureBox.captcha.correctQuestion(OCRAD(ctx.getImageData(0, 0, 120, 40)));
+                                const question = TreasureBox.captcha.correctQuestion(OCRAD(ctx.getImageData(0, 0, 120, 40)));
                                 DEBUG('TreasureBox.DOM.image.load', 'question =', question);
-                                let answer = TreasureBox.captcha.eval(question);
+                                const answer = TreasureBox.captcha.eval(question);
                                 DEBUG('TreasureBox.DOM.image.load', 'answer =', answer);
                                 if (answer !== undefined) {
                                     // window.toast('[自动领取瓜子]验证码识别结果：' + question + ' = ' + answer, 'info');
@@ -1779,7 +1780,7 @@
                         case -1: // 未开始
                             {
                                 Lottery.MaterialObject.list.push(obj);
-                                let p = $.Deferred();
+                                const p = $.Deferred();
                                 p.then(() => {
                                     return Lottery.MaterialObject.draw(obj);
                                 });
