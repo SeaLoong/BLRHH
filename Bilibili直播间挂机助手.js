@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.8
+// @version      2.0.9
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1722,16 +1722,20 @@
                 ignore_keyword: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼'],
                 run: () => {
                     try {
-                        return Lottery.MaterialObject.check().then((aid) => {
+                        if (CACHE.materialobject_ts) {
+                            const diff = ts_ms() - new Date(CACHE.materialobject_ts);
+                            if (diff < (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3)) {
+                                setTimeout(Lottery.MaterialObject.run, diff);
+                                return;
+                            }
+                        }
+                        Lottery.MaterialObject.check().then((aid) => {
                             // aid有效
                             CACHE.last_aid = aid;
+                            CACHE.materialobject_ts = ts_ms();
                             Essential.Cache.save();
                         }).always(() => {
-                            const p = $.Deferred();
-                            p.then(() => Lottery.MaterialObject.run());
-                            setTimeout(() => {
-                                p.resolve();
-                            }, CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3);
+                            setTimeout(Lottery.MaterialObject.run, CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3);
                         });
                     } catch (err) {
                         window.toast('[自动抽奖][实物抽奖]运行时出现异常', 'error');
@@ -1740,13 +1744,11 @@
                     return $.Deferred().reject();
                 },
                 check: (aid, valid = false) => {
-                    aid = parseInt(aid || (CACHE.last_aid + 1), 10);
-                    if (isNaN(aid)) aid = 163;
+                    aid = parseInt(aid || (CACHE.last_aid), 10);
+                    if (isNaN(aid)) aid = 166;
                     DEBUG('Lottery.MaterialObject.check: aid:', aid);
                     return API.Lottery.MaterialObject.getStatus(aid).then((response) => {
                         if (response.code === 0) {
-                            CACHE.last_aid = aid;
-                            Essential.Cache.save();
                             if (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.IGNORE_QUESTIONABLE_LOTTERY && Lottery.MaterialObject.ignore_keyword.some(v => response.data.title.toLowerCase().indexOf(v) > -1)) {
                                 window.toast('[自动抽奖][实物抽奖]忽略抽奖(aid=' + aid + ')', 'caution');
                                 return Lottery.MaterialObject.check(aid + 1, true);
