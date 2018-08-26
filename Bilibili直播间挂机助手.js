@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.10
+// @version      2.0.11
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1353,6 +1353,11 @@
                 const p = $.Deferred();
                 runUntilSucceed(() => {
                     try {
+                        if ($('.draw-box.gift-left-part').length) {
+                            window.toast('[自动领取瓜子]当前直播间有实物抽奖，暂停领瓜子功能', 'caution');
+                            p.resolve();
+                            return true;
+                        }
                         let treasure_box = $('#gift-control-vm div.treasure-box.p-relative');
                         if (!treasure_box.length) return false;
                         treasure_box = treasure_box.first();
@@ -1488,8 +1493,8 @@
                     TreasureBox.promise.timer.reject();
                     TreasureBox.promise.timer = undefined;
                 }
-                TreasureBox.DOM.div_timer.hide();
-                TreasureBox.DOM.div_tip.html(htmltext);
+                if (TreasureBox.DOM.div_timer) TreasureBox.DOM.div_timer.hide();
+                if (TreasureBox.DOM.div_tip) TreasureBox.DOM.div_tip.html(htmltext);
             },
             getAward: (captcha, cnt = 0) => {
                 if (!CONFIG.AUTO_TREASUREBOX) return $.Deferred().reject();
