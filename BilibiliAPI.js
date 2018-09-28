@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.1
+// @version      1.3.2
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -1023,7 +1023,7 @@ var BilibiliAPI = {
                             ws: ws
                         }
                     }));
-                }, 5e3);
+                }, 10e3);
             });
             this.addEventListener('message', (event) => {
                 let dv = new DataView(event.data);

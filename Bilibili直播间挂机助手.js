@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.0.11
+// @version      2.0.12
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -41,12 +41,13 @@
         return;
     }
 
-    const DEBUGMODE = false;
+    const DEBUGMODE = false || localStorage.getItem('BLRHH-DEBUG');
     const DEBUG = (sign, ...data) => {
         if (!DEBUGMODE) return;
         let d = new Date();
         d = '[' + d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds() + ']';
-        console.debug('[' + NAME + ']' + d, sign + ':', data);
+        if (data.length === 1) console.debug('[' + NAME + ']' + d + '\n', sign + ':', data[0]);
+        else console.debug('[' + NAME + ']' + d, sign + ':', data);
     };
 
     let CONFIG;
@@ -79,298 +80,304 @@
         }, delay);
     };
 
+    const tryAgain = (callback) => setTimeout(callback, 10e3);
+
     const isSubScript = () => window.frameElement && window.parent[NAME];
 
     if (isSubScript()) {
         try {
-            try {
-                window.stop();
-                $(document).ajaxSend((event, request, settings) => {
-                    // 拒绝所有非API的ajax访问
-                    if (settings.url.indexOf('api.live.bilibili.com') === -1) request.abort();
-                });
-            } catch (err) {};
-            try {
-                // 拦截弹幕服务器连接
-                const webSocketConstructor = WebSocket.prototype.constructor;
-                WebSocket.prototype.constructor = (url, protocols) => {
-                    if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
-                    throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
-                };
-            } catch (err) {};
-            try {
-                // 拦截直播流
-                window.fetch = () => new Promise(() => {
-                    throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
-                });
-            } catch (err) {};
-            // 清空页面元素和节点
-            try {
-                $('html').remove();
-            } catch (err) {};
-            // 读取父脚本数据
-            window.toast = window.parent.toast;
-            Info = window.parent[NAME].Info;
-            CONFIG = window.parent[NAME].CONFIG;
-            CACHE = window.parent[NAME].CACHE;
-            window[NAME].promise.sync.then(() => {
+            if (window[NAME].type === 'LOTTERY') {
+                try {
+                    window.stop();
+                    $(document).ajaxSend((event, request, settings) => {
+                        // 拒绝所有非API的ajax访问
+                        if (settings.url.indexOf('api.live.bilibili.com') === -1) request.abort();
+                    });
+                } catch (err) {};
+                try {
+                    // 拦截弹幕服务器连接
+                    const webSocketConstructor = WebSocket.prototype.constructor;
+                    WebSocket.prototype.constructor = (url, protocols) => {
+                        if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
+                        throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
+                    };
+                } catch (err) {};
+                try {
+                    // 拦截直播流
+                    window.fetch = () => new Promise(() => {
+                        throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
+                    });
+                } catch (err) {};
+                // 清空页面元素和节点
+                try {
+                    $('html').remove();
+                } catch (err) {};
+                // 读取父脚本数据
+                window.toast = window.parent.toast;
                 Info = window.parent[NAME].Info;
                 CONFIG = window.parent[NAME].CONFIG;
                 CACHE = window.parent[NAME].CACHE;
-                // 这里不能直接重置window[NAME].promise.sync为新的promise，要回到主脚本中重置
-                window[NAME].promise.syncFinish.resolve();
-            });
-            window[NAME].Lottery = {
-                list: []
-            };
-            // 正式执行子脚本
-            const Lottery = {
-                ws: undefined,
-                Gift: {
-                    fishingCheck: (roomid) => {
-                        const p = $.Deferred();
-                        API.room.room_init(roomid).then((response) => {
-                            if (response.code === 0) {
-                                if (response.data.is_hidden || response.data.is_locked || response.data.encrypted || response.data.pwd_verified) return p.resolve(true);
-                                return p.resolve(false);
-                            }
-                            p.reject();
-                        }, () => {
-                            p.reject();
-                        }).always(() => {
-                            API.room.room_entry_action(roomid, Info.visit_id, Info.csrf_token);
-                        });
-                        return p;
-                    },
-                    run: (roomid) => {
-                        // 全部参加完成返回resolve，任意一个失败返回reject
-                        try {
-                            if (window.parent[NAME].Lottery.stop) return $.Deferred().reject();
-                            return Lottery.Gift.fishingCheck(roomid).then((fishing) => {
-                                if (!fishing) {
-                                    return API.Lottery.Gift.check(roomid).then((response) => {
-                                        DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
-                                        if (response.code === 0) {
-                                            return Lottery.Gift.join(roomid, response.data.list);
-                                        } else if (response.code === -400) {
-                                            // 没有需要提示的小电视
-                                        } else {
-                                            if (response.msg === 'timeout') return Lottery.Gift.run(roomid);
-                                            window.toast('[自动抽奖][礼物抽奖]' + response.msg, 'caution');
-                                        }
-                                    }, () => {
-                                        window.toast('[自动抽奖][礼物抽奖]检查直播间(' + roomid + ')失败，请检查网络', 'error');
-                                    });
+                window[NAME].promise.sync.then(() => {
+                    Info = window.parent[NAME].Info;
+                    CONFIG = window.parent[NAME].CONFIG;
+                    CACHE = window.parent[NAME].CACHE;
+                    // 这里不能直接重置window[NAME].promise.sync为新的promise，要回到主脚本中重置
+                    window[NAME].promise.syncFinish.resolve();
+                });
+                window[NAME].Lottery = {
+                    list: []
+                };
+                // 正式执行子脚本
+                const Lottery = {
+                    ws: undefined,
+                    Gift: {
+                        fishingCheck: (roomid) => {
+                            const p = $.Deferred();
+                            API.room.room_init(roomid).then((response) => {
+                                if (response.code === 0) {
+                                    if (response.data.is_hidden || response.data.is_locked || response.data.encrypted || response.data.pwd_verified) return p.resolve(true);
+                                    return p.resolve(false);
                                 }
+                                p.reject();
+                            }, () => {
+                                p.reject();
+                            }).always(() => {
+                                API.room.room_entry_action(roomid, Info.visit_id, Info.csrf_token);
                             });
-                        } catch (err) {
-                            window.parent[NAME].Lottery.stop = true;
-                            window.toast('[自动抽奖][礼物抽奖]运行时出现异常，已停止', 'error');
-                            console.error('[' + NAME + ']', err);
-                            return $.Deferred().reject();
-                        }
-                    },
-                    join: (roomid, raffleList, i = 0) => {
-                        if (window.parent[NAME].Lottery.stop) return $.Deferred().reject();
-                        if (i >= raffleList.length) return $.Deferred().resolve();
-                        const obj = raffleList[i];
-                        obj.raffleId = parseInt(obj.raffleId, 10); // 有时候会出现raffleId是string的情况(破站)
-                        if (isNaN(obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
-                        // raffleId过滤，防止重复参加
-                        if (window[NAME].Lottery.list.some(v => v === obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
-                        const p = $.Deferred(); // 这个Promise在notice之后resolve，如果设置不提示则直接resolve
-                        const p1 = $.Deferred(); // 这个Promise在延时时间到的时候resolve
-                        p1.then(() => {
-                            // 时间到，开始参加
-                            const removeRaffleId = (raffleId) => {
-                                $.each(window[NAME].Lottery.list, (i, v) => {
-                                    if (v === raffleId) {
-                                        window[NAME].Lottery.list.splice(i, 1);
-                                        return false;
+                            return p;
+                        },
+                        run: (roomid) => {
+                            // 全部参加完成返回resolve，任意一个失败返回reject
+                            try {
+                                if (window.parent[NAME].Lottery.stop) return $.Deferred().reject();
+                                return Lottery.Gift.fishingCheck(roomid).then((fishing) => {
+                                    if (!fishing) {
+                                        return API.Lottery.Gift.check(roomid).then((response) => {
+                                            DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
+                                            if (response.code === 0) {
+                                                return Lottery.Gift.join(roomid, response.data.list);
+                                            } else if (response.code === -400) {
+                                                // 没有需要提示的小电视
+                                            } else {
+                                                if (response.msg === 'timeout') return Lottery.Gift.run(roomid);
+                                                window.toast('[自动抽奖][礼物抽奖]' + response.msg, 'caution');
+                                            }
+                                        }, () => {
+                                            window.toast('[自动抽奖][礼物抽奖]检查直播间(' + roomid + ')失败，请检查网络', 'error');
+                                            return Lottery.Gift.run(roomid);
+                                        });
                                     }
                                 });
-                            };
-                            window[NAME].Lottery.list.push(obj.raffleId); // 加入raffleId记录列表
-                            // 随机判断是否丢弃这次抽奖
-                            if (Math.random() < CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DISCARD_RATE) {
-                                // 丢弃抽奖
-                                window.toast('[自动抽奖][礼物抽奖]忽略抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')', 'info');
-                                p.resolve();
-                            } else {
-                                const toNotice = () => { // 可以notice的情况
-                                    if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_NOTICE) {
-                                        removeRaffleId(obj.raffleId);
-                                        p.resolve();
-                                    } else {
-                                        // 等待时间到后notice
-                                        const p3 = $.Deferred();
-                                        p3.then(() => Lottery.Gift.notice(roomid, obj.raffleId, obj.type).then(() => {
+                            } catch (err) {
+                                window.parent[NAME].Lottery.stop = true;
+                                window.toast('[自动抽奖][礼物抽奖]运行时出现异常，已停止', 'error');
+                                console.error('[' + NAME + ']', err);
+                                return $.Deferred().reject();
+                            }
+                        },
+                        join: (roomid, raffleList, i = 0) => {
+                            if (window.parent[NAME].Lottery.stop) return $.Deferred().reject();
+                            if (i >= raffleList.length) return $.Deferred().resolve();
+                            const obj = raffleList[i];
+                            obj.raffleId = parseInt(obj.raffleId, 10); // 有时候会出现raffleId是string的情况(破站)
+                            if (isNaN(obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
+                            // raffleId过滤，防止重复参加
+                            if (window[NAME].Lottery.list.some(v => v === obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
+                            const p = $.Deferred(); // 这个Promise在notice之后resolve，如果设置不提示则直接resolve
+                            const p1 = $.Deferred(); // 这个Promise在延时时间到的时候resolve
+                            p1.then(() => {
+                                // 时间到，开始参加
+                                const removeRaffleId = (raffleId) => {
+                                    $.each(window[NAME].Lottery.list, (i, v) => {
+                                        if (v === raffleId) {
+                                            window[NAME].Lottery.list.splice(i, 1);
+                                            return false;
+                                        }
+                                    });
+                                };
+                                window[NAME].Lottery.list.push(obj.raffleId); // 加入raffleId记录列表
+                                // 随机判断是否丢弃这次抽奖
+                                if (Math.random() < CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DISCARD_RATE) {
+                                    // 丢弃抽奖
+                                    window.toast('[自动抽奖][礼物抽奖]忽略抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')', 'info');
+                                    p.resolve();
+                                } else {
+                                    const toNotice = () => { // 可以notice的情况
+                                        if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_NOTICE) {
                                             removeRaffleId(obj.raffleId);
                                             p.resolve();
-                                        }, () => {
-                                            removeRaffleId(obj.raffleId);
-                                            p.reject();
-                                        }));
-                                        setTimeout(() => p3.resolve(), obj.time * 1e3 + Math.random() * 10e3 + 10e3);
-                                    }
-                                };
-                                if (obj.status === 1) { // 可以参加
-                                    API.Lottery.Gift.join(roomid, obj.raffleId, Info.csrf_token, Info.visit_id).then((response) => {
-                                        DEBUG('Lottery.Gift.join: API.Lottery.Gift.join', response);
-                                        switch (response.code) {
-                                            case 0:
-                                                window.toast('[自动抽奖][礼物抽奖]已参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')', 'success');
-                                                toNotice();
-                                                break;
-                                            case 400:
-                                                window.parent[NAME].Lottery.stop = true;
-                                                window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
-                                                p.reject();
-                                                break;
-                                            case 402:
-                                                // 抽奖已过期，下次再来吧
-                                                p.reject();
-                                                break;
-                                            case 65531:
-                                                // 65531: 非当前直播间或短ID直播间试图参加抽奖
-                                                window.parent[NAME].Lottery.stop = true;
-                                                window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')失败，已停止', 'error');
-                                                p.reject();
-                                                break;
-                                            default:
-                                                window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')' + response.msg, 'caution');
-                                                toNotice();
-                                        }
-                                    }, () => {
-                                        window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')失败，请检查网络', 'error');
-                                        p.reject();
-                                    });
-                                } else if (obj.status === 2 && obj.time > 0) { // 已参加且未开奖
-                                    toNotice();
-                                }
-                            }
-                        });
-                        // 延时等待
-                        const randomNumber = (min = 0, max = 1) => min + (max - min) * Math.random();
-                        setTimeout(() => p1.resolve(), randomNumber(CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DELAY_MIN, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DELAY_MAX) * 1e3);
-                        return $.when(Lottery.Gift.join(roomid, raffleList, i + 1), p);
-                    },
-                    notice: (roomid, raffleId, type) => {
-                        // notice成功返回resolve，失败返回reject
-                        if (window.parent[NAME].Lottery.stop) return $.Deferred().reject();
-                        if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_NOTICE) return $.Deferred().resolve();
-                        // 如果raffleId记录列表里没有这个raffleId，那么说明已经被处理，不需要notice，返回resolve
-                        if (window[NAME].Lottery.list.every(v => v !== raffleId)) return $.Deferred().resolve();
-                        return API.Lottery.Gift.notice(raffleId, type).then((response) => {
-                            DEBUG('Lottery.Gift.notice: API.Lottery.Gift.notice', response);
-                            if (response.code === 0) {
-                                switch (response.data.status) {
-                                    case 1:
-                                        // 非常抱歉，您错过了此次抽奖，下次记得早点来哦
-                                        break;
-                                    case 2:
-                                        if (response.data.gift_id === '-1' && !response.data.gift_name) {
-                                            window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果：' + response.msg, 'info');
                                         } else {
-                                            window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                                            // 等待时间到后notice
+                                            const p3 = $.Deferred();
+                                            p3.then(() => Lottery.Gift.notice(roomid, obj.raffleId, obj.type).then(() => {
+                                                removeRaffleId(obj.raffleId);
+                                                p.resolve();
+                                            }, () => {
+                                                removeRaffleId(obj.raffleId);
+                                                p.reject();
+                                            }));
+                                            setTimeout(() => p3.resolve(), obj.time * 1e3 + Math.random() * 10e3 + 10e3);
                                         }
-                                        break;
-                                    case 3:
-                                        // 还未开奖
-                                        const p = $.Deferred();
-                                        p.then(() => Lottery.Gift.notice(roomid, raffleId, type));
-                                        setTimeout(() => p.resolve(), 10e3);
-                                        return p;
-                                    default:
-                                        window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果：' + response.msg, 'caution');
+                                    };
+                                    if (obj.status === 1) { // 可以参加
+                                        API.Lottery.Gift.join(roomid, obj.raffleId, Info.csrf_token, Info.visit_id).then((response) => {
+                                            DEBUG('Lottery.Gift.join: API.Lottery.Gift.join', response);
+                                            switch (response.code) {
+                                                case 0:
+                                                    window.toast('[自动抽奖][礼物抽奖]已参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')', 'success');
+                                                    toNotice();
+                                                    break;
+                                                case 400:
+                                                    window.parent[NAME].Lottery.stop = true;
+                                                    window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                                    p.reject();
+                                                    break;
+                                                case 402:
+                                                    // 抽奖已过期，下次再来吧
+                                                    p.reject();
+                                                    break;
+                                                case 65531:
+                                                    // 65531: 非当前直播间或短ID直播间试图参加抽奖
+                                                    window.parent[NAME].Lottery.stop = true;
+                                                    window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')失败，已停止', 'error');
+                                                    p.reject();
+                                                    break;
+                                                default:
+                                                    window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')' + response.msg, 'caution');
+                                                    toNotice();
+                                            }
+                                        }, () => {
+                                            window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + obj.raffleId + ')失败，请检查网络', 'error');
+                                            p.reject();
+                                        });
+                                    } else if (obj.status === 2 && obj.time > 0) { // 已参加且未开奖
+                                        toNotice();
+                                    }
                                 }
-                            } else {
-                                // 其他情况
-                                window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')' + response.msg, 'caution');
-                            }
-                        }, () => {
-                            window.toast('[自动抽奖][礼物抽奖]获取抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果失败，请检查网络');
-                        });
-                    }
-                }
-            };
-            let timer_next, timer_max_time;
-            let new_raffle = false;
-            let run_finished = false;
-            let raffleList = [];
-            const finish = () => {
-                if (Lottery.ws.readyState === WebSocket.OPEN) Lottery.ws.close();
-                Lottery.ws = undefined;
-                window[NAME].promise.finish.resolve();
-            };
-            Lottery.ws = new API.DanmuWebSocket(Info.uid, window[NAME].roomid);
-            Lottery.ws.bind((ws) => {
-                Lottery.ws = ws;
-            }, undefined, undefined, (obj) => {
-                switch (obj.cmd) {
-                    case 'RAFFLE_START':
-                        // 1) 可能是有连续送礼，直到连续9s后没有RAFFLE_START
-                        // 2) max_time(通常是180s)-1s后还有连续送礼，强制参加
-                        new_raffle = true;
-                        // 自创一个raffleList，再按照run里的方式处理
-                        raffleList.push({
-                            raffleId: obj.data.raffleId,
-                            type: obj.data.type,
-                            time: obj.data.time,
-                            status: 1
-                        });
-                        if (timer_next) clearTimeout(timer_next);
-                        timer_next = setTimeout(() => {
-                            // 到9s后的处理
-                            if (timer_max_time) clearTimeout(timer_max_time);
-                            timer_max_time = undefined;
-                            timer_next = undefined;
-                            Lottery.Gift.join(window[NAME].roomid, raffleList).always(() => {
-                                raffleList = [];
-                                if (run_finished) finish();
                             });
-                        }, 9e3);
-                        if (!timer_max_time) {
-                            timer_max_time = setTimeout(() => {
-                                // 到最大时间限度后的处理
-                                if (timer_next) clearTimeout(timer_next);
-                                timer_next = undefined;
+                            // 延时等待
+                            const randomNumber = (min = 0, max = 1) => min + (max - min) * Math.random();
+                            setTimeout(() => p1.resolve(), randomNumber(CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DELAY_MIN, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.DELAY_MAX) * 1e3);
+                            return $.when(Lottery.Gift.join(roomid, raffleList, i + 1), p);
+                        },
+                        notice: (roomid, raffleId, type) => {
+                            // notice成功返回resolve，失败返回reject
+                            if (window.parent[NAME].Lottery.stop) return $.Deferred().reject();
+                            if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_NOTICE) return $.Deferred().resolve();
+                            // 如果raffleId记录列表里没有这个raffleId，那么说明已经被处理，不需要notice，返回resolve
+                            if (window[NAME].Lottery.list.every(v => v !== raffleId)) return $.Deferred().resolve();
+                            return API.Lottery.Gift.notice(raffleId, type).then((response) => {
+                                DEBUG('Lottery.Gift.notice: API.Lottery.Gift.notice', response);
+                                if (response.code === 0) {
+                                    switch (response.data.status) {
+                                        case 1:
+                                            // 非常抱歉，您错过了此次抽奖，下次记得早点来哦
+                                            break;
+                                        case 2:
+                                            if (response.data.gift_id === '-1' && !response.data.gift_name) {
+                                                window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果：' + response.msg, 'info');
+                                            } else {
+                                                window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果：' + response.data.gift_name + '*' + response.data.gift_num, 'info');
+                                            }
+                                            break;
+                                        case 3:
+                                            // 还未开奖
+                                            const p = $.Deferred();
+                                            p.then(() => Lottery.Gift.notice(roomid, raffleId, type));
+                                            setTimeout(() => p.resolve(), 10e3);
+                                            return p;
+                                        default:
+                                            window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果：' + response.msg, 'caution');
+                                    }
+                                } else {
+                                    // 其他情况
+                                    window.toast('[自动抽奖][礼物抽奖]抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')' + response.msg, 'caution');
+                                }
+                            }, () => {
+                                window.toast('[自动抽奖][礼物抽奖]获取抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')结果失败，请检查网络');
+                                return Lottery.Gift.notice(roomid, raffleId, type);
+                            });
+                        }
+                    }
+                };
+                let timer_next, timer_max_time;
+                let new_raffle = false;
+                let run_finished = false;
+                let raffleList = [];
+                const finish = () => {
+                    if (Lottery.ws.readyState === WebSocket.OPEN) Lottery.ws.close();
+                    Lottery.ws = undefined;
+                    window[NAME].promise.finish.resolve();
+                };
+                Lottery.ws = new API.DanmuWebSocket(Info.uid, window[NAME].roomid);
+                Lottery.ws.bind((ws) => {
+                    Lottery.ws = ws;
+                }, undefined, undefined, (obj) => {
+                    switch (obj.cmd) {
+                        case 'RAFFLE_START':
+                            // 1) 可能是有连续送礼，直到连续9s后没有RAFFLE_START
+                            // 2) max_time(通常是180s)-1s后还有连续送礼，强制参加
+                            new_raffle = true;
+                            // 自创一个raffleList，再按照run里的方式处理
+                            raffleList.push({
+                                raffleId: obj.data.raffleId,
+                                type: obj.data.type,
+                                time: obj.data.time,
+                                status: 1
+                            });
+                            if (timer_next) clearTimeout(timer_next);
+                            timer_next = setTimeout(() => {
+                                // 到9s后的处理
+                                if (timer_max_time) clearTimeout(timer_max_time);
                                 timer_max_time = undefined;
+                                timer_next = undefined;
                                 Lottery.Gift.join(window[NAME].roomid, raffleList).always(() => {
                                     raffleList = [];
                                     if (run_finished) finish();
                                 });
-                            }, ((obj.data.max_time || 180) - 1) * 1e3);
-                        }
-                        break;
-                    case 'RAFFLE_END':
-                        Lottery.Gift.notice(window[NAME].roomid, obj.data.raffleId, obj.data.type).always(() => {
-                            $.each(window[NAME].Lottery.list, (i, v) => {
-                                if (v === parseInt(obj.raffleId, 10)) {
-                                    window[NAME].Lottery.list.splice(i, 1);
-                                    return false;
-                                }
-                            });
-                            if (window[NAME].Lottery.list.length === 0) finish();
-                        });
-                        break;
-                    case 'SPECIAL_GIFT':
-                        if (obj.data['39'] !== undefined) {
-                            switch (obj.data['39'].action) {
-                                case 'start':
-                                    // 节奏风暴开始
-                                case 'end':
-                                    // 节奏风暴结束
+                            }, 9e3);
+                            if (!timer_max_time) {
+                                timer_max_time = setTimeout(() => {
+                                    // 到最大时间限度后的处理
+                                    if (timer_next) clearTimeout(timer_next);
+                                    timer_next = undefined;
+                                    timer_max_time = undefined;
+                                    Lottery.Gift.join(window[NAME].roomid, raffleList).always(() => {
+                                        raffleList = [];
+                                        if (run_finished) finish();
+                                    });
+                                }, ((obj.data.max_time || 180) - 1) * 1e3);
                             }
-                        };
-                    default:
-                        break;
-                }
-            });
-            Lottery.Gift.run(window[NAME].roomid).always(() => {
-                run_finished = true;
-                if (!new_raffle) finish();
-            });
+                            break;
+                        case 'RAFFLE_END':
+                            Lottery.Gift.notice(window[NAME].roomid, obj.data.raffleId, obj.data.type).always(() => {
+                                $.each(window[NAME].Lottery.list, (i, v) => {
+                                    if (v === parseInt(obj.raffleId, 10)) {
+                                        window[NAME].Lottery.list.splice(i, 1);
+                                        return false;
+                                    }
+                                });
+                                if (window[NAME].Lottery.list.length === 0) finish();
+                            });
+                            break;
+                        case 'SPECIAL_GIFT':
+                            if (obj.data['39'] !== undefined) {
+                                switch (obj.data['39'].action) {
+                                    case 'start':
+                                        // 节奏风暴开始
+                                    case 'end':
+                                        // 节奏风暴结束
+                                }
+                            };
+                        default:
+                            break;
+                    }
+                });
+                Lottery.Gift.run(window[NAME].roomid).always(() => {
+                    run_finished = true;
+                    if (!new_raffle) finish();
+                });
+            }
         } catch (err) {
             console.error('[' + NAME + ']子脚本运行时出现异常，已停止并关闭子页面');
             console.error('[' + NAME + ']', err);
@@ -380,7 +387,7 @@
         const runTommorrow = (callback) => {
             const t = new Date();
             t.setDate(t.getDate() + 1);
-            t.setHours(0, 5, 0, 0); // 加5分钟的延迟
+            t.setHours(0, 1, 0, 0); // 加1分钟的延迟
             setTimeout(callback, t.valueOf() - Date.now());
         };
 
@@ -521,8 +528,7 @@
                             IGNORE_NOTICE: false,
                             DELAY_MIN: 5,
                             DELAY_MAX: 10,
-                            DISCARD_RATE: 0.01,
-                            IGNORE_QUESTIONABLE_LOTTERY: true,
+                            DISCARD_RATE: 0,
                             REFRESH_INTERVAL: 60
                         },
                         GUARD_AWARD: true,
@@ -567,10 +573,9 @@
                             DELAY_MIN: '最小延时',
                             DELAY_MAX: '最大延时',
                             DISCARD_RATE: '丢弃率',
-                            IGNORE_QUESTIONABLE_LOTTERY: '忽略存疑的抽奖',
                             REFRESH_INTERVAL: '刷新间隔'
                         },
-                        GUARD_AWARD: '总督领奖',
+                        GUARD_AWARD: '舰队领奖',
                         MATERIAL_OBJECT_LOTTERY: '实物抽奖',
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
                             CHECK_INTERVAL: '检查间隔',
@@ -627,7 +632,6 @@
                             DELAY_MIN: '延时参加抽奖的最小值，为了不漏抽奖，限制在0~10之间，单位为秒',
                             DELAY_MAX: '延时参加抽奖的最大值，为了不漏抽奖，限制在0~20之间，单位为秒',
                             DISCARD_RATE: '丢弃每个抽奖的概率，数值在0~1之间',
-                            IGNORE_QUESTIONABLE_LOTTERY: '对部分礼物抽奖广播的数据存在疑问，勾选后不参加这部分抽奖',
                             REFRESH_INTERVAL: '设置页面自动刷新的时间间隔，设置为0则不启用，单位为分钟<br>太久导致页面崩溃将无法正常运行脚本'
                         },
                         MATERIAL_OBJECT_LOTTERY: '部分房间设有实物奖励抽奖，脚本使用穷举的方式检查是否有实物抽奖<br>请注意中奖后记得及时填写相关信息领取实物奖励',
@@ -909,7 +913,6 @@
                     DEBUG('Essential.Cache.load: CACHE', CACHE);
                 },
                 save: () => {
-                    DEBUG('Essential.Cache.save: CACHE', CACHE);
                     localStorage.setItem(NAME + '_CACHE', JSON.stringify(CACHE));
                 }
             },
@@ -967,10 +970,11 @@
                             if (response.msg === 'timeout') return Sign.run();
                             window.toast('[自动签到]' + response.data.text, 'caution');
                         }
+                        runTommorrow(Sign.run);
                     }, () => {
                         window.toast('[自动签到]签到失败，请检查网络', 'error');
+                        Sign.run();
                     });
-                    runTommorrow(Sign.run);
                 } catch (err) {
                     window.toast('[自动签到]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -987,6 +991,7 @@
                     return $.Deferred().reject();
                 }, () => {
                     window.toast('[自动应援团签到]获取应援团列表失败，请检查网络', 'error');
+                    return GroupSign.getGroups();
                 });
             },
             signInList: (list, i = 0) => {
@@ -1028,9 +1033,9 @@
                         GroupSign.signInList(list).then(() => {
                             CACHE.group_sign_ts = ts_ms();
                             Essential.Cache.save();
-                        });
-                    });
-                    runTommorrow(GroupSign.run);
+                            runTommorrow(GroupSign.run);
+                        }, () => tryAgain(GroupSign.run));
+                    }, () => tryAgain(GroupSign.run));
                 } catch (err) {
                     window.toast('[自动应援团签到]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1054,8 +1059,8 @@
                     Exchange.silver2coin().then(() => {
                         CACHE.exchange_ts = ts_ms();
                         Essential.Cache.save();
-                    });
-                    runTommorrow(Exchange.run);
+                        runTommorrow(Exchange.run);
+                    }, () => tryAgain(Exchange.run));
                 } catch (err) {
                     window.toast('[银瓜子换硬币]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1078,6 +1083,7 @@
                     }
                 }, () => {
                     window.toast('[银瓜子换硬币]兑换失败，请检查网络', 'error');
+                    return Exchange.silver2coin();
                 });
             }
         }; // Once Run every day
@@ -1158,11 +1164,11 @@
                         }
                     };
                     window.toast('[自动完成任务]检查任务完成情况', 'info');
-                    API.i.taskInfo().then(func).always(() => {
+                    API.i.taskInfo().then(func).then(() => {
                         CACHE.task_ts = ts_ms();
                         Essential.Cache.save();
                         Task.run_timer = setTimeout(Task.run, Task.interval);
-                    });
+                    }, () => tryAgain(Task.run));
                 } catch (err) {
                     window.toast('[自动完成任务]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1184,6 +1190,7 @@
                     }
                 }, () => {
                     window.toast('[自动完成任务]完成任务失败，请检查网络', 'error');
+                    return Task.receiveAward(task_id);
                 });
             }
         }; // Once Run every hour
@@ -1205,6 +1212,7 @@
                     if (response.data.pageinfo.curPage < response.data.pageinfo.totalpages) return Gift.getMedalList(page + 1);
                 }, () => {
                     window.toast('[自动送礼]获取勋章列表失败，请检查网络', 'error');
+                    return Gift.getMedalList(page);
                 });
             },
             getBagList: () => {
@@ -1214,6 +1222,7 @@
                     Gift.time = response.data.time;
                 }, () => {
                     window.toast('[自动送礼]获取包裹列表失败，请检查网络', 'error');
+                    return Gift.getBagList();
                 });
             },
             getFeedByGiftID: (gift_id) => {
@@ -1237,6 +1246,7 @@
                     }
                     const func = () => {
                         window.toast('[自动送礼]送礼失败，请检查网络', 'error');
+                        Gift.run();
                     };
                     API.room.room_init(CONFIG.AUTO_GIFT_CONFIG.ROOMID).then((response) => {
                         DEBUG('Gift.run: API.room.room_init', response);
@@ -1326,9 +1336,9 @@
                         Task.run();
                     }
                     if (MobileHeartbeat.run_timer) clearTimeout(MobileHeartbeat.run_timer);
-                    API.HeartBeat.mobile().always(() => {
+                    API.HeartBeat.mobile().then(() => {
                         MobileHeartbeat.run_timer = setTimeout(MobileHeartbeat.run, 300e3);
-                    });
+                    }, () => tryAgain(MobileHeartbeat.run));
                 } catch (err) {
                     window.toast('[移动端心跳]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1535,6 +1545,7 @@
                     }
                 }, () => {
                     window.toast('[自动领取瓜子]获取任务失败，请检查网络', 'error');
+                    return TreasureBox.getAward(captcha, cnt);
                 });
             },
             getCurrentTask: () => {
@@ -1544,6 +1555,7 @@
                     return $.Deferred().resolve(response);
                 }, () => {
                     window.toast('[自动领取瓜子]获取当前任务失败，请检查网络', 'error');
+                    return TreasureBox.getCurrentTask();
                 });
             },
             captcha: {
@@ -1553,8 +1565,7 @@
                         TreasureBox.captcha.cnt = 0;
                         return $.Deferred().reject();
                     }
-                    TreasureBox.captcha.cnt++;
-                    if (TreasureBox.captcha.cnt > 100) { // 允许验证码无法识别的次数
+                    if (TreasureBox.captcha.cnt > 500) { // 允许验证码无法识别的次数
                         // 验证码识别失败
                         TreasureBox.setMsg('验证码<br>识别<br>失败');
                         window.toast('[自动领取瓜子]验证码识别失败，已停止', 'error');
@@ -1563,6 +1574,7 @@
                     return API.TreasureBox.getCaptcha(ts_ms()).then((response) => {
                         DEBUG('TreasureBox.captcha.calc: getCaptcha', response);
                         if (response.code === 0) {
+                            TreasureBox.captcha.cnt++;
                             const p = $.Deferred();
                             TreasureBox.promise.calc = $.Deferred();
                             TreasureBox.promise.calc.then((captcha) => {
@@ -1578,12 +1590,12 @@
                             TreasureBox.DOM.image.attr('src', response.data.img);
                             return p;
                         } else {
-                            if (response.msg === 'timeout') return TreasureBox.captcha.calc();
                             window.toast('[自动领取瓜子]' + response.msg, 'caution');
-                            window.toast('[自动领取瓜子]加载验证码失败，已停止', 'error');
+                            return TreasureBox.captcha.calc();
                         }
                     }, () => {
                         window.toast('[自动领取瓜子]加载验证码失败，请检查网络', 'error');
+                        return TreasureBox.captcha.calc();
                     });
                 },
                 // 对B站验证码进行处理
@@ -1707,13 +1719,14 @@
                                 return Lottery.Guard.join(roomid, response.data.guard);
                             } else {
                                 if (response.msg === 'timeout') return Lottery.Guard.run();
-                                window.toast('[自动抽奖][总督领奖](roomid=' + roomid + ')' + response.msg, 'caution');
+                                window.toast('[自动抽奖][舰队领奖](roomid=' + roomid + ')' + response.msg, 'caution');
                             }
                         }, () => {
-                            window.toast('[自动抽奖][总督领奖]检查直播间(' + roomid + ')失败，请检查网络', 'error');
+                            window.toast('[自动抽奖][舰队领奖]检查直播间(' + roomid + ')失败，请检查网络', 'error');
+                            return Lottery.run(roomid);
                         });
                     } catch (err) {
-                        window.toast('[自动抽奖][总督领奖]运行时出现异常', 'error');
+                        window.toast('[自动抽奖][舰队领奖]运行时出现异常', 'error');
                         console.error('[' + NAME + ']', err);
                     }
                     return $.Deferred().reject();
@@ -1725,15 +1738,15 @@
                         return API.Lottery.Guard.join(roomid, obj.id, Info.csrf_token).then((response) => {
                             DEBUG('Lottery.Guard.join: API.Lottery.Guard.join', response);
                             if (response.code === 0) {
-                                window.toast('[自动抽奖][总督领奖]领取(roomid=' + roomid + ',id=' + obj.id + ')成功', 'success');
-                                window.toast('[自动抽奖][总督领奖]' + response.data.message, 'success');
+                                window.toast('[自动抽奖][舰队领奖]领取(roomid=' + roomid + ',id=' + obj.id + ')成功', 'success');
+                                window.toast('[自动抽奖][舰队领奖]' + response.data.message, 'success');
                             } else {
                                 if (response.msg === 'timeout') return Lottery.Guard.join(roomid, guard, i);
-                                window.toast('[自动抽奖][总督领奖](roomid=' + roomid + ',id=' + obj.id + ')' + response.msg, 'caution');
+                                window.toast('[自动抽奖][舰队领奖](roomid=' + roomid + ',id=' + obj.id + ')' + response.msg, 'caution');
                             }
                             return Lottery.Guard.join(roomid, guard, i + 1);
                         }, () => {
-                            window.toast('[自动抽奖][总督领奖]领取(roomid=' + roomid + ',id=' + obj.id + ')失败，请检查网络', 'error');
+                            window.toast('[自动抽奖][舰队领奖]领取(roomid=' + roomid + ',id=' + obj.id + ')失败，请检查网络', 'error');
                             return Lottery.Guard.join(roomid, guard, i + 1);
                         });
                     }
@@ -1757,9 +1770,8 @@
                             CACHE.last_aid = aid;
                             CACHE.materialobject_ts = ts_ms();
                             Essential.Cache.save();
-                        }).always(() => {
                             setTimeout(Lottery.MaterialObject.run, CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3);
-                        });
+                        }, () => tryAgain(Lottery.MaterialObject.run));
                     } catch (err) {
                         window.toast('[自动抽奖][实物抽奖]运行时出现异常', 'error');
                         console.error('[' + NAME + ']', err);
@@ -1769,7 +1781,7 @@
                 check: (aid, valid = false) => {
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = 166;
-                    DEBUG('Lottery.MaterialObject.check: aid:', aid);
+                    DEBUG('Lottery.MaterialObject.check: aid', aid);
                     return API.Lottery.MaterialObject.getStatus(aid).then((response) => {
                         if (response.code === 0) {
                             if (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.IGNORE_QUESTIONABLE_LOTTERY && Lottery.MaterialObject.ignore_keyword.some(v => response.data.title.toLowerCase().indexOf(v) > -1)) {
@@ -1787,6 +1799,7 @@
                         }
                     }, () => {
                         window.toast('[自动抽奖][实物抽奖]检查抽奖(aid=' + aid + ')失败，请检查网络', 'error');
+                        return Lottery.MaterialObject.check(aid, valid);
                     });
                 },
                 join: (aid, title, typeB, i = 0) => {
@@ -1856,6 +1869,7 @@
                         }
                     }, () => {
                         window.toast('[自动抽奖][实物抽奖]参加"' + obj.title + '"(aid=' + obj.aid + ',number=' + obj.number + ')失败，请检查网络', 'error');
+                        return Lottery.MaterialObject.draw(obj);
                     });
                 },
                 notice: (obj) => {
@@ -1880,6 +1894,7 @@
                         }
                     }, () => {
                         window.toast('[自动抽奖][实物抽奖]获取抽奖"' + obj.title + '"(aid=' + obj.aid + ',number=' + obj.number + ')中奖名单失败，请检查网络', 'error');
+                        return Lottery.MaterialObject.notice(obj);
                     });
                 }
             },
@@ -1901,6 +1916,7 @@
                 });
                 iframe.contentWindow[NAME] = {
                     roomid: roomid,
+                    type: 'LOTTERY',
                     promise: {
                         finish: p, // 这个Promise在iframe需要删除时resolve
                         sync: $.Deferred() // 这个Promise在子脚本的CONIG、CACHE、Info等需要重新读取时resolve
@@ -1925,21 +1941,19 @@
                     Lottery.ws = new API.DanmuWebSocket(Info.uid, Info.roomid);
                     Lottery.ws.bind((ws) => {
                         Lottery.ws = ws;
-                        window.toast('[自动抽奖]弹幕服务器连接断开，已重连', 'caution');
+                        window.toast('[自动抽奖]弹幕服务器连接断开，尝试重连', 'caution');
                     }, () => {
                         window.toast('[自动抽奖]连接弹幕服务器成功', 'success');
                     }, undefined, (obj) => {
+                        DEBUG('DanmuWebSocket', obj);
                         switch (obj.cmd) {
-                            case 'SYS_MSG':
+                            case 'NOTICE_MSG':
                                 if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                                 if (window[NAME].Lottery.stop || obj.real_roomid === undefined) break;
-                                if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_QUESTIONABLE_LOTTERY) {
-                                    if (obj.broadcast_type === 1) break;
-                                }
                                 // 监听策略：以下情况开始尝试创建一个iframe
                                 // 1) 本次roomid与上一次的roomid不同时
-                                // 2) 9s内没有收到新的SYS_MSG
-                                // 3) 150s内一直是同一个直播间的SYS_MSG
+                                // 2) 9s内没有收到新的NOTICE_MSG
+                                // 3) 150s内一直是同一个直播间的NOTICE_MSG
                                 if (timer_last_roomid) {
                                     clearTimeout(timer_last_roomid);
                                     timer_last_roomid = undefined;
@@ -1985,29 +1999,33 @@
                             case 'RAFFLE_START':
                                 if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                                 if (window[NAME].Lottery.stop) break;
-                                API.Lottery.Gift.join(Info.roomid, obj.data.raffleId, Info.csrf_token, Info.visit_id).then((response) => {
-                                    switch (response.code) {
-                                        case 0:
-                                            window.toast('[自动抽奖][礼物抽奖]已参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')', 'success');
-                                            break;
-                                        case 400:
-                                            window[NAME].Lottery.stop = true;
-                                            window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
-                                            break;
-                                        case 402:
-                                            // 抽奖已过期，下次再来吧
-                                            break;
-                                        case 65531:
-                                            // 65531: 非当前直播间或短ID直播间试图参加抽奖
-                                            window[NAME].Lottery.stop = true;
-                                            window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')失败，已停止', 'error');
-                                            break;
-                                        default:
-                                            window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')' + response.msg, 'caution');
-                                    }
-                                }, () => {
-                                    window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')失败，请检查网络', 'error');
-                                });
+                                const _join = () => {
+                                    return API.Lottery.Gift.join(Info.roomid, obj.data.raffleId, Info.csrf_token, Info.visit_id).then((response) => {
+                                        switch (response.code) {
+                                            case 0:
+                                                window.toast('[自动抽奖][礼物抽奖]已参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')', 'success');
+                                                break;
+                                            case 400:
+                                                window[NAME].Lottery.stop = true;
+                                                window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                                break;
+                                            case 402:
+                                                // 抽奖已过期，下次再来吧
+                                                break;
+                                            case 65531:
+                                                // 65531: 非当前直播间或短ID直播间试图参加抽奖
+                                                window[NAME].Lottery.stop = true;
+                                                window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')失败，已停止', 'error');
+                                                break;
+                                            default:
+                                                window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')' + response.msg, 'caution');
+                                        }
+                                    }, () => {
+                                        window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + Info.roomid + ',raffleId=' + obj.data.raffleId + ')失败，请检查网络', 'error');
+                                        return _join();
+                                    });
+                                };
+                                _join();
                                 break;
                             case 'RAFFLE_END':
                                 if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
@@ -2100,7 +2118,7 @@
                             p2.then(() => {
                                 initFailed = true;
                             });
-                            let timer_p2 = setTimeout(() => p2.resolve(), 10e3);
+                            let timer_p2 = setTimeout(() => p2.resolve(), 30e3);
                             runUntilSucceed(() => {
                                 try {
                                     if (initFailed) {
@@ -2109,8 +2127,9 @@
                                         p.reject();
                                         return true;
                                     }
-                                    DEBUG('Init: InitData: BilibiliLive', window.BilibiliLive);
                                     if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0 || !window.__statisObserver) return false;
+                                    DEBUG('Init: InitData: BilibiliLive', window.BilibiliLive);
+                                    DEBUG('Init: InitData: __statisObserver', window.__statisObserver);
                                     clearTimeout(timer_p2);
                                     timer_p2 = undefined;
                                     if (parseInt(window.BilibiliLive.UID, 10) === 0 || isNaN(parseInt(window.BilibiliLive.UID, 10))) {
