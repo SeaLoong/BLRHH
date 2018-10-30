@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.2
+// @version      1.3.3
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -59,11 +59,12 @@ var BilibiliAPI = {
         mobile: () => BilibiliAPI.mobile.userOnlineHeart()
     },
     DailyReward: {
-        task: () => BilibiliAPI.home.reward(),
-        login: () => BilibiliAPI.home.home(),
+        task: () => BilibiliAPI.home.reward(), // CORS
+        exp: () => BilibiliAPI.exp(),
+        login: () => BilibiliAPI.x.now(),
         watch: (aid, cid, mid, csrf, start_ts, played_time, realtime, type, play_type, dt) => BilibiliAPI.x.heartbeat(aid, cid, mid, csrf, start_ts, played_time, realtime, type, play_type, dt),
-        coin: (aid, csrf, multiply) => BilibiliAPI.x.add(aid, csrf, multiply),
-        share: () => {}
+        coin: (aid, csrf, multiply) => BilibiliAPI.x.coin_add(aid, csrf, multiply),
+        share: (aid, csrf) => BilibiliAPI.x.share_add(aid, csrf)
     },
     // ajax调用B站API
     last_ajax: 0,
@@ -97,6 +98,12 @@ var BilibiliAPI = {
     ajaxGetCaptchaKey: () => {
         return BilibiliAPI.ajax({
             url: '//www.bilibili.com/plus/widget/ajaxGetCaptchaKey.php?js'
+        });
+    },
+    exp: () => {
+        // 获取今日已获得的投币经验?
+        return BilibiliAPI.ajax({
+            url: '//www.bilibili.com/plus/account/exp.php'
         });
     },
     msg: (roomid, csrf_token, visit_id) => {
@@ -466,13 +473,6 @@ var BilibiliAPI = {
             // 获取每日奖励情况
             return BilibiliAPI.ajax({
                 url: '//account.bilibili.com/home/reward'
-            });
-        },
-        home: () => {
-            // 每日登录
-            return BilibiliAPI.ajax({
-                url: '//account.bilibili.com/account/home',
-                dataType: 'html'
             });
         }
     },
@@ -857,6 +857,20 @@ var BilibiliAPI = {
             return BilibiliAPI.ajax({
                 url: 'room/v1/Room/room_init?id=' + id
             });
+        },
+        getRoomList: (parent_area_id = 1, cate_id = 0, area_id = 0, page = 1, page_size = 30, sort_type = 'online', platform = 'web') => {
+            return BilibiliAPI.ajax({
+                url: 'room/v1/area/getRoomList',
+                data: {
+                    platform: platform,
+                    parent_area_id: parent_area_id,
+                    cate_id: cate_id,
+                    area_id: area_id,
+                    sort_type: sort_type,
+                    page: page,
+                    page_size: page_size
+                }
+            });
         }
     },
     sign: {
@@ -902,7 +916,7 @@ var BilibiliAPI = {
         }
     },
     x: {
-        add: (aid, csrf, multiply = 1) => {
+        coin_add: (aid, csrf, multiply = 1) => {
             // 投币
             return BilibiliAPI.ajax({
                 method: 'POST',
@@ -915,8 +929,20 @@ var BilibiliAPI = {
                 }
             });
         },
-        heartbeat: (aid, cid, mid, csrf, start_ts, played_time = 0, realtime = 0, type = 3, play_type = 2, dt = 2) => {
-            // B站视频心跳，观看视频任务判定
+        share_add: (aid, csrf) => {
+            // 分享
+            return BilibiliAPI.ajax({
+                method: 'POST',
+                url: '//api.bilibili.com/x/web-interface/share/add',
+                data: {
+                    aid: aid,
+                    csrf: csrf,
+                    jsonp: 'jsonp'
+                }
+            });
+        },
+        heartbeat: (aid, cid, mid, csrf, start_ts, played_time = 0, realtime = 0, type = 3, play_type = 1, dt = 2) => {
+            // B站视频心跳
             return BilibiliAPI.ajax({
                 method: 'POST',
                 url: '//api.bilibili.com/x/report/web/heartbeat',
@@ -925,12 +951,21 @@ var BilibiliAPI = {
                     cid: cid,
                     mid: mid, // uid
                     csrf: csrf,
-                    start_ts: start_ts || Date.now(),
+                    start_ts: start_ts || (Date.now() / 1000),
                     played_time: played_time,
                     realtime: realtime,
                     type: type,
-                    play_type: play_type,
+                    play_type: play_type, // 1:播放开始，2:播放中
                     dt: dt
+                }
+            });
+        },
+        now: () => {
+            // 点击播放视频时出现的事件，可能与登录/观看视频判定有关
+            return BilibiliAPI.ajax({
+                url: '//api.bilibili.com/x/report/click/now',
+                data: {
+                    jsonp: 'jsonp'
                 }
             });
         }
