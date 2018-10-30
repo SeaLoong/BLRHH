@@ -1,11 +1,6 @@
 # Bilibili直播间挂机助手/Bilibili-LRHH/BLRHH
 
-![ECMAScript 5](https://img.shields.io/badge/ECMAScript_5-unsupport-red.svg?longCache=true)
-![ECMAScript 6](https://img.shields.io/badge/ECMAScript_6-pass-green.svg?longCache=true)
-![TamperMonkey 4.6](https://img.shields.io/badge/TamperMonkey_4.6-pass-green.svg?longCache=true)
-![Chromium 67](https://img.shields.io/badge/Chromium_67-pass-green.svg?longCache=true)
-![Firefox 61](https://img.shields.io/badge/Firefox_61-pass-green.svg?longCache=true)
-[![Issues](https://img.shields.io/github/issues/SeaLoong/Bilibili-LRHH.svg)](https://github.com/SeaLoong/Bilibili-LRHH/issues)
+![ECMAScript 5](https://img.shields.io/badge/ECMAScript_5-unsupport-red.svg?longCache=true) ![ECMAScript 6](https://img.shields.io/badge/ECMAScript_6-pass-green.svg?longCache=true) ![TamperMonkey 4.6](https://img.shields.io/badge/TamperMonkey_4.6-pass-green.svg?longCache=true) ![Chromium 67](https://img.shields.io/badge/Chromium_67-pass-green.svg?longCache=true) ![Firefox 61](https://img.shields.io/badge/Firefox_61-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/Bilibili-LRHH.svg)](https://github.com/SeaLoong/Bilibili-LRHH/issues)
 
 > 该脚本为TamperMonkey脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不能保证正常运行  
 > 当脚本无法正常运行时，请把广告拦截插件关闭后重试
@@ -17,6 +12,7 @@
 2. 进入[Bilibili直播间挂机助手](https://greasyfork.org/zh-CN/scripts/37095-bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B)页面，点击"安装此脚本"即可从GreasyFork更新此脚本
 3. 或者点击[Bilibili直播间挂机助手](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js)，将代码复制下来。然后从脚本管理器中新建一个脚本，将自动生成的内容删除，粘贴复制的代码即可从Github更新此脚本
 4. 进入直播间页面，右下角多出个"挂机助手设置"，选择自己需要的功能，保存刷新即可
+
 -----------------
 
 ## 已实现功能
