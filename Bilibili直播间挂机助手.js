@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.1.0
+// @version      2.1.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -93,40 +93,40 @@
 
     if (isSubScript()) {
         try {
-            if (window[NAME].type === 'LOTTERY') {
-                try {
-                    // 拦截弹幕服务器连接
-                    const webSocketConstructor = WebSocket.prototype.constructor;
-                    WebSocket.prototype.constructor = (url, protocols) => {
-                        if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
-                        throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
-                    };
-                } catch (err) {};
-                try {
-                    // 拦截直播流
-                    window.fetch = () => new Promise(() => {
-                        throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
-                    });
-                } catch (err) {};
-                // 清空页面元素和节点
-                try {
-                    $('html').remove();
-                } catch (err) {};
-                // 读取父脚本数据
-                window.toast = window.parent.toast;
+            try {
+                // 拦截弹幕服务器连接
+                const webSocketConstructor = WebSocket.prototype.constructor;
+                WebSocket.prototype.constructor = (url, protocols) => {
+                    if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
+                    throw new Error('子脚本弹幕服务器连接已拦截 by ' + NAME);
+                };
+            } catch (err) {};
+            try {
+                // 拦截直播流
+                window.fetch = () => new Promise(() => {
+                    throw new Error('子脚本直播流fetch已拦截 by ' + NAME);
+                });
+            } catch (err) {};
+            // 清空页面元素和节点
+            try {
+                $('html').remove();
+            } catch (err) {};
+            // 读取父脚本数据
+            window.toast = window.parent.toast;
+            Info = window.parent[NAME].Info;
+            CONFIG = window.parent[NAME].CONFIG;
+            CACHE = window.parent[NAME].CACHE;
+            window[NAME].promise.sync.then(() => {
                 Info = window.parent[NAME].Info;
                 CONFIG = window.parent[NAME].CONFIG;
                 CACHE = window.parent[NAME].CACHE;
-                window[NAME].promise.sync.then(() => {
-                    Info = window.parent[NAME].Info;
-                    CONFIG = window.parent[NAME].CONFIG;
-                    CACHE = window.parent[NAME].CACHE;
-                    // 这里不能直接重置window[NAME].promise.sync为新的promise，要回到主脚本中重置
-                    window[NAME].promise.syncFinish.resolve();
-                });
-                window[NAME].Lottery = {
-                    list: []
-                };
+                // 这里不能直接重置window[NAME].promise.sync为新的promise，要回到主脚本中重置
+                window[NAME].promise.syncFinish.resolve();
+            });
+            window[NAME].Lottery = {
+                list: []
+            };
+            if (window[NAME].type === 'LOTTERY') {
                 // 正式执行子脚本
                 const Lottery = {
                     ws: undefined,
@@ -356,11 +356,6 @@
                     Lottery.ws = ws;
                 }, undefined, undefined, (obj) => {
                     switch (obj.cmd) {
-                        case 'GUARD_BUY':
-                        case 'GUARD_LOTTERY_START':
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
-                            Lottery.Guard.run(window[NAME].roomid);
-                            break;
                         case 'RAFFLE_START':
                             // 1) 可能是有连续送礼，直到连续9s后没有RAFFLE_START
                             // 2) max_time(通常是180s)-1s后还有连续送礼，强制参加
@@ -431,8 +426,6 @@
             window[NAME].promise.finish.resolve();
         }
     } else {
-        if (location.hostname !== 'live.bilibili.com') return;
-
         const runTommorrow = (callback) => {
             const t = new Date(ts_ms());
             t.setDate(t.getDate() + 1);
@@ -1413,7 +1406,6 @@
                             return API.gift.bag_send(Info.uid, v.gift_id, Gift.ruid, feed_num, v.bag_id, Gift.room_id, Info.rnd, Info.csrf_token, Info.visit_id).then((response) => {
                                 DEBUG('Gift.sendGift: API.gift.bag_send', response);
                                 if (response.code === 0) {
-                                    Info.rnd = response.data.rnd;
                                     Gift.remain_feed -= feed_num * feed;
                                     window.toast('[自动送礼]包裹送礼成功，送出' + feed_num + '个' + v.gift_name, 'success');
                                 } else {
@@ -1819,8 +1811,8 @@
                     try {
                         return API.Lottery.Guard.check(roomid).then((response) => {
                             DEBUG('Lottery.Guard.run: API.Lottery.Guard.check', response);
-                            if (response.code === 0 && response.data.hasOwnProperty('guard')) {
-                                return Lottery.Guard.join(roomid, response.data.guard);
+                            if (response.code === 0) {
+                                return Lottery.Guard.join(roomid, response.data);
                             } else {
                                 window.toast('[自动抽奖][舰队领奖](roomid=' + roomid + ')' + response.msg, 'caution');
                             }
@@ -1853,7 +1845,7 @@
                             return tryAgain(() => Lottery.Guard.join(roomid, guard, i));
                         });
                     }
-                    return $.Deferred().resolve();
+                    return Lottery.Guard.join(roomid, guard, i + 1);
                 }
             },
             MaterialObject: {
@@ -2004,11 +1996,12 @@
                     });
                 }
             },
-            create: (roomid) => {
+            create: (roomid, url = '') => {
                 // roomid过滤，防止创建多个同样roomid的iframe
                 if (window[NAME].Lottery.iframeList.some(v => v.contentWindow[NAME].roomid === roomid)) return;
                 const iframe = $('<iframe style="display: none;"></iframe>')[0];
-                iframe.src = '//live.bilibili.com/' + roomid + '?visit_id=' + Info.visit_id;
+                if (url) iframe.src = url.replace('http:', '').replace('https:', '');
+                else iframe.src = '//live.bilibili.com/' + roomid + '?visit_id=' + Info.visit_id;
                 document.body.appendChild(iframe);
                 const p = $.Deferred();
                 p.then(() => {
@@ -2040,59 +2033,84 @@
                     window.toast('[自动抽奖]' + area + '弹幕服务器连接断开，尝试重连', 'caution');
                 }, () => {
                     window.toast('[自动抽奖]' + area + '连接弹幕服务器成功', 'success');
-                }, undefined, (obj) => {
-                    DEBUG('DanmuWebSocket', obj);
+                }, undefined, (obj, str) => {
+                    if (obj.cmd !== 'DANMU_MSG' &&
+                        obj.cmd !== 'SEND_GIFT' &&
+                        obj.cmd !== 'ENTRY_EFFECT' &&
+                        obj.cmd !== 'WELCOME' &&
+                        obj.cmd !== 'WELCOME_GUARD' &&
+                        obj.cmd !== 'COMBO_SEND' &&
+                        obj.cmd !== 'COMBO_END' &&
+                        obj.cmd !== 'WISH_BOTTLE' &&
+                        obj.cmd !== 'ROOM_RANK') {
+                        DEBUG('DanmuWebSocket' + area, str);
+                    }
                     switch (obj.cmd) {
                         case 'NOTICE_MSG':
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
-                            if (window[NAME].Lottery.stop || obj.real_roomid === undefined) break;
-                            // 监听策略：以下情况开始尝试创建一个iframe
-                            // 1) 本次roomid与上一次的roomid不同时
-                            // 2) 9s内没有收到新的NOTICE_MSG
-                            // 3) 150s内一直是同一个直播间的NOTICE_MSG
-                            if (timer_last_roomid) {
-                                clearTimeout(timer_last_roomid);
-                                timer_last_roomid = undefined;
-                            }
-                            if (obj.real_roomid !== last_roomid && last_roomid !== undefined) {
-                                // 直播间不同的处理
-                                if (timer_same_roomid_maxtime) clearTimeout(timer_same_roomid_maxtime);
-                                timer_same_roomid_maxtime = undefined;
-                                Lottery.create(last_roomid);
-                            } else {
-                                if (!timer_same_roomid_maxtime) {
-                                    // 同一直播间等待150s
-                                    timer_same_roomid_maxtime = setTimeout(() => {
-                                        // 过150s还是同一个直播间的处理
-                                        if (timer_last_roomid) clearTimeout(timer_last_roomid);
+                            switch (obj.msg_type) {
+                                case 1:
+                                    // 系统
+                                    break;
+                                case 2:
+                                    // 礼物抽奖
+                                    if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
+                                    if (window[NAME].Lottery.stop || obj.real_roomid === undefined) break;
+                                    // 监听策略：以下情况开始尝试创建一个iframe
+                                    // 1) 本次roomid与上一次的roomid不同时
+                                    // 2) 9s内没有收到新的NOTICE_MSG
+                                    // 3) 150s内一直是同一个直播间的NOTICE_MSG
+                                    if (timer_last_roomid) {
+                                        clearTimeout(timer_last_roomid);
                                         timer_last_roomid = undefined;
+                                    }
+                                    if (obj.real_roomid !== last_roomid && last_roomid !== undefined) {
+                                        // 直播间不同的处理
+                                        if (timer_same_roomid_maxtime) clearTimeout(timer_same_roomid_maxtime);
                                         timer_same_roomid_maxtime = undefined;
-                                        Lottery.create(obj.real_roomid);
+                                        Lottery.create(last_roomid, obj.link_url);
+                                    } else {
+                                        if (!timer_same_roomid_maxtime) {
+                                            // 同一直播间等待150s
+                                            timer_same_roomid_maxtime = setTimeout(() => {
+                                                // 过150s还是同一个直播间的处理
+                                                if (timer_last_roomid) clearTimeout(timer_last_roomid);
+                                                timer_last_roomid = undefined;
+                                                timer_same_roomid_maxtime = undefined;
+                                                Lottery.create(obj.real_roomid, obj.link_url);
+                                                last_roomid = undefined;
+                                            }, 150e3);
+                                        }
+                                    }
+                                    // 连续收到抽奖消息等待9s
+                                    timer_last_roomid = setTimeout(() => {
+                                        // 过9s没抽奖消息的处理
+                                        if (timer_same_roomid_maxtime) clearTimeout(timer_same_roomid_maxtime);
+                                        timer_same_roomid_maxtime = undefined;
+                                        timer_last_roomid = undefined;
+                                        Lottery.create(obj.real_roomid, obj.link_url);
                                         last_roomid = undefined;
-                                    }, 150e3);
-                                }
+                                    }, 9e3);
+                                    last_roomid = obj.real_roomid;
+                                    break;
+                                case 3:
+                                    // 舰队领奖
+                                    if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
+                                    Lottery.Guard.run(obj.real_roomid);
+                                    break;
+                                case 4:
+                                    // 登船
+                                    break;
+                                case 5:
+                                    // 获奖
+                                case 6:
+                                    // 节奏风暴
+                                    break;
                             }
-                            // 连续收到抽奖消息等待9s
-                            timer_last_roomid = setTimeout(() => {
-                                // 过9s没抽奖消息的处理
-                                if (timer_same_roomid_maxtime) clearTimeout(timer_same_roomid_maxtime);
-                                timer_same_roomid_maxtime = undefined;
-                                timer_last_roomid = undefined;
-                                Lottery.create(obj.real_roomid);
-                                last_roomid = undefined;
-                            }, 9e3);
-                            last_roomid = obj.real_roomid;
                             break;
-                        case 'GUARD_MSG':
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
-                            if (obj.roomid === undefined) break;
-                            Lottery.Guard.run(obj.roomid);
-                            break;
-                        case 'GUARD_BUY':
-                        case 'GUARD_LOTTERY_START':
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
-                            Lottery.Guard.run(Info.roomid);
-                            break;
+                            // case 'GUARD_LOTTERY_START':
+                            //     if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) return;
+                            //     Lottery.Guard.run(obj.data.roomid);
+                            //     break;
                         case 'RAFFLE_START':
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                             if (window[NAME].Lottery.stop) break;
@@ -2180,14 +2198,14 @@
                         stop: false, // 标记是否停止抽奖
                         iframeList: [] // 记录已经创建的iframe
                     };
-                    const areas = ['娱乐区', '游戏区', '手游区', '绘画区'];
+                    const areas = ['[娱乐区]', '[游戏区]', '[手游区]', '[绘画区]'];
                     for (let i = 1; i < 5; i++) {
                         API.room.getRoomList(i).then((response) => {
                             if (response.code === 0) {
                                 if (Info.roomid === response.data[0].roomid) {
                                     Lottery.listen(Info.uid, Info.roomid, areas[i - 1]);
                                 } else {
-                                    Lottery.listen(response.data[0].uid, response.data[0].roomid, areas[i - 1]);
+                                    Lottery.listen(Info.uid, response.data[0].roomid, areas[i - 1]);
                                 }
                             }
                         });
@@ -2210,7 +2228,8 @@
                 Essential.init().then(() => {
                     const uniqueCheck = () => {
                         const p1 = $.Deferred();
-                        if (ts_s() - CACHE.unique_check >= 0 && ts_s() - CACHE.unique_check <= 10) {
+                        const t = Date.now() / 1000;
+                        if (t - CACHE.unique_check >= 0 && t - CACHE.unique_check <= 10) {
                             // 其他脚本正在运行
                             return p1.reject();
                         }
@@ -2220,7 +2239,7 @@
                     uniqueCheck().then(() => {
                         let timer_unique;
                         const uniqueMark = () => {
-                            CACHE.unique_check = ts_s();
+                            CACHE.unique_check = Date.now() / 1000;
                             Essential.Cache.save();
                             timer_unique = setTimeout(uniqueMark, 2e3);
                         };

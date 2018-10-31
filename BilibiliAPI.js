@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.3
+// @version      1.3.4
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -42,7 +42,7 @@ var BilibiliAPI = {
             getWinnerGroupInfo: (aid, number) => BilibiliAPI.lottery.box.getWinnerGroupInfo(aid, number)
         },
         Guard: {
-            check: (roomid) => BilibiliAPI.lottery.lottery.check(roomid),
+            check: (roomid) => BilibiliAPI.lottery.lottery.check_guard(roomid),
             join: (roomid, id, csrf_token) => BilibiliAPI.lottery.lottery.join(roomid, id, csrf_token)
         }
     },
@@ -706,17 +706,17 @@ var BilibiliAPI = {
             }
         },
         lottery: {
-            check: (roomid) => {
-                // 检查是否有总督领奖(与节奏风暴?)
+            check_guard: (roomid) => {
+                // 检查是否有舰队领奖
                 return BilibiliAPI.ajax({
-                    url: 'lottery/v1/lottery/check?roomid=' + roomid
+                    url: 'lottery/v1/Lottery/check_guard?roomid=' + roomid
                 });
             },
             join: (roomid, id, csrf_token, visit_id, type = 'guard') => {
                 // 参加总督领奖
                 return BilibiliAPI.ajax({
                     method: 'POST',
-                    url: 'lottery/v1/lottery/join',
+                    url: 'lottery/v2/Lottery/join',
                     data: {
                         roomid: roomid,
                         id: id,
