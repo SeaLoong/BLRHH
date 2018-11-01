@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.1.1
+// @version      2.1.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -161,7 +161,6 @@
                                         window.toast('[自动抽奖][舰队领奖]' + response.data.message, 'success');
                                     } else {
                                         window.toast('[自动抽奖][舰队领奖](roomid=' + roomid + ',id=' + obj.id + ')' + response.msg, 'caution');
-                                        return Lottery.Guard.join(roomid, guard, i);
                                     }
                                     return Lottery.Guard.join(roomid, guard, i + 1);
                                 }, () => {
@@ -392,6 +391,7 @@
                             }
                             break;
                         case 'RAFFLE_END':
+                            if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_NOTICE) return;
                             Lottery.Gift.notice(window[NAME].roomid, obj.data.raffleId, obj.data.type).always(() => {
                                 $.each(window[NAME].Lottery.list, (i, v) => {
                                     if (v === parseInt(obj.raffleId, 10)) {
@@ -1837,7 +1837,6 @@
                                 window.toast('[自动抽奖][舰队领奖]' + response.data.message, 'success');
                             } else {
                                 window.toast('[自动抽奖][舰队领奖](roomid=' + roomid + ',id=' + obj.id + ')' + response.msg, 'caution');
-                                return Lottery.Guard.join(roomid, guard, i);
                             }
                             return Lottery.Guard.join(roomid, guard, i + 1);
                         }, () => {
@@ -2143,7 +2142,7 @@
                             _join();
                             break;
                         case 'RAFFLE_END':
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
+                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY || CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.IGNORE_NOTICE) return;
                             if (window[NAME].Lottery.stop) break;
                             API.Lottery.Gift.notice(obj.data.raffleId, obj.data.type).then((response) => {
                                 DEBUG('Lottery.Gift.notice: API.Lottery.Gift.notice', response);
