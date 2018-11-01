@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.1.2
+// @version      2.1.3
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -2051,6 +2051,7 @@
                                     // 系统
                                     break;
                                 case 2:
+                                case 8: // 很行啊
                                     // 礼物抽奖
                                     if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) return;
                                     if (window[NAME].Lottery.stop || obj.real_roomid === undefined) break;
