@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.2.0
+// @version      2.2.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -289,10 +289,11 @@
             }, undefined, undefined, (obj) => {
                 switch (obj.cmd) {
                     case 'GUARD_LOTTERY_START':
-                        if (Info.blocked || !obj.lottery.id) break;
-                        if (obj.roomid === window[NAME].roomid) Lottery.Guard._join(window[NAME].roomid, obj.lottery.id);
+                        if (Info.blocked || !obj.data.lottery.id) break;
+                        if (obj.roomid === window[NAME].roomid) Lottery.Guard._join(window[NAME].roomid, obj.data.lottery.id);
                         break;
                     case 'RAFFLE_START':
+                    case 'TV_START':
                         if (Info.blocked || !obj.data.raffleId) break;
                         Lottery.Gift._join(window[NAME].roomid, obj.data.raffleId);
                         break;
@@ -445,6 +446,7 @@
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY: true,
                         GIFT_LOTTERY_CONFIG: {
+                            LISTEN_NUMBER: 1,
                             REFRESH_INTERVAL: 0
                         },
                         GUARD_AWARD: true,
@@ -485,6 +487,7 @@
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY: '礼物抽奖',
                         GIFT_LOTTERY_CONFIG: {
+                            LISTEN_NUMBER: '监听倍数',
                             REFRESH_INTERVAL: '刷新间隔'
                         },
                         GUARD_AWARD: '舰队领奖',
@@ -519,6 +522,7 @@
                 PLACEHOLDER: {
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY_CONFIG: {
+                            LISTEN_NUMBER: '1~5，默认1',
                             REFRESH_INTERVAL: '单位(分钟)'
                         },
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
@@ -537,6 +541,7 @@
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY: '包括小电视、摩天大楼、C位光环及其他可以通过送礼触发广播的抽奖<br>注意：由于内部实现，抽奖内置9s左右(最多接近3分钟)的延迟，与下方的延时抽奖会累加计算',
                         GIFT_LOTTERY_CONFIG: {
+                            LISTEN_NUMBER: '设置在四大分区中的每一个分区监听的直播间的数量，1~5之间的一个整数<br>可能导致占用大量内存或导致卡顿',
                             REFRESH_INTERVAL: '设置页面自动刷新的时间间隔，设置为0则不启用，单位为分钟<br>太久导致页面崩溃将无法正常运行脚本'
                         },
                         MATERIAL_OBJECT_LOTTERY: '部分房间设有实物奖励抽奖，脚本使用穷举的方式检查是否有实物抽奖<br>请注意中奖后记得及时填写相关信息领取实物奖励',
@@ -773,9 +778,25 @@
                 },
                 fix: (config) => {
                     // 修正设置项中不合法的参数，针对有输入框的设置项
+                    if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER === undefined) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER;
+                    config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = parseInt(config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER, 10);
+                    if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER < 1) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = 1;
+                    else if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER > 5) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = 5;
+
+                    if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL === undefined) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL;
+                    config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = parseInt(config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL, 10);
                     if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL < 0) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = 0;
+
+                    if (config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL === undefined) config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL;
+                    config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL = parseInt(config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL, 10);
                     if (config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL < 0) config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL = 0;
+
+                    if (config.AUTO_GIFT_CONFIG.ROOMID === undefined) config.AUTO_GIFT_CONFIG.ROOMID = Essential.Config.CONFIG_DEFAULT.AUTO_GIFT_CONFIG.ROOMID;
+                    config.AUTO_GIFT_CONFIG.ROOMID = parseInt(config.AUTO_GIFT_CONFIG.ROOMID, 10);
                     if (config.AUTO_GIFT_CONFIG.ROOMID < 0) config.AUTO_GIFT_CONFIG.ROOMID = 0;
+
+                    if (config.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER === undefined) config.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER = Essential.Config.CONFIG_DEFAULT.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER;
+                    config.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER = parseInt(config.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER, 10);
                     if (config.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER < 0) config.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER = 0;
                     return config;
                 },
@@ -1906,7 +1927,7 @@
             create: (roomid, real_roomid, type, link_url) => {
                 if (!real_roomid) real_roomid = roomid;
                 // roomid过滤，防止创建多个同样roomid的iframe
-                if (window[NAME].Lottery.iframeList.some(v => v.contentWindow[NAME].roomid === real_roomid)) return;
+                if (window[NAME].Lottery.iframeList.some(v => v.roomid === real_roomid)) return;
                 const iframe = $('<iframe style="display: none;"></iframe>')[0];
                 if (link_url) iframe.src = link_url.replace('https:', '').replace('http:', '') + '&visit_id=' + Info.visit_id;
                 else iframe.src = '//live.bilibili.com/' + roomid + '?visit_id=' + Info.visit_id;
@@ -1921,6 +1942,7 @@
                         }
                     });
                 });
+                iframe.roomid = real_roomid;
                 iframe.contentWindow[NAME] = {
                     roomid: real_roomid,
                     type: type,
@@ -1932,28 +1954,28 @@
                 window[NAME].Lottery.iframeList.push(iframe);
                 DEBUG('Lottery.create: iframe', iframe);
             },
-            listen: (uid, roomid, area = '') => {
+            listen: (uid, roomid, area = '', debugall = false) => {
                 let ws = new API.DanmuWebSocket(uid, roomid);
                 Lottery.wsList.push(ws);
                 ws.bind((newws) => {
                     ws = newws;
-                    window.toast('[自动抽奖]' + area + '[' + roomid + ']弹幕服务器连接断开，尝试重连', 'caution');
+                    window.toast('[自动抽奖]' + area + '(' + roomid + ')弹幕服务器连接断开，尝试重连', 'caution');
                 }, () => {
-                    window.toast('[自动抽奖]' + area + '[' + roomid + ']连接弹幕服务器成功', 'success');
+                    window.toast('[自动抽奖]' + area + '(' + roomid + ')连接弹幕服务器成功', 'success');
                 }, undefined, (obj, str) => {
-                    if (obj.cmd !== 'DANMU_MSG' &&
-                        obj.cmd !== 'SEND_GIFT' &&
-                        obj.cmd !== 'ENTRY_EFFECT' &&
-                        obj.cmd !== 'WELCOME' &&
-                        obj.cmd !== 'WELCOME_GUARD' &&
-                        obj.cmd !== 'COMBO_SEND' &&
-                        obj.cmd !== 'COMBO_END' &&
-                        obj.cmd !== 'WISH_BOTTLE' &&
-                        obj.cmd !== 'ROOM_RANK') {
-                        DEBUG('DanmuWebSocket' + area, str);
-                    }
                     switch (obj.cmd) {
+                        case 'DANMU_MSG':
+                        case 'SEND_GIFT':
+                        case 'ENTRY_EFFECT':
+                        case 'WELCOME':
+                        case 'WELCOME_GUARD':
+                        case 'COMBO_SEND':
+                        case 'COMBO_END':
+                        case 'WISH_BOTTLE':
+                        case 'ROOM_RANK':
+                            break;
                         case 'NOTICE_MSG':
+                            if (debugall) DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             switch (obj.msg_type) {
                                 case 1:
                                     // 系统
@@ -1983,16 +2005,20 @@
                             }
                             break;
                         case 'GUARD_LOTTERY_START':
+                            DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
-                            if (Info.blocked || !obj.lottery.id) break;
-                            if (obj.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.lottery.id);
+                            if (Info.blocked || !obj.data.lottery.id) break;
+                            if (obj.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
                             break;
                         case 'RAFFLE_START':
+                        case 'TV_START':
+                            DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
                             if (Info.blocked || !obj.data.raffleId) break;
                             Lottery.Gift._join(Info.roomid, obj.data.raffleId);
                             break;
                         case 'SPECIAL_GIFT':
+                            DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (obj.data['39']) {
                                 switch (obj.data['39'].action) {
                                     case 'start':
@@ -2003,6 +2029,7 @@
                             };
                             break;
                         default:
+                            if (debugall) DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             break;
                     }
                 });
@@ -2022,9 +2049,10 @@
                     window[NAME].Lottery = {
                         iframeList: [] // 记录已经创建的iframe
                     };
+                    Lottery.listen(Info.uid, Info.roomid, '', true);
                     const areas = ['[娱乐区]', '[游戏区]', '[手游区]', '[绘画区]'];
                     for (let i = 1; i < 5; i++) {
-                        API.room.getRoomList(i, 0, 0, 1, 1).then((response) => {
+                        API.room.getRoomList(i, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER).then((response) => {
                             DEBUG('Lottery.run: API.room.getRoomList', response);
                             if (response.code === 0) {
                                 for (const obj of response.data) {
