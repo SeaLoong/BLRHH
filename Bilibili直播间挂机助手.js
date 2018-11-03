@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.2.1
+// @version      2.2.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -126,7 +126,8 @@
                 window[NAME].promise.syncFinish.resolve();
             });
             window[NAME].Lottery = {
-                list: []
+                raffleIdList: [],
+                guardIdList: []
             };
             DEBUG('inited', window[NAME]);
             // 正式执行子脚本
@@ -180,11 +181,6 @@
                         if (Info.blocked) return $.Deferred().resolve();
                         if (i >= raffleList.length) return $.Deferred().resolve();
                         const obj = raffleList[i];
-                        obj.raffleId = parseInt(obj.raffleId, 10); // 有时候会出现raffleId是string的情况(破站)
-                        if (isNaN(obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
-                        // raffleId过滤，防止重复参加
-                        if (window[NAME].Lottery.list.some(v => v === obj.raffleId)) return Lottery.Gift.join(roomid, raffleList, i + 1);
-                        window[NAME].Lottery.list.push(obj.raffleId); // 加入raffleId记录列表
                         if (obj.status === 1) { // 可以参加
                             return Lottery.Gift._join(roomid, obj.raffleId).then(() => Lottery.Gift.join(roomid, raffleList, i + 1));
                         } else if (obj.status === 2 && obj.time > 0) { // 已参加且未开奖
@@ -193,6 +189,12 @@
                     },
                     _join: (roomid, raffleId) => {
                         if (Info.blocked) return $.Deferred().resolve();
+                        roomid = parseInt(roomid, 10);
+                        raffleId = parseInt(raffleId, 10);
+                        if (isNaN(roomid) || isNaN(raffleId)) return $.Deferred().reject();
+                        // raffleId过滤，防止重复参加
+                        if (window[NAME].Lottery.raffleIdList.some(v => v === raffleId)) return $.Deferred().resolve();
+                        window[NAME].Lottery.raffleIdList.push(raffleId); // 加入raffleId记录列表
                         return API.Lottery.Gift.join(roomid, raffleId, Info.csrf_token, Info.visit_id).then((response) => {
                             DEBUG('Lottery.Gift._join: API.Lottery.Gift.join', response);
                             switch (response.code) {
@@ -200,8 +202,7 @@
                                     window.toast('[自动抽奖][礼物抽奖]已参加抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')', 'success');
                                     break;
                                 case 400:
-                                    Info.blocked = true;
-                                    window.parent[NAME].Info = Info;
+                                    window.parent[NAME].Info.blocked = Info.blocked = true;
                                     window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
                                     break;
                                 case 402:
@@ -209,8 +210,7 @@
                                     break;
                                 case 65531:
                                     // 65531: 非当前直播间或短ID直播间试图参加抽奖
-                                    Info.blocked = true;
-                                    window.parent[NAME].Info = Info;
+                                    window.parent[NAME].Info.blocked = Info.blocked = true;
                                     window.toast('[自动抽奖][礼物抽奖]参加抽奖(roomid=' + roomid + ',raffleId=' + raffleId + ')失败，已停止', 'error');
                                     break;
                                 default:
@@ -254,14 +254,19 @@
                     },
                     _join: (roomid, id) => {
                         if (Info.blocked) return $.Deferred().resolve();
+                        roomid = parseInt(roomid, 10);
+                        id = parseInt(id, 10);
+                        if (isNaN(roomid) || isNaN(id)) return $.Deferred().reject();
+                        // id过滤，防止重复参加
+                        if (window[NAME].Lottery.guardIdList.some(v => v === id)) return $.Deferred().resolve();
+                        window[NAME].Lottery.guardIdList.push(id); // 加入id记录列表
                         return API.Lottery.Guard.join(roomid, id, Info.csrf_token).then((response) => {
                             DEBUG('Lottery.Guard._join: API.Lottery.Guard.join', response);
                             if (response.code === 0) {
                                 window.toast('[自动抽奖][舰队领奖]领取(roomid=' + roomid + ',id=' + id + ')成功', 'success');
                                 window.toast('[自动抽奖][舰队领奖]' + response.data.message, 'success');
                             } else if (response.code === 400) {
-                                Info.blocked = true;
-                                window.parent[NAME].Info = Info;
+                                window.parent[NAME].Info.blocked = Info.blocked = true;
                                 window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
                             } else {
                                 window.toast('[自动抽奖][舰队领奖](roomid=' + roomid + ',id=' + id + ')' + response.msg, 'caution');
@@ -275,6 +280,7 @@
             };
             let timer_next;
             const finish = () => {
+                if (timer_next) clearTimeout(timer_next);
                 if (Lottery.ws.readyState === WebSocket.OPEN) Lottery.ws.close();
                 Lottery.ws = undefined;
                 window[NAME].promise.finish.resolve();
@@ -287,15 +293,17 @@
             Lottery.ws.bind((ws) => {
                 Lottery.ws = ws;
             }, undefined, undefined, (obj) => {
+                if (Info.blocked) {
+                    finish();
+                    return;
+                }
                 switch (obj.cmd) {
                     case 'GUARD_LOTTERY_START':
-                        if (Info.blocked || !obj.data.lottery.id) break;
-                        if (obj.roomid === window[NAME].roomid) Lottery.Guard._join(window[NAME].roomid, obj.data.lottery.id);
+                        if (obj.roomid === window[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window[NAME].roomid, obj.data.lottery.id);
                         break;
                     case 'RAFFLE_START':
                     case 'TV_START':
-                        if (Info.blocked || !obj.data.raffleId) break;
-                        Lottery.Gift._join(window[NAME].roomid, obj.data.raffleId);
+                        if (obj.data.raffleId) Lottery.Gift._join(window[NAME].roomid, obj.data.raffleId);
                         break;
                     case 'SPECIAL_GIFT':
                         if (obj.data['39'] !== undefined) {
@@ -1935,7 +1943,7 @@
                 const p = $.Deferred();
                 p.then(() => {
                     $.each(window[NAME].Lottery.iframeList, (i, v) => {
-                        if (v.contentWindow[NAME].roomid === real_roomid) {
+                        if (v.roomid === real_roomid) {
                             $(v).remove();
                             window[NAME].Lottery.iframeList.splice(i, 1);
                             return false;
