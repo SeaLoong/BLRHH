@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.2.2
+// @version      2.2.3
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -303,7 +303,7 @@
                         break;
                     case 'RAFFLE_START':
                     case 'TV_START':
-                        if (obj.data.raffleId) Lottery.Gift._join(window[NAME].roomid, obj.data.raffleId);
+                        if (obj.data.msg.real_roomid === window[NAME].roomid && obj.data.raffleId) Lottery.Gift._join(window[NAME].roomid, obj.data.raffleId);
                         break;
                     case 'SPECIAL_GIFT':
                         if (obj.data['39'] !== undefined) {
@@ -1992,13 +1992,13 @@
                                 case 8:
                                     // 礼物抽奖
                                     if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                                    if (Info.blocked || !obj.roomid) break;
-                                    Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url);
+                                    if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
+                                    if (obj.real_roomid !== Info.roomid) Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url);
                                     break;
                                 case 3:
                                     // 舰队领奖
                                     if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
-                                    if (Info.blocked || !obj.roomid) break;
+                                    if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
                                     if (obj.real_roomid !== Info.roomid) Lottery.create(obj.roomid, obj.real_roomid, 'GUARD', obj.link_url);
                                     break;
                                 case 4:
@@ -2015,15 +2015,15 @@
                         case 'GUARD_LOTTERY_START':
                             DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
-                            if (Info.blocked || !obj.data.lottery.id) break;
+                            if (Info.blocked || !obj.roomid || !obj.data.lottery.id) break;
                             if (obj.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
                             break;
                         case 'RAFFLE_START':
                         case 'TV_START':
                             DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                            if (Info.blocked || !obj.data.raffleId) break;
-                            Lottery.Gift._join(Info.roomid, obj.data.raffleId);
+                            if (Info.blocked || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
+                            if (obj.data.msg.real_roomid === Info.roomid) Lottery.Gift._join(Info.roomid, obj.data.raffleId);
                             break;
                         case 'SPECIAL_GIFT':
                             DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
