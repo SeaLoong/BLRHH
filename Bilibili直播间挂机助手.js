@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.2.3
+// @version      2.2.4
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1161,7 +1161,8 @@
                         }
                     }
                     if (Task.MobileHeartbeat) Task.MobileHeartbeat = false;
-                    const func = (response) => {
+                    API.i.taskInfo().then((response) => {
+                        DEBUG('Task.run: API.i.taskInfo', response);
                         for (const key in response.data) {
                             if (typeof response.data[key] === 'object') {
                                 if (response.data[key].task_id && response.data[key].status === 1) {
@@ -1169,9 +1170,7 @@
                                 } else if (response.data[key].task_id === 'double_watch_task' && response.data[key].status === 2) Task.double_watch_task = true;
                             }
                         }
-                    };
-                    window.toast('[自动完成任务]检查任务完成情况', 'info');
-                    API.i.taskInfo().then(func).then(() => {
+                    }).always(() => {
                         CACHE.task_ts = ts_ms();
                         Essential.Cache.save();
                         Task.run_timer = setTimeout(Task.run, Task.interval);
@@ -1812,9 +1811,10 @@
                 },
                 check: (aid, valid = false) => {
                     aid = parseInt(aid || (CACHE.last_aid), 10);
-                    if (isNaN(aid)) aid = 185;
+                    if (isNaN(aid)) aid = 216;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
                     return API.Lottery.MaterialObject.getStatus(aid).then((response) => {
+                        DEBUG('Lottery.MaterialObject.check: API.Lottery.MaterialObject.getStatus', response);
                         if (response.code === 0) {
                             if (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.IGNORE_QUESTIONABLE_LOTTERY && Lottery.MaterialObject.ignore_keyword.some(v => response.data.title.toLowerCase().indexOf(v) > -1)) {
                                 window.toast('[自动抽奖][实物抽奖]忽略抽奖(aid=' + aid + ')', 'info');
