@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.2.5
+// @version      2.2.6
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1986,7 +1986,6 @@
                         case 'ROOM_RANK':
                             break;
                         case 'NOTICE_MSG':
-                            if (onlyguard) break;
                             if (debugall) DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             switch (obj.msg_type) {
                                 case 1:
@@ -1995,11 +1994,12 @@
                                 case 2:
                                 case 8:
                                     // 礼物抽奖
+                                    if (onlyguard) break;
                                     if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
                                     if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
                                     if (obj.real_roomid !== Info.roomid) {
                                         const p = $.Deferred();
-                                        p.then(Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url));
+                                        p.then(() => Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url));
                                         setTimeout(p.resolve, Math.random() * 1e4);
                                     }
                                     break;
@@ -2009,7 +2009,7 @@
                                     if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
                                     if (obj.real_roomid !== Info.roomid) {
                                         const p = $.Deferred();
-                                        p.then(Lottery.create(obj.roomid, obj.real_roomid, 'GUARD', obj.link_url));
+                                        p.then(() => Lottery.create(obj.roomid, obj.real_roomid, 'GUARD', obj.link_url));
                                         setTimeout(p.resolve, Math.random() * 1e4);
                                     }
                                     break;
