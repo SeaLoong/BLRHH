@@ -1,6 +1,6 @@
 # Bilibili直播间挂机助手/Bilibili-LRHH/BLRHH
 
-![ECMAScript 5](https://img.shields.io/badge/ECMAScript_5-unsupport-red.svg?longCache=true) ![ECMAScript 6](https://img.shields.io/badge/ECMAScript_6-pass-green.svg?longCache=true) ![TamperMonkey 4.8](https://img.shields.io/badge/TamperMonkey_4.7-pass-green.svg?longCache=true) ![Chromium 69](https://img.shields.io/badge/Chromium_69-pass-green.svg?longCache=true) ![Firefox 63](https://img.shields.io/badge/Firefox_61-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/Bilibili-LRHH.svg)](https://github.com/SeaLoong/Bilibili-LRHH/issues)
+![ECMAScript 5](https://img.shields.io/badge/ECMAScript_5-unsupport-red.svg?longCache=true) ![ECMAScript 6](https://img.shields.io/badge/ECMAScript_6-pass-green.svg?longCache=true) ![TamperMonkey 4.8](https://img.shields.io/badge/TamperMonkey_4.8-pass-green.svg?longCache=true) ![Chromium 69](https://img.shields.io/badge/Chromium_69-pass-green.svg?longCache=true) ![Firefox 63](https://img.shields.io/badge/Firefox_63-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/Bilibili-LRHH.svg)](https://github.com/SeaLoong/Bilibili-LRHH/issues)
 
 > 该脚本为TamperMonkey脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不能保证正常运行  
 > 当脚本无法正常运行时，请把广告拦截插件关闭后重试
@@ -80,6 +80,9 @@
 -----------------
 
 ## 更新日志
+> ###  2018-11-10 (Version 2.2.5)
+>     增加了自动抽奖的内置延迟
+>     增加了对自动送礼功能的限制
 > ###  2018-11-07 (Version 2.2.4)
 > ###  2018-11-05 (Version 2.2.3)
 >     修复了有时出现抽奖参数不正确的问题
