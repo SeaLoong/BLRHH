@@ -39,17 +39,18 @@
 ## 常见问题
 1. OCRAD初始化失败/脚本需要加载很久(启用自动领取瓜子后)
     + 尝试替换脚本require源
-    ```JavaScript
-    greasyfork源
+    ```
+    [greasyfork源]
     // @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
     // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
-    ```
-    ```JavaScript
-    github源
+    [github源]
     // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
     // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
+    [gitee源]
+    // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
+    // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/ocrad.js
     ```
-    + 在代码中找到上面两段代码中的一段，替换为另一段，然后刷新页面试试
+    + 在代码中找到上面几段代码中的一段，替换为其他的一段，然后刷新页面试试
 2. 开启自动抽奖后，直播间页面经常崩溃
     + 在设置中找到"刷新间隔"，设置为一个合适的数值
     + 这个情况目前暂无更好的解决方法
@@ -80,6 +81,8 @@
 -----------------
 
 ## 更新日志
+> ###  2018-11-27 (Version 2.3.1)
+>     修复了一些逻辑问题
 > ###  2018-11-26 (Version 2.3.0)
 >     修复了应援团签到不能正常使用的问题
 >     增加了自动完成每日奖励任务的功能

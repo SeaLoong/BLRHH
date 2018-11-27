@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.0
+// @version      2.3.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -12,8 +12,8 @@
 // @include      /https?:\/\/live\.bilibili\.com\/blanc\d+\??.*/
 // @include      /https?:\/\/api\.live\.bilibili\.com\/BLRHH/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
-// @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/ocrad.js
 // @grant        none
 // @run-at       document-start
 // @license      MIT License
@@ -25,14 +25,17 @@
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
-// @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
+// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/ocrad.js
+[gitee源]
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/ocrad.js
 */
 
 (function BLRHH() {
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.0';
+    const VERSION = '2.3.1';
     document.domain = 'bilibili.com';
 
     let API;
@@ -418,7 +421,7 @@
                             return tryAgain(() => DailyReward.watch(aid, cid));
                         });
                     },
-                    coin: (cards, n, i) => {
+                    coin: (cards, n, i = 0) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.COIN) return $.Deferred().resolve();
                         if (DailyReward.coin_exp >= CONFIG.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER * 10) {
                             window.toast('[自动每日奖励][每日投币]今日投币已完成', 'success');
@@ -518,11 +521,8 @@
                         }
                     }
                 }; // Once Run every day "api.live.bilibili.com"
-                let p1 = $.Deferred().resolve();
-                let p2 = $.Deferred().resolve();
-                if (CONFIG.AUTO_GROUP_SIGN) p1 = GroupSign.run();
-                if (CONFIG.AUTO_DAILYREWARD) p2 = DailyReward.run();
-                $.when(p1, p2).always(() => window.frameElement[NAME].promise.finish.resolve());
+                if (CONFIG.AUTO_GROUP_SIGN) GroupSign.run();
+                if (CONFIG.AUTO_DAILYREWARD) DailyReward.run();
             }
         } catch (err) {
             console.error('[' + NAME + ']子脚本运行时出现异常，已停止并关闭子页面');
@@ -1431,7 +1431,7 @@
                             if (OCRAD);
                         } catch (err) {
                             TreasureBox.setMsg('初始化<br>失败');
-                            window.toast('[自动领取瓜子]OCRAD初始化失败，已停止', 'error');
+                            window.toast('[自动领取瓜子]OCRAD初始化失败，请检查网络', 'error');
                             console.error('[' + NAME + ']', err);
                             p.resolve();
                             return true;
@@ -1825,10 +1825,10 @@
                             const diff = ts_ms() - new Date(CACHE.materialobject_ts);
                             if (diff < (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3)) {
                                 setTimeout(Lottery.MaterialObject.run, diff);
-                                return;
+                                return $.Deferred().resolve();
                             }
                         }
-                        Lottery.MaterialObject.check().then((aid) => {
+                        return Lottery.MaterialObject.check().then((aid) => {
                             if (aid) { // aid有效
                                 CACHE.last_aid = aid;
                                 CACHE.materialobject_ts = ts_ms();
@@ -1839,8 +1839,8 @@
                     } catch (err) {
                         window.toast('[自动抽奖][实物抽奖]运行时出现异常', 'error');
                         console.error('[' + NAME + ']', err);
+                        return $.Deferred().reject();
                     }
-                    return $.Deferred().reject();
                 },
                 check: (aid, valid = false) => {
                     aid = parseInt(aid || (CACHE.last_aid), 10);
