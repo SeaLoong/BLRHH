@@ -424,7 +424,7 @@
                     coin: (cards, n, i = 0) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.COIN) return $.Deferred().resolve();
                         if (DailyReward.coin_exp >= CONFIG.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER * 10) {
-                            window.toast('[自动每日奖励][每日投币]今日投币已完成', 'success');
+                            window.toast('[自动每日奖励][每日投币]今日投币已完成', 'info');
                             return $.Deferred().resolve();
                         }
                         if (i >= cards.length) {
@@ -448,7 +448,7 @@
                             }
                             window.toast('[自动每日奖励][每日投币]' + response.msg, 'caution');
                             return DailyReward.coin(cards, n, i + 1);
-                        }, () => DailyReward.coin(cards, n, i));
+                        }, tryAgain(() => DailyReward.coin(cards, n, i)));
                     },
                     share: (aid) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.SHARE) return $.Deferred().resolve();
