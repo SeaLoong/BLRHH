@@ -13,7 +13,7 @@
 // @include      /https?:\/\/api\.live\.bilibili\.com\/BLRHH/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/ocrad.js
+// @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
 // @license      MIT License
