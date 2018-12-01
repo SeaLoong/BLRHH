@@ -37,20 +37,23 @@
 -----------------
 
 ## 常见问题
-1. OCRAD初始化失败/脚本需要加载很久(启用自动领取瓜子后)
+1. OCRAD初始化失败/脚本需要加载很久/不能正常使用
     + 尝试替换脚本require源
-    ```
+    + 在代码中找到以下几段代码中的一段，替换为其他的一段，然后刷新页面试试
+     ```js
     [greasyfork源]
     // @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
     // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
     [github源]
     // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
-    // @require      https://raw.githubusercontent.com/antimatter15/ocrad.js/master/ocrad.js
+    // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/OCRAD.min.js
     [gitee源]
     // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
-    // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/ocrad.js
+    // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
+    [腾讯云源]
+    // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.4.js
+    // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
     ```
-    + 在代码中找到上面几段代码中的一段，替换为其他的一段，然后刷新页面试试
 2. 开启自动抽奖后，直播间页面经常崩溃
     + 在设置中找到"刷新间隔"，设置为一个合适的数值
     + 这个情况目前暂无更好的解决方法
@@ -58,6 +61,8 @@
     + 我也不知道啊QWQ，清理下缓存试试
 4. 自动抽奖功能不能正常运行
     + 关闭广告拦截插件试试
+5. 脚本显示完成了每日经验奖励，但个人中心显示未完成
+    + 正常现象，过段时间就会正常显示了
 
 -----------------
 
@@ -71,7 +76,6 @@
 ## 捐赠作者
 
 + 支付宝 => ![支付宝二维码](https://i.loli.net/2018/11/05/5be02cd439623.png) 微信 => ![微信二维码](https://i.loli.net/2018/10/30/5bd867645d5b4.png)
-+ 感谢 hentaishopkeeper, smoblk.H.E.I 等 4 名用户的支付宝投喂和 3 名用户的微信投喂
 
 -----------------
 
@@ -81,6 +85,7 @@
 -----------------
 
 ## 更新日志
+> ###  2018-12-1 (Version 2.3.2)
 > ###  2018-11-27 (Version 2.3.1)
 >     修复了一些逻辑问题
 > ###  2018-11-26 (Version 2.3.0)
@@ -209,4 +214,5 @@
 >     修复了脚本不能运行的问题
 > ### 2018-01-06
 >     在GreasyFork上创建脚本
+
 -----------------
