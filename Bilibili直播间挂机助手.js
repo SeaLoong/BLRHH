@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.2
+// @version      2.3.3
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.2';
+    const VERSION = '2.3.3';
     document.domain = 'bilibili.com';
 
     let API;
@@ -57,9 +57,9 @@
         if (!DEBUGMODE) return;
         let d = new Date(ts_ms());
         d = (isSubScript() ? 'SubScript:' : '') + '[' + d.getHours() + ':' + d.getMinutes() + ':' + d.getSeconds() + '.' + d.getMilliseconds() + ']';
-        if (data.length === 1) console.debug('[' + NAME + ']' + d + '\n', sign + ':', data[0]);
-        else if (data.length === 0) console.debug('[' + NAME + ']' + d + '\n', sign);
-        else console.debug('[' + NAME + ']' + d, sign + ':', data);
+        d = '[' + NAME + ']' + d;
+        if (data.length === 1) console.debug(d, sign + ':', data[0]);
+        else console.debug(d, sign + ':', data);
     };
 
     let CONFIG;
@@ -310,7 +310,7 @@
                     }
                     switch (obj.cmd) {
                         case 'GUARD_LOTTERY_START':
-                            if (obj.roomid === window.frameElement[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window.frameElement[NAME].roomid, obj.data.lottery.id);
+                            if (obj.data.roomid === window.frameElement[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window.frameElement[NAME].roomid, obj.data.lottery.id);
                             break;
                         case 'RAFFLE_START':
                         case 'TV_START':
@@ -371,7 +371,7 @@
                             return $.when(GroupSign.signInList(list, i + 1), p);
                         }, () => {
                             window.toast('[自动应援团签到]应援团(group_id=' + obj.group_id + ',owner_uid=' + obj.owner_uid + ')签到失败，请检查网络', 'error');
-                            return tryAgain(() => $.when(GroupSign.signInList(list, i + 1), $.Deferred().reject()));
+                            return tryAgain(() => GroupSign.signInList(list, i));
                         });
                     },
                     run: () => {
@@ -2071,16 +2071,26 @@
                         case 'GUARD_LOTTERY_START':
                             DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
-                            if (Info.blocked || !obj.roomid || !obj.data.lottery.id) break;
-                            if (obj.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
+                            if (Info.blocked || !obj.data.roomid || !obj.data.lottery.id) break;
+                            if (obj.data.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
+                            else {
+                                const p = $.Deferred();
+                                p.then(() => Lottery.create(obj.data.roomid, obj.data.roomid, 'GUARD', obj.data.link));
+                                setTimeout(p.resolve, Math.random() * 1e4);
+                            }
                             break;
                         case 'RAFFLE_START':
                         case 'TV_START':
                             if (onlyguard) break;
                             DEBUG('DanmuWebSocket' + area + '(' + roomid + ')', str);
                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                            if (Info.blocked || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
+                            if (Info.blocked || !obj.data.msg.roomid || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
                             if (obj.data.msg.real_roomid === Info.roomid) Lottery.Gift._join(Info.roomid, obj.data.raffleId);
+                            else {
+                                const p = $.Deferred();
+                                p.then(() => Lottery.create(obj.data.msg.roomid, obj.data.msg.real_roomid, 'LOTTERY', obj.data.msg.url));
+                                setTimeout(p.resolve, Math.random() * 1e4);
+                            }
                             break;
                         case 'SPECIAL_GIFT':
                             if (onlyguard) break;
