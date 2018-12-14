@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.3
+// @version      2.3.4
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.3';
+    const VERSION = '2.3.4';
     document.domain = 'bilibili.com';
 
     let API;
@@ -391,8 +391,8 @@
                                     CACHE.group_sign_ts = ts_ms();
                                     up();
                                     runTommorrow(GroupSign.run);
-                                }, () => tryAgain(GroupSign.run));
-                            }, () => tryAgain(GroupSign.run));
+                                }, () => tryAgain(() => GroupSign.run()));
+                            }, () => tryAgain(() => GroupSign.run()));
                         } catch (err) {
                             window.toast('[自动应援团签到]运行时出现异常，已停止', 'error');
                             console.error('[' + NAME + ']', err);
@@ -425,7 +425,7 @@
                             return tryAgain(() => DailyReward.watch(aid, cid));
                         });
                     },
-                    coin: (cards, n, i = 0) => {
+                    coin: (cards, n, i = 0, one = false) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.COIN) return $.Deferred().resolve();
                         if (DailyReward.coin_exp >= CONFIG.AUTO_DAILYREWARD_CONFIG.COIN_CONFIG.NUMBER * 10) {
                             window.toast('[自动每日奖励][每日投币]今日投币已完成', 'info');
@@ -437,6 +437,7 @@
                         }
                         const obj = JSON.parse(cards[i].card);
                         let num = Math.min(2, n);
+                        if (one) num = 1;
                         return API.DailyReward.coin(obj.aid, Info.csrf_token, num).then((response) => {
                             DEBUG('DailyReward.coin: API.DailyReward.coin', response);
                             if (response.code === 0) {
@@ -446,13 +447,17 @@
                             } else if (response.code === -110) {
                                 window.toast('[自动每日奖励][每日投币]未绑定手机，已停止', 'error');
                                 return $.Deferred().reject();
+                            } else if (response.code === 34003) {
+                                // 非法的投币数量
+                                if (one) return DailyReward.coin(cards, n, i + 1);
+                                return DailyReward.coin(cards, n, i, true);
                             } else if (response.code === 34005) {
                                 // 塞满啦！先看看库存吧~
                                 return DailyReward.coin(cards, n, i + 1);
                             }
                             window.toast('[自动每日奖励][每日投币]' + response.msg, 'caution');
                             return DailyReward.coin(cards, n, i + 1);
-                        }, tryAgain(() => DailyReward.coin(cards, n, i)));
+                        }, () => tryAgain(() => DailyReward.coin(cards, n, i)));
                     },
                     share: (aid) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.SHARE) return $.Deferred().resolve();
@@ -460,6 +465,8 @@
                             DEBUG('DailyReward.share: API.DailyReward.share', response);
                             if (response.code === 0) {
                                 window.toast('[自动每日奖励][每日分享]分享成功(av=' + aid + ')', 'success');
+                            } else if (response.code === 71000) {
+                                // 重复分享
                             } else {
                                 window.toast('[自动每日奖励][每日分享]' + response.msg, 'caution');
                             }
@@ -1150,7 +1157,7 @@
                         CACHE.exchange_ts = ts_ms();
                         Essential.Cache.save();
                         runTommorrow(Exchange.run);
-                    }, () => tryAgain(Exchange.run));
+                    }, () => tryAgain(() => Exchange.run()));
                 } catch (err) {
                     window.toast('[银瓜子换硬币]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1211,7 +1218,7 @@
                         CACHE.task_ts = ts_ms();
                         Essential.Cache.save();
                         Task.run_timer = setTimeout(Task.run, Task.interval);
-                    }, () => tryAgain(Task.run));
+                    }, () => tryAgain(() => Task.run()));
                 } catch (err) {
                     window.toast('[自动完成任务]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1288,7 +1295,7 @@
                     }
                     const func = () => {
                         window.toast('[自动送礼]送礼失败，请检查网络', 'error');
-                        tryAgain(() => Gift.run());
+                        return tryAgain(() => Gift.run());
                     };
                     API.room.room_init(CONFIG.AUTO_GIFT_CONFIG.ROOMID).then((response) => {
                         DEBUG('Gift.run: API.room.room_init', response);
@@ -1378,7 +1385,7 @@
                     API.HeartBeat.mobile().then(() => {
                         DEBUG('MobileHeartbeat.run: API.HeartBeat.mobile');
                         MobileHeartbeat.run_timer = setTimeout(MobileHeartbeat.run, 300e3);
-                    }, () => tryAgain(MobileHeartbeat.run));
+                    }, () => tryAgain(() => MobileHeartbeat.run()));
                 } catch (err) {
                     window.toast('[移动端心跳]运行时出现异常，已停止', 'error');
                     console.error('[' + NAME + ']', err);
@@ -1840,7 +1847,7 @@
                                 Essential.Cache.save();
                             }
                             setTimeout(Lottery.MaterialObject.run, CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3);
-                        }, () => tryAgain(Lottery.MaterialObject.run));
+                        }, () => tryAgain(() => Lottery.MaterialObject.run()));
                     } catch (err) {
                         window.toast('[自动抽奖][实物抽奖]运行时出现异常', 'error');
                         console.error('[' + NAME + ']', err);
@@ -1849,7 +1856,7 @@
                 },
                 check: (aid, valid = false) => {
                     aid = parseInt(aid || (CACHE.last_aid), 10);
-                    if (isNaN(aid)) aid = 221;
+                    if (isNaN(aid)) aid = 229; // TODO
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
                     return API.Lottery.MaterialObject.getStatus(aid).then((response) => {
                         DEBUG('Lottery.MaterialObject.check: API.Lottery.MaterialObject.getStatus', response);
