@@ -75,7 +75,7 @@
 
 ## 捐赠作者
 
-+ 支付宝 => ![支付宝二维码](https://i.loli.net/2018/11/05/5be02cd439623.png) 微信 => ![微信二维码](https://i.loli.net/2018/10/30/5bd867645d5b4.png)
++ 支付宝 => ![支付宝二维码](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/AliPay2.png) 微信 => ![微信二维码](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/WeChat2.png)
 
 -----------------
 
