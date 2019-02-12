@@ -40,20 +40,22 @@
 1. OCRAD初始化失败/脚本需要加载很久/不能正常使用
     + 尝试替换脚本require源
     + 在代码中找到以下几段代码中的一段，替换为其他的一段，然后刷新页面试试
-     ```js
-    [greasyfork源]
-    // @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
-    // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
-    [github源]
-    // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
-    // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/OCRAD.min.js
-    [gitee源]
-    // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
-    // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
-    [腾讯云源]
-    // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.4.js
-    // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
-    ```
+
+        ```js
+        [greasyfork源]
+        // @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
+        // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
+        [github源]
+        // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
+        // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/OCRAD.min.js
+        [gitee源]
+        // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
+        // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
+        [腾讯云源]
+        // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.4.js
+        // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
+        ```
+
 2. 开启自动抽奖后，直播间页面经常崩溃
     + 在设置中找到"刷新间隔"，设置为一个合适的数值
     + 这个情况目前暂无更好的解决方法
@@ -85,6 +87,8 @@
 -----------------
 
 ## 更新日志
+> ###  2019-2-13 (Version 2.3.5)
+>     增加了新的分区支持
 > ###  2018-12-15 (Version 2.3.4)
 > ###  2018-12-4 (Version 2.3.3)
 > ###  2018-12-1 (Version 2.3.2)
