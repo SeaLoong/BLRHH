@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.5
+// @version      2.3.6
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.5';
+    const VERSION = '2.3.6';
     document.domain = 'bilibili.com';
 
     let API;
@@ -1538,6 +1538,9 @@
                             CACHE.treasure_box_ts = ts_ms();
                             Essential.Cache.save();
                             runTommorrow(TreasureBox.run);
+                        } else if (response.code === -500) {
+                            // 请先登录!
+                            window.location.reload();
                         } else {
                             window.toast('[自动领取瓜子]' + response.msg, 'caution');
                             return TreasureBox.run();
@@ -1854,25 +1857,24 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = false) => {
+                check: (aid, valid = 289, rem = 9) => {
                     aid = parseInt(aid || (CACHE.last_aid), 10);
-                    if (isNaN(aid)) aid = 229; // TODO
+                    if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
                     return API.Lottery.MaterialObject.getStatus(aid).then((response) => {
                         DEBUG('Lottery.MaterialObject.check: API.Lottery.MaterialObject.getStatus', response);
                         if (response.code === 0) {
                             if (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.IGNORE_QUESTIONABLE_LOTTERY && Lottery.MaterialObject.ignore_keyword.some(v => response.data.title.toLowerCase().indexOf(v) > -1)) {
                                 // window.toast('[自动抽奖][实物抽奖]忽略抽奖(aid=' + aid + ')', 'info');
-                                return Lottery.MaterialObject.check(aid + 1, true);
+                                return Lottery.MaterialObject.check(aid + 1, aid);
                             } else {
-                                return Lottery.MaterialObject.join(aid, response.data.title, response.data.typeB).then(() => Lottery.MaterialObject.check(aid + 1, true), () => Lottery.MaterialObject.check(aid + 1, true));
+                                return Lottery.MaterialObject.join(aid, response.data.title, response.data.typeB).always(() => {
+                                    Lottery.MaterialObject.check(aid + 1, aid);
+                                });
                             }
                         } else if (response.code === -400) { // 活动不存在
-                            if (valid) {
-                                return $.Deferred().resolve(aid - 1);
-                            } else {
-                                return Lottery.MaterialObject.check(aid - 1, valid);
-                            }
+                            if (rem) return Lottery.MaterialObject.check(aid + 1, valid, rem - 1);
+                            return $.Deferred().resolve(valid);
                         } else {
                             window.toast('[自动抽奖][实物抽奖]' + response.msg, 'info');
                         }
