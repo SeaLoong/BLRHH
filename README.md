@@ -9,8 +9,8 @@
 
 ## 如何使用
 1. 见[GreasyFork](https://greasyfork.org/zh-CN) 首页说明
-2. 进入[Bilibili直播间挂机助手](https://greasyfork.org/zh-CN/scripts/37095-bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B)页面，点击"安装此脚本"即可从GreasyFork更新此脚本
-3. 或者点击[Bilibili直播间挂机助手](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.js)，将代码复制下来。然后从脚本管理器中新建一个脚本，将自动生成的内容删除，粘贴复制的代码即可从Github更新此脚本
+2. 方式一：进入[Bilibili直播间挂机助手](https://greasyfork.org/zh-CN/scripts/37095-bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B)页面，点击"安装此脚本"即可从GreasyFork更新此脚本
+3. 方式二：点击[Bilibili直播间挂机助手](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js)，脚本管理器会弹出安装脚本页面(如果没有，则需要将代码复制下来。然后从脚本管理器中新建一个脚本，将自动生成的内容删除，粘贴复制的代码)，即可从Github更新此脚本
 4. 进入直播间页面，右下角多出个"挂机助手设置"，选择自己需要的功能，保存刷新即可
 
 -----------------
@@ -88,6 +88,9 @@
 -----------------
 
 ## 更新日志
+> ###  2019-02-28 (Version 2.3.7)
+>     修复了一处实物抽奖中的逻辑问题
+>     修复了由时差引起的脚本执行不正常的问题
 > ###  2019-02-14 (Version 2.3.6)
 >     修复了一处因Cookie过期导致无限重试的问题
 >     优化了实物抽奖穷举算法
