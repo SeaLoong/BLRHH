@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.7
+// @version      2.3.8
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.7';
+    const VERSION = '2.3.8';
     document.domain = 'bilibili.com';
 
     let API;
@@ -80,8 +80,6 @@
         blocked: false
     };
 
-    let ts_diff = 0;
-
     const tz_offset = new Date().getTimezoneOffset() + 480;
 
     const ts_s = () => Math.round(ts_ms() / 1000);
@@ -102,7 +100,17 @@
         t.setHours(0, 0, 0, 0);
         const d = new Date();
         d.setMinutes(t.getMinutes() + tz_offset);
-        return (d - t > 86400e3 + ts_diff);
+        return (d - t > 86400e3);
+    };
+
+    const runTomorrow = (callback) => {
+        const t = new Date();
+        t.setMinutes(t.getMinutes() + tz_offset);
+        t.setDate(t.getDate() + 1);
+        t.setHours(0, 1, 0, 0);
+        t.setMinutes(t.getMinutes() - tz_offset);
+        setTimeout(callback, t - ts_ms());
+        DEBUG('runTomorrow', t.toString());
     };
 
     if (isSubScript()) {
@@ -131,7 +139,6 @@
             Info = window.parent[NAME].Info;
             CONFIG = window.parent[NAME].CONFIG;
             CACHE = window.parent[NAME].CACHE;
-            const runTommorrow = window.parent[NAME].runTommorrow;
             const down = () => {
                 Info = window.parent[NAME].Info;
                 CONFIG = window.parent[NAME].CONFIG;
@@ -232,13 +239,13 @@
                                         // 65531: 非当前直播间或短ID直播间试图参加抽奖
                                         Info.blocked = true;
                                         up();
-                                        window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，已停止`, 'error');
+                                        window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，已停止`, 'error');
                                         break;
                                     default:
-                                        window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                        window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
                                 }
                             }, () => {
-                                window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，请检查网络`, 'error');
+                                window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，请检查网络`, 'error');
                                 return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
                             });
                         }
@@ -390,14 +397,14 @@
                             if (!CONFIG.AUTO_GROUP_SIGN) return $.Deferred().resolve();
                             if (CACHE.group_sign_ts && !checkNewDay(CACHE.group_sign_ts)) {
                                 // 同一天，不再检查应援团签到
-                                runTommorrow(GroupSign.run);
+                                runTomorrow(GroupSign.run);
                                 return $.Deferred().resolve();
                             }
                             return GroupSign.getGroups().then((list) => {
                                 return GroupSign.signInList(list).then(() => {
                                     CACHE.group_sign_ts = ts_ms();
                                     up();
-                                    runTommorrow(GroupSign.run);
+                                    runTomorrow(GroupSign.run);
                                 }, () => tryAgain(() => GroupSign.run()));
                             }, () => tryAgain(() => GroupSign.run()));
                         } catch (err) {
@@ -474,6 +481,7 @@
                                 window.toast(`[自动每日奖励][每日分享]分享成功(av=${aid})`, 'success');
                             } else if (response.code === 71000) {
                                 // 重复分享
+                                window.toast(`[自动每日奖励][每日分享]今日分享已完成`, 'info');
                             } else {
                                 window.toast(`[自动每日奖励][每日分享]'${response.msg}`, 'caution');
                             }
@@ -508,7 +516,7 @@
                             if (!CONFIG.AUTO_DAILYREWARD) return $.Deferred().resolve();
                             if (CACHE.dailyreward_ts && !checkNewDay(CACHE.dailyreward_ts)) {
                                 // 同一天，不执行每日任务
-                                runTommorrow(DailyReward.run);
+                                runTomorrow(DailyReward.run);
                                 return $.Deferred().resolve();
                             }
                             return API.DailyReward.exp().then((response) => {
@@ -519,7 +527,7 @@
                                     return DailyReward.dynamic().then(() => {
                                         CACHE.dailyreward_ts = ts_ms();
                                         up();
-                                        runTommorrow(DailyReward.run);
+                                        runTomorrow(DailyReward.run);
                                     });
                                 } else {
                                     window.toast(`[自动每日奖励]${response.message}`, 'caution');
@@ -552,16 +560,6 @@
             }, delay);
         };
 
-        const runTommorrow = (callback) => {
-            const t = new Date();
-            t.setMinutes(t.getMinutes() + tz_offset);
-            t.setDate(t.getDate() + 1);
-            t.setHours(0, 1, 0, 0);
-            t.setMinutes(t.getMinutes() - tz_offset);
-            setTimeout(callback, t - ts_ms());
-            DEBUG('runTommorrow', t.toString());
-        };
-
         const Essential = {
             init: () => {
                 return Essential.Toast.init().then(() => {
@@ -578,7 +576,7 @@
                 init: () => {
                     try {
                         const list = [];
-                        window.toast = (msg, type = 'info', timeout = 4e3) => {
+                        window.toast = (msg, type = 'info', timeout = 3e3) => {
                             let d = new Date().toLocaleTimeString();
                             switch (type) {
                                 case 'success':
@@ -595,7 +593,7 @@
                                     type = 'info';
                                     console.log(`[${NAME}][${d}]${msg}`);
                             }
-                            if (!CONFIG.SHOW_TOAST) return;
+                            if (CONFIG && !CONFIG.SHOW_TOAST) return;
                             const a = $(`<div class="link-toast ${type} fixed"><span class="toast-text">${msg}</span></div>`)[0];
                             document.body.appendChild(a);
                             a.style.top = (document.body.scrollTop + list.length * 40 + 10) + 'px';
@@ -887,8 +885,8 @@
                                 const div_title_span = $('<span style="float: left;display: inline;padding-left: 8px;font: 700 14px/35px SimSun;">Bilibili直播间挂机助手</span>');
                                 const div_title_button = $('<div/>');
                                 div_title_button[0].style = 'float: right;display: inline;padding-right: 8px;';
-                                const div_button_reset = $(`<div style="display: inline;"><span class="${NAME}_clickable">重置</span></div>`);
-                                div_title_button.append(div_button_reset);
+                                const div_button_clear = $(`<div style="display: inline;"><span class="${NAME}_clickable">清除缓存</span></div>`);
+                                div_title_button.append(div_button_clear);
                                 div_title.append(div_title_span);
                                 div_title.append(div_title_button);
                                 div_style.append(div_title);
@@ -916,8 +914,9 @@
                                     }
                                     Essential.Config.showed = !Essential.Config.showed;
                                 });
-                                div_button_reset.click(() => {
-                                    Essential.Config.recurLoad(Essential.Config.CONFIG_DEFAULT);
+                                div_button_clear.click(() => {
+                                    Essential.Cache.clear();
+                                    location.reload(true);
                                 });
                                 const getItemByElement = (element) => element.id.replace(`${NAME}_config_`, '');
                                 const getItemByHelpElement = (element) => element.id.replace(`${NAME}_config_`, '').replace('_help', '');
@@ -1088,7 +1087,6 @@
             DataSync: {
                 init: () => {
                     window[NAME] = {};
-                    window[NAME].runTommorrow = runTommorrow;
                     window[NAME].iframeMap = new Map();
                 },
                 down: () => {
@@ -1113,7 +1111,7 @@
                     if (!CONFIG.AUTO_SIGN) return;
                     if (CACHE.sign_ts && !checkNewDay(CACHE.sign_ts)) {
                         // 同一天，不再检查签到
-                        runTommorrow(Sign.run);
+                        runTomorrow(Sign.run);
                         return;
                     }
                     API.sign.doSign().then((response) => {
@@ -1129,7 +1127,7 @@
                             window.toast(`[自动签到]${response.data.text}`, 'caution');
                             return Sign.run();
                         }
-                        runTommorrow(Sign.run);
+                        runTomorrow(Sign.run);
                     }, () => {
                         window.toast('[自动签到]签到失败，请检查网络', 'error');
                         return tryAgain(() => Sign.run());
@@ -1147,13 +1145,13 @@
                     if (!CONFIG.SILVER2COIN) return $.Deferred().resolve();
                     if (CACHE.exchange_ts && !checkNewDay(CACHE.exchange_ts)) {
                         // 同一天，不再兑换硬币
-                        runTommorrow(Exchange.run);
+                        runTomorrow(Exchange.run);
                         return $.Deferred().resolve();
                     }
                     return Exchange.silver2coin().then(() => {
                         CACHE.exchange_ts = ts_ms();
                         Essential.Cache.save();
-                        runTommorrow(Exchange.run);
+                        runTomorrow(Exchange.run);
                     }, () => tryAgain(() => Exchange.run()));
                 } catch (err) {
                     window.toast('[银瓜子换硬币]运行时出现异常，已停止', 'error');
@@ -1315,7 +1313,7 @@
                                                 Gift.sendGift();
                                             } else {
                                                 window.toast('[自动送礼]今日亲密度已满', 'info');
-                                                runTommorrow(Gift.run);
+                                                runTomorrow(Gift.run);
                                             }
                                         }
                                     });
@@ -1336,7 +1334,7 @@
                 }
                 if (Gift.remain_feed <= 0 && !CONFIG.AUTO_GIFT_CONFIG.IGNORE_FEED) {
                     window.toast('[自动送礼]送礼结束，今日亲密度已满', 'info');
-                    runTommorrow(Gift.run);
+                    runTomorrow(Gift.run);
                     return $.Deferred().resolve();
                 }
                 if (Gift.time <= 0) Gift.time = ts_ms();
@@ -1503,7 +1501,7 @@
                     }
                     if (CACHE.treasure_box_ts && !checkNewDay(CACHE.treasure_box_ts)) {
                         TreasureBox.setMsg('今日<br>已领完');
-                        runTommorrow(TreasureBox.run);
+                        runTomorrow(TreasureBox.run);
                         return;
                     }
                     TreasureBox.getCurrentTask().then((response) => {
@@ -1513,10 +1511,8 @@
                             TreasureBox.promise.timer.then(() => {
                                 TreasureBox.captcha.calc().then((captcha) => {
                                     // 验证码识别完成
-                                    TreasureBox.getAward(captcha).then(() => {
-                                        TreasureBox.run();
-                                    });
-                                });
+                                    TreasureBox.getAward(captcha).then(() => TreasureBox.run(), () => TreasureBox.run());
+                                }, () => TreasureBox.run());
                             });
                             TreasureBox.time_end = response.data.time_end;
                             TreasureBox.time_start = response.data.time_start;
@@ -1534,10 +1530,10 @@
                             // window.toast(`[自动领取瓜子]${response.msg}`, 'info');
                             CACHE.treasure_box_ts = ts_ms();
                             Essential.Cache.save();
-                            runTommorrow(TreasureBox.run);
+                            runTomorrow(TreasureBox.run);
                         } else if (response.code === -500) {
                             // 请先登录!
-                            window.location.reload();
+                            location.reload();
                         } else {
                             window.toast(`[自动领取瓜子]${response.msg}`, 'caution');
                             return TreasureBox.run();
@@ -1617,7 +1613,7 @@
                         TreasureBox.captcha.cnt = 0;
                         return $.Deferred().reject();
                     }
-                    if (TreasureBox.captcha.cnt > 500) { // 允许验证码无法识别的次数
+                    if (TreasureBox.captcha.cnt > 100) { // 允许验证码无法识别的次数
                         // 验证码识别失败
                         TreasureBox.setMsg('验证码<br>识别<br>失败');
                         window.toast('[自动领取瓜子]验证码识别失败，已停止', 'error');
@@ -1975,7 +1971,7 @@
                 }
             },
             create: (roomid, real_roomid, type, link_url) => {
-                if (Lottery.createCount > 50) window.location.reload(true);
+                if (Lottery.createCount > 50) location.reload(true);
                 if (!real_roomid) real_roomid = roomid;
                 // roomid过滤，防止创建多个同样roomid的iframe
                 real_roomid += '';
@@ -2144,7 +2140,7 @@
                     }, 10e3);
                     if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL > 0) {
                         setTimeout(() => {
-                            window.location.reload(true);
+                            location.reload(true);
                         }, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL * 60e3);
                     }
                 } catch (err) {
@@ -2194,7 +2190,7 @@
                     const uniqueCheck = () => {
                         const p1 = $.Deferred();
                         const t = Date.now() / 1000;
-                        if (t - CACHE.unique_check >= 0 && t - CACHE.unique_check <= 10) {
+                        if (t - CACHE.unique_check >= 0 && t - CACHE.unique_check <= 15) {
                             // 其他脚本正在运行
                             return p1.reject();
                         }
@@ -2204,9 +2200,9 @@
                     uniqueCheck().then(() => {
                         let timer_unique;
                         const uniqueMark = () => {
+                            timer_unique = setTimeout(uniqueMark, 10e3);
                             CACHE.unique_check = Date.now() / 1000;
                             Essential.Cache.save();
-                            timer_unique = setTimeout(uniqueMark, 2e3);
                         };
                         window.addEventListener('unload', () => {
                             if (timer_unique) {
@@ -2259,19 +2255,14 @@
                                     Info.rnd = window.BilibiliLive.RND;
                                     Info.csrf_token = getCookie('bili_jct');
                                     Info.visit_id = window.__statisObserver.__visitId;
-                                    const p1 = API.av.getTimestamp(Info.csrf_token, Info.visit_id).then((response) => {
-                                        DEBUG('InitData: API.av.getTimestamp', response);
-                                        if (response.data.timestamp) ts_diff += response.data.timestamp * 1e3 - Date.now(); // 加上B站与本地时间戳的差
-                                        DEBUG('InitData: API.av.getTimestamp: ts_diff', ts_diff);
-                                    });
-                                    const p2 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
+                                    const p1 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
                                         DEBUG('InitData: API.live_user.get_info_in_room', response);
                                         Info.silver = response.data.wallet.silver;
                                         Info.gold = response.data.wallet.gold;
                                         Info.mobile_verify = response.data.info.mobile_verify;
                                         Info.identification = response.data.info.identification;
                                     });
-                                    const p3 = API.gift.gift_config().then((response) => {
+                                    const p2 = API.gift.gift_config().then((response) => {
                                         DEBUG('InitData: API.gift.gift_config', response);
                                         Info.gift_list = response.data;
                                         Info.gift_list.forEach((v, i) => {
@@ -2280,7 +2271,7 @@
                                             if (i < Info.gift_list.length - 1) Info.gift_list_str += '，';
                                         });
                                     });
-                                    $.when(p1, p2, p3).then(() => {
+                                    $.when(p1, p2).then(() => {
                                         Essential.DataSync.down();
                                         p.resolve();
                                     }, () => {
