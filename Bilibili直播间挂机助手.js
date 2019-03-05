@@ -21,8 +21,8 @@
 
 /*
 [greasyfork源]
-// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
-// @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
+// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=641218
+// @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/OCRAD.min.js
