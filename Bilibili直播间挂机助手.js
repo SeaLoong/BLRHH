@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.8
+// @version      2.3.9
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.8';
+    const VERSION = '2.3.9';
     document.domain = 'bilibili.com';
 
     let API;
@@ -228,9 +228,13 @@
                                         window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})`, 'success');
                                         break;
                                     case 400:
-                                        Info.blocked = true;
-                                        up();
-                                        window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                        if (response.msg.indexOf('拒绝') > -1) {
+                                            Info.blocked = true;
+                                            up();
+                                            window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                        } else {
+                                            window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                        }
                                         break;
                                     case 402:
                                         // 抽奖已过期，下次再来吧
@@ -294,9 +298,13 @@
                                     window.toast(`[自动抽奖][舰队领奖]领取(roomid=${roomid},id=${id})成功`, 'success');
                                     window.toast(`[自动抽奖][舰队领奖]${response.data.message}`, 'success');
                                 } else if (response.code === 400) {
-                                    Info.blocked = true;
-                                    up();
-                                    window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                    if (response.msg.indexOf('拒绝') > -1) {
+                                        Info.blocked = true;
+                                        up();
+                                        window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                    } else {
+                                        window.toast(`[自动抽奖][舰队领奖](roomid=${roomid}},id=${id})${response.msg}`, 'caution');
+                                    }
                                 } else {
                                     window.toast(`[自动抽奖][舰队领奖](roomid=${roomid}},id=${id})${response.msg}`, 'caution');
                                 }
@@ -1583,11 +1591,15 @@
                             }, 3e3);
                             return p;
                         case 400: // 400: 访问被拒绝
-                            Info.blocked = true;
-                            Essential.DataSync.down();
-                            TreasureBox.setMsg('拒绝<br>访问');
-                            window.toast('[自动领取瓜子]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
-                            return $.Deferred().reject();
+                            if (response.msg.indexOf('拒绝') > -1) {
+                                Info.blocked = true;
+                                Essential.DataSync.down();
+                                TreasureBox.setMsg('拒绝<br>访问');
+                                window.toast('[自动领取瓜子]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                return $.Deferred().reject();
+                            }
+                            window.toast(`[自动领取瓜子]${response.msg}`, 'caution');
+                            return $.Deferred().resolve();
                         default: // 其他错误
                             window.toast(`[自动领取瓜子]${response.msg}`, 'caution');
                     }
@@ -1770,9 +1782,13 @@
                                     window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})`, 'success');
                                     break;
                                 case 400:
-                                    Info.blocked = true;
-                                    Essential.DataSync.down();
-                                    window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                    if (response.msg.indexOf('拒绝') > -1) {
+                                        Info.blocked = true;
+                                        Essential.DataSync.down();
+                                        window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                    } else {
+                                        window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                    }
                                     break;
                                 case 402:
                                     // 抽奖已过期，下次再来吧
@@ -1807,9 +1823,13 @@
                                 window.toast(`[自动抽奖][舰队领奖]领取(roomid=${roomid},id=${id})成功`, 'success');
                                 window.toast(`[自动抽奖][舰队领奖]${response.data.message}`, 'success');
                             } else if (response.code === 400) {
-                                Info.blocked = true;
-                                Essential.DataSync.down();
-                                window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                if (response.msg.indexOf('拒绝') > -1) {
+                                    Info.blocked = true;
+                                    Essential.DataSync.down();
+                                    window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被封禁，已停止', 'error');
+                                } else {
+                                    window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
+                                }
                             } else {
                                 window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
                             }
@@ -1850,7 +1870,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 294, rem = 9) => {
+                check: (aid, valid = 301, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
