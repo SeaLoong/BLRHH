@@ -489,7 +489,7 @@
                                 window.toast(`[自动每日奖励][每日分享]分享成功(av=${aid})`, 'success');
                             } else if (response.code === 71000) {
                                 // 重复分享
-                                window.toast(`[自动每日奖励][每日分享]今日分享已完成`, 'info');
+                                window.toast('[自动每日奖励][每日分享]今日分享已完成', 'info');
                             } else {
                                 window.toast(`[自动每日奖励][每日分享]'${response.msg}`, 'caution');
                             }
