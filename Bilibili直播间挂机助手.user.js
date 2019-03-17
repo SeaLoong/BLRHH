@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.10
+// @version      2.3.11
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.10';
+    const VERSION = '2.3.11';
     document.domain = 'bilibili.com';
 
     let API;
@@ -88,8 +88,7 @@
 
     const tryAgain = (callback) => {
         const p = $.Deferred();
-        p.then(callback);
-        setTimeout(() => p.resolve(), 10e3);
+        setTimeout(() => callback().then((arg1, arg2, arg3, arg4, arg5, arg6) => p.resolve(arg1, arg2, arg3, arg4, arg5, arg6)), 10e3);
         return p;
     };
 
@@ -1520,6 +1519,7 @@
                         return;
                     }
                     TreasureBox.getCurrentTask().then((response) => {
+                        DEBUG('TreasureBox.run: TreasureBox.getCurrentTask().then', response);
                         if (response.code === 0) {
                             // 获取任务成功
                             TreasureBox.promise.timer = $.Deferred();
