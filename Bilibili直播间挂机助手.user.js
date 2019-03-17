@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.11
+// @version      2.3.12
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.11';
+    const VERSION = '2.3.12';
     document.domain = 'bilibili.com';
 
     let API;
@@ -1122,13 +1122,13 @@
         const Sign = {
             run: () => {
                 try {
-                    if (!CONFIG.AUTO_SIGN) return;
+                    if (!CONFIG.AUTO_SIGN) return $.Deferred().resolve();
                     if (CACHE.sign_ts && !checkNewDay(CACHE.sign_ts)) {
                         // 同一天，不再检查签到
                         runTomorrow(Sign.run);
-                        return;
+                        return $.Deferred().resolve();
                     }
-                    API.sign.doSign().then((response) => {
+                    return API.sign.doSign().then((response) => {
                         DEBUG('Sign.run: API.sign.doSign', response);
                         if (response.code === 0) {
                             // 签到成功
@@ -1149,6 +1149,7 @@
                 } catch (err) {
                     window.toast('[自动签到]运行时出现异常，已停止', 'error');
                     console.error(`[${NAME}]`, err);
+                    return $.Deferred().reject();
                 }
             }
         }; // Once Run every day
@@ -1200,21 +1201,21 @@
             MobileHeartbeat: false,
             run: () => {
                 try {
-                    if (!CONFIG.AUTO_TASK) return;
+                    if (!CONFIG.AUTO_TASK) return $.Deferred().resolve();
                     if (!Info.mobile_verify) {
                         window.toast('[自动完成任务]未绑定手机，已停止', 'caution');
-                        return;
+                        return $.Deferred().resolve();
                     }
                     if (Task.run_timer) clearTimeout(Task.run_timer);
                     if (CACHE.task_ts && !Task.MobileHeartbeat) {
                         const diff = ts_ms() - CACHE.task_ts;
                         if (diff < Task.interval) {
                             Task.run_timer = setTimeout(Task.run, diff);
-                            return;
+                            return $.Deferred().resolve();
                         }
                     }
                     if (Task.MobileHeartbeat) Task.MobileHeartbeat = false;
-                    API.i.taskInfo().then((response) => {
+                    return API.i.taskInfo().then((response) => {
                         DEBUG('Task.run: API.i.taskInfo', response);
                         for (const key in response.data) {
                             if (typeof response.data[key] === 'object') {
@@ -1231,6 +1232,7 @@
                 } catch (err) {
                     window.toast('[自动完成任务]运行时出现异常，已停止', 'error');
                     console.error(`[${NAME}]`, err);
+                    return $.Deferred().reject();
                 }
             },
             receiveAward: (task_id) => {
@@ -1293,20 +1295,20 @@
             },
             run: () => {
                 try {
-                    if (!CONFIG.AUTO_GIFT || (CONFIG.AUTO_GIFT && CONFIG.AUTO_GIFT_CONFIG.ROOMID > 0 && CONFIG.AUTO_GIFT_CONFIG.ROOMID !== Info.short_id && CONFIG.AUTO_GIFT_CONFIG.ROOMID !== Info.roomid)) return;
+                    if (!CONFIG.AUTO_GIFT || (CONFIG.AUTO_GIFT && CONFIG.AUTO_GIFT_CONFIG.ROOMID > 0 && CONFIG.AUTO_GIFT_CONFIG.ROOMID !== Info.short_id && CONFIG.AUTO_GIFT_CONFIG.ROOMID !== Info.roomid)) return $.Deferred().resolve();
                     if (Gift.run_timer) clearTimeout(Gift.run_timer);
                     if (CACHE.gift_ts) {
                         const diff = ts_ms() - CACHE.gift_ts;
                         if (diff < Gift.interval) {
                             Gift.run_timer = setTimeout(Gift.run, diff);
-                            return;
+                            return $.Deferred().resolve();
                         }
                     }
                     const func = () => {
                         window.toast('[自动送礼]送礼失败，请检查网络', 'error');
                         return tryAgain(() => Gift.run());
                     };
-                    API.room.room_init(CONFIG.AUTO_GIFT_CONFIG.ROOMID).then((response) => {
+                    return API.room.room_init(CONFIG.AUTO_GIFT_CONFIG.ROOMID).then((response) => {
                         DEBUG('Gift.run: API.room.room_init', response);
                         Gift.room_id = parseInt(response.data.room_id, 10);
                         Gift.getMedalList().then(() => {
@@ -1339,6 +1341,7 @@
                 } catch (err) {
                     window.toast('[自动送礼]运行时出现异常，已停止', 'error');
                     console.error(`[${NAME}]`, err);
+                    return $.Deferred().reject();
                 }
             },
             sendGift: (i = 0) => {
@@ -1385,19 +1388,20 @@
             run_timer: undefined,
             run: () => {
                 try {
-                    if (!CONFIG.MOBILE_HEARTBEAT) return;
+                    if (!CONFIG.MOBILE_HEARTBEAT) return $.Deferred().resolve();
                     if (MobileHeartbeat.run_timer && !Task.double_watch_task && Info.mobile_verify) {
                         Task.MobileHeartbeat = true;
                         Task.run();
                     }
                     if (MobileHeartbeat.run_timer) clearTimeout(MobileHeartbeat.run_timer);
-                    API.HeartBeat.mobile().then(() => {
+                    return API.HeartBeat.mobile().then(() => {
                         DEBUG('MobileHeartbeat.run: API.HeartBeat.mobile');
                         MobileHeartbeat.run_timer = setTimeout(MobileHeartbeat.run, 300e3);
                     }, () => tryAgain(() => MobileHeartbeat.run()));
                 } catch (err) {
                     window.toast('[移动端心跳]运行时出现异常，已停止', 'error');
                     console.error(`[${NAME}]`, err);
+                    return $.Deferred().reject();
                 }
             }
         }; // Once Run every 5mins
