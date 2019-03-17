@@ -88,7 +88,11 @@
 
     const tryAgain = (callback) => {
         const p = $.Deferred();
-        setTimeout(() => callback().then((arg1, arg2, arg3, arg4, arg5, arg6) => p.resolve(arg1, arg2, arg3, arg4, arg5, arg6)), 10e3);
+        setTimeout(() => {
+            const t = callback();
+            if (t.then) t.then((arg1, arg2, arg3, arg4, arg5, arg6) => p.resolve(arg1, arg2, arg3, arg4, arg5, arg6));
+            else p.resolve();
+        }, 10e3);
         return p;
     };
 
