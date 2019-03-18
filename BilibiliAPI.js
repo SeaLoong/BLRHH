@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.4
+// @version      1.3.5
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -76,7 +76,7 @@ var BilibiliAPI = {
             BilibiliAPI.cnt_frequently_ajax = 0;
         }
         BilibiliAPI.last_ajax = Date.now();
-        if (BilibiliAPI.cnt_frequently_ajax > 20) throw new Error('调用BilibiliAPI太快，可能出现了bug');
+        if (BilibiliAPI.cnt_frequently_ajax > 50) throw new Error('调用BilibiliAPI太快，可能出现了bug');
         if (settings.xhrFields) {
             jQuery.extend(settings.xhrFields, {
                 withCredentials: true
