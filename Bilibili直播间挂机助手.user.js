@@ -21,7 +21,7 @@
 
 /*
 [greasyfork源]
-// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=641218
+// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=680959
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
@@ -2238,8 +2238,7 @@
                         addCSS('#chat-popup-area-vm {display: none;}');
                     }
                     Lottery.listen(Info.uid, Info.roomid, '', false, true);
-                    Lottery.Gift.run(Info.roomid);
-                    Lottery.Guard.run(Info.roomid);
+                    Lottery.Gift.run(Info.roomid).always(() => Lottery.Guard.run(Info.roomid));
                     const areas = ['[娱乐区]', '[网游区]', '[手游区]', '[绘画区]', '[电台区]', '[单机区]'];
                     for (let i = 0; i < areas.length; ++i) {
                         API.room.getRoomList(i + 1, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER).then((response) => {
@@ -2247,8 +2246,7 @@
                             if (response.code === 0) {
                                 for (let j = 0; j < response.data.length; ++j) {
                                     Lottery.listen(Info.uid, response.data[j].roomid, areas[i], j);
-                                    Lottery.Gift.run(response.data[j].roomid);
-                                    Lottery.Guard.run(response.data[j].roomid);
+                                    Lottery.Gift.run(response.data[j].roomid).always(() => Lottery.Guard.run(response.data[j].roomid));
                                 }
                             }
                         });
