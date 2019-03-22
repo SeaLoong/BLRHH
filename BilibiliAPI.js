@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.5
+// @version      1.3.6
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -67,32 +67,36 @@ var BilibiliAPI = {
         share: (aid, csrf) => BilibiliAPI.x.share_add(aid, csrf)
     },
     // ajax调用B站API
-    last_ajax: 0,
-    cnt_frequently_ajax: 0,
+    runUntilSucceed: (callback, delay = 0, period = 100) => {
+        setTimeout(() => {
+            if (!callback()) BilibiliAPI.runUntilSucceed(callback, period, period);
+        }, delay);
+    },
+    processing: 0,
     ajax: (settings) => {
-        if (Date.now() - BilibiliAPI.last_ajax < 10) {
-            BilibiliAPI.cnt_frequently_ajax++;
-        } else {
-            BilibiliAPI.cnt_frequently_ajax = 0;
-        }
-        BilibiliAPI.last_ajax = Date.now();
-        if (BilibiliAPI.cnt_frequently_ajax > 50) throw new Error('调用BilibiliAPI太快，可能出现了bug');
-        if (settings.xhrFields) {
-            jQuery.extend(settings.xhrFields, {
-                withCredentials: true
-            });
-        } else {
-            settings.xhrFields = {
-                withCredentials: true
-            };
-        }
+        if (settings.xhrFields === undefined) settings.xhrFields = {};
+        settings.xhrFields.withCredentials = true;
         jQuery.extend(settings, {
             url: (settings.url.substr(0, 2) === '//' ? '' : '//api.live.bilibili.com/') + settings.url,
             method: settings.method || 'GET',
             crossDomain: true,
             dataType: settings.dataType || 'json'
         });
-        return jQuery.ajax(settings);
+        const p = jQuery.Deferred();
+        BilibiliAPI.runUntilSucceed(() => {
+            if (BilibiliAPI.processing > 10) return false;
+            BilibiliAPI.processing++;
+            return jQuery.ajax(settings).then((arg1, arg2, arg3) => {
+                BilibiliAPI.processing--;
+                p.resolve(arg1, arg2, arg3);
+                return true;
+            }, (arg1, arg2, arg3) => {
+                BilibiliAPI.processing--;
+                p.reject(arg1, arg2, arg3);
+                return true;
+            });
+        });
+        return p;
     },
     // 以下按照URL分类
     ajaxGetCaptchaKey: () => {
