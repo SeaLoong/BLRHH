@@ -1151,7 +1151,7 @@ var BilibiliAPI = {
             }
             if (typeof onreceive === 'function') {
                 this.addEventListener('receive', (event) => {
-                    onreceive.call(this, event.detail.len, event.detail.headerLen, event.detail.protover, event.detail.operation, event.detail.sequence, event.detail.data);
+                    onreceive.call(this, event.detail.len, event.detail.headerLen, event.detail.code1, event.detail.operation, event.detail.code2, event.detail.data);
                 });
                 this.handlers.receive.push(onreceive);
             }
