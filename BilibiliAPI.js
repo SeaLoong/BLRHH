@@ -67,7 +67,7 @@ var BilibiliAPI = {
         share: (aid, csrf) => BilibiliAPI.x.share_add(aid, csrf)
     },
     // ajax调用B站API
-    runUntilSucceed: (callback, delay = 0, period = 100) => {
+    runUntilSucceed: (callback, delay = 0, period = 50) => {
         setTimeout(() => {
             if (!callback()) BilibiliAPI.runUntilSucceed(callback, period, period);
         }, delay);
@@ -84,14 +84,14 @@ var BilibiliAPI = {
         });
         const p = jQuery.Deferred();
         BilibiliAPI.runUntilSucceed(() => {
-            if (BilibiliAPI.processing > 10) return false;
-            BilibiliAPI.processing++;
+            if (BilibiliAPI.processing > 50) return false;
+            ++BilibiliAPI.processing;
             return jQuery.ajax(settings).then((arg1, arg2, arg3) => {
-                BilibiliAPI.processing--;
+                --BilibiliAPI.processing;
                 p.resolve(arg1, arg2, arg3);
                 return true;
             }, (arg1, arg2, arg3) => {
-                BilibiliAPI.processing--;
+                --BilibiliAPI.processing;
                 p.reject(arg1, arg2, arg3);
                 return true;
             });
@@ -1001,7 +1001,8 @@ var BilibiliAPI = {
             const decodedString = decodeURIComponent(escape(encodedString));
             return decodedString;
         }
-        constructor(uid, roomid, serveraddress = 'wss://broadcastlv.chat.bilibili.com/sub', protover = 1, platform = 'web', clientver = '1.4.6') {
+        constructor(uid, roomid, serveraddress = 'wss://broadcastlv.chat.bilibili.com/sub') {
+            // 总字节长度 int(4bytes) + 头字节长度(16=4+2+2+4+4) short(2bytes) + code1(1) short(2bytes) + operation int(4bytes) + code2(1) int(4bytes) + Data
             super(serveraddress);
             this.binaryType = 'arraybuffer';
             this.handlers = {
@@ -1012,7 +1013,7 @@ var BilibiliAPI = {
                 receive: []
             };
             this.addEventListener('open', () => {
-                this.sendLoginPacket(uid, roomid, protover, platform, clientver).sendHeartBeatPacket();
+                this.sendLoginPacket(uid, roomid).sendHeartBeatPacket();
                 this.heartBeatHandler = setInterval(() => {
                     this.sendHeartBeatPacket();
                 }, 30e3);
@@ -1022,7 +1023,7 @@ var BilibiliAPI = {
                 if (event.code === 1000) return;
                 // 自动重连
                 setTimeout(() => {
-                    const ws = new BilibiliAPI.DanmuWebSocket(uid, roomid, serveraddress, protover, platform, clientver);
+                    const ws = new BilibiliAPI.DanmuWebSocket(uid, roomid, serveraddress);
                     ws.handlers = this.handlers;
                     for (const key in this.handlers) {
                         if (this.handlers.hasOwnProperty(key)) {
@@ -1050,7 +1051,7 @@ var BilibiliAPI = {
                                         break;
                                     case 'receive':
                                         ws.addEventListener('receive', (event) => {
-                                            handler.call(ws, event.detail.len, event.detail.headerLen, event.detail.protover, event.detail.operation, event.detail.sequence, event.detail.data);
+                                            handler.call(ws, event.detail.len, event.detail.headerLen, event.detail.code1, event.detail.operation, event.detail.code2, event.detail.data);
                                         });
                                         break;
                                 }
@@ -1069,15 +1070,15 @@ var BilibiliAPI = {
                 let position = 0;
                 while (position < event.data.byteLength) {
                     /*
-                    登录 Uint(4byte) + 00 10 + 00 01 + 00 00 00 08 + 00 00 00 01
-                    心跳 Uint(4byte) + 00 10 + 00 01 + 00 00 00 03 + 00 00 00 01 + Uint(4byte)
-                    弹幕消息/系统消息/送礼 Uint(4byte) + 00 10 + 00 00 + 00 00 00 05 + 00 00 00 00 + Data
+                    登录 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 08 + 00 00 00 01
+                    心跳 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 03 + 00 00 00 01 + 直播间人气 int(4bytes)
+                    弹幕消息/系统消息/送礼 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 00 + 00 00 00 05 + 00 00 00 00 + Data
                     */
                     let len = dv.getUint32(position);
                     let headerLen = dv.getUint16(position + 4);
-                    let protover = dv.getUint16(position + 6);
+                    let code1 = dv.getUint16(position + 6);
                     let operation = dv.getUint32(position + 8);
-                    let sequence = dv.getUint32(position + 12);
+                    let code2 = dv.getUint32(position + 12);
                     switch (operation) {
                         case 3:
                             const num = dv.getUint32(headerLen); // 在线人数
@@ -1105,9 +1106,9 @@ var BilibiliAPI = {
                         detail: {
                             len: len,
                             headerLen: headerLen,
-                            protover: protover,
+                            code1: code1,
                             operation: operation,
-                            sequence: sequence,
+                            code2: code2,
                             data: event.data.slice(position + headerLen, position + len)
                         }
                     }));
@@ -1155,11 +1156,11 @@ var BilibiliAPI = {
                 this.handlers.receive.push(onreceive);
             }
         }
-        sendData(data, protover = 1, operation = 2, sequence = 1) {
+        sendData(data, code1, operation, code2) {
             if (this.readyState !== WebSocket.OPEN) throw new Error('DanmuWebSocket未连接');
             switch (Object.prototype.toString.call(data)) {
                 case '[object Object]':
-                    return this.sendData(JSON.stringify(data), protover, operation, sequence);
+                    return this.sendData(JSON.stringify(data), code1, operation, code2);
                 case '[object String]':
                     {
                         let dataUint8Array = BilibiliAPI.DanmuWebSocket.stringToUint(data);
@@ -1167,9 +1168,9 @@ var BilibiliAPI = {
                         let dv = new DataView(buffer);
                         dv.setUint32(0, BilibiliAPI.DanmuWebSocket.headerLength + dataUint8Array.byteLength);
                         dv.setUint16(4, BilibiliAPI.DanmuWebSocket.headerLength);
-                        dv.setUint16(6, parseInt(protover, 10));
+                        dv.setUint16(6, parseInt(code1, 10));
                         dv.setUint32(8, parseInt(operation, 10));
-                        dv.setUint32(12, parseInt(sequence, 10));
+                        dv.setUint32(12, parseInt(code2, 10));
                         for (let i = 0; i < dataUint8Array.byteLength; ++i) {
                             dv.setUint8(BilibiliAPI.DanmuWebSocket.headerLength + i, dataUint8Array[i]);
                         }
@@ -1181,22 +1182,22 @@ var BilibiliAPI = {
             }
             return this;
         }
-        sendLoginPacket(uid, roomid, protover = 1, platform = 'web', clientver = '1.4.6') {
-            // Uint(4byte) + 00 10 + 00 01 + 00 00 00 07 + 00 00 00 01 + Data 登录数据包
+        sendLoginPacket(uid, roomid) {
+            // 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + + 00 01 + 00 00 00 07 + 00 00 00 01 + Data 登录数据包
             const data = {
                 'uid': parseInt(uid, 10),
                 'roomid': parseInt(roomid, 10),
-                'protover': protover,
-                'platform': platform,
-                'clientver': clientver
+                'protover': 2,
+                'platform': 'web',
+                'clientver': '1.6.3',
+                'type': 2
             };
             return this.sendData(data, 1, 7, 1);
         }
         sendHeartBeatPacket() {
-            // Uint(4byte) + 00 10 + 00 01 + 00 00 00 02 + 00 00 00 01 + Data 心跳数据包
+            // 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 02 + 00 00 00 01 + Data 心跳数据包
             return this.sendData('[object Object]', 1, 2, 1);
         }
     }
 };
-
 BilibiliAPI.DanmuWebSocket.headerLength = 16;
