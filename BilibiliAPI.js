@@ -1002,7 +1002,7 @@ var BilibiliAPI = {
             return decodedString;
         }
         constructor(uid, roomid, serveraddress = 'wss://broadcastlv.chat.bilibili.com/sub') {
-            // 总字节长度 int(4bytes) + 头字节长度(16=4+2+2+4+4) short(2bytes) + code1(1) short(2bytes) + operation int(4bytes) + code2(1) int(4bytes) + Data
+            // 总字节长度 int(4bytes) + 头字节长度(16=4+2+2+4+4) short(2bytes) + protover(1,2) short(2bytes) + operation int(4bytes) + sequence(1,0) int(4bytes) + Data
             super(serveraddress);
             this.binaryType = 'arraybuffer';
             this.handlers = {
@@ -1025,6 +1025,7 @@ var BilibiliAPI = {
                 setTimeout(() => {
                     const ws = new BilibiliAPI.DanmuWebSocket(uid, roomid, serveraddress);
                     ws.handlers = this.handlers;
+                    ws.unpack = this.unpack;
                     for (const key in this.handlers) {
                         if (this.handlers.hasOwnProperty(key)) {
                             this.handlers[key].forEach(handler => {
@@ -1051,7 +1052,7 @@ var BilibiliAPI = {
                                         break;
                                     case 'receive':
                                         ws.addEventListener('receive', (event) => {
-                                            handler.call(ws, event.detail.len, event.detail.headerLen, event.detail.code1, event.detail.operation, event.detail.code2, event.detail.data);
+                                            handler.call(ws, event.detail.len, event.detail.headerLen, event.detail.protover, event.detail.operation, event.detail.sequence, event.detail.data);
                                         });
                                         break;
                                 }
@@ -1066,7 +1067,7 @@ var BilibiliAPI = {
                 }, 10e3);
             });
             this.addEventListener('message', (event) => {
-                let dv = new DataView(event.data);
+                const dv = new DataView(event.data);
                 let position = 0;
                 while (position < event.data.byteLength) {
                     /*
@@ -1074,22 +1075,28 @@ var BilibiliAPI = {
                     心跳 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 03 + 00 00 00 01 + 直播间人气 int(4bytes)
                     弹幕消息/系统消息/送礼 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 00 + 00 00 00 05 + 00 00 00 00 + Data
                     */
-                    let len = dv.getUint32(position);
-                    let headerLen = dv.getUint16(position + 4);
-                    let code1 = dv.getUint16(position + 6);
-                    let operation = dv.getUint32(position + 8);
-                    let code2 = dv.getUint32(position + 12);
+                    const len = dv.getUint32(position);
+                    const headerLen = dv.getUint16(position + 4);
+                    const protover = dv.getUint16(position + 6);
+                    const operation = dv.getUint32(position + 8);
+                    const sequence = dv.getUint32(position + 12);
+                    let data = event.data.slice(position + headerLen, position + len);
+                    if (protover === 2 && this.unpack) data = this.unpack(data);
+                    const dataV = new DataView(data);
                     switch (operation) {
                         case 3:
-                            const num = dv.getUint32(headerLen); // 在线人数
+                        {
+                            const num = dataV.getUint32(0); // 在线人数
                             this.dispatchEvent(new CustomEvent('heartbeat', {
                                 detail: {
                                     num: num
                                 }
                             }));
                             break;
+                        }
                         case 5:
-                            const str = BilibiliAPI.DanmuWebSocket.uintToString(new Uint8Array(event.data, position + headerLen, len - headerLen));
+                        {
+                            const str = BilibiliAPI.DanmuWebSocket.uintToString(data);
                             const obj = JSON.parse(str);
                             this.dispatchEvent(new CustomEvent('cmd', {
                                 detail: {
@@ -1098,6 +1105,7 @@ var BilibiliAPI = {
                                 }
                             }));
                             break;
+                        }
                         case 8:
                             this.dispatchEvent(new CustomEvent('login'));
                             break;
@@ -1106,15 +1114,18 @@ var BilibiliAPI = {
                         detail: {
                             len: len,
                             headerLen: headerLen,
-                            code1: code1,
+                            protover: protover,
                             operation: operation,
-                            code2: code2,
-                            data: event.data.slice(position + headerLen, position + len)
+                            sequence: sequence,
+                            data: data
                         }
                     }));
                     position += len;
                 }
             });
+        }
+        setUnpack(fn) {
+            this.unpack = fn;
         }
         bind(onreconnect = undefined, onlogin = undefined, onheartbeat = undefined, oncmd = undefined, onreceive = undefined) {
             /*
@@ -1151,16 +1162,16 @@ var BilibiliAPI = {
             }
             if (typeof onreceive === 'function') {
                 this.addEventListener('receive', (event) => {
-                    onreceive.call(this, event.detail.len, event.detail.headerLen, event.detail.code1, event.detail.operation, event.detail.code2, event.detail.data);
+                    onreceive.call(this, event.detail.len, event.detail.headerLen, event.detail.protover, event.detail.operation, event.detail.sequence, event.detail.data);
                 });
                 this.handlers.receive.push(onreceive);
             }
         }
-        sendData(data, code1, operation, code2) {
+        sendData(data, protover, operation, sequence) {
             if (this.readyState !== WebSocket.OPEN) throw new Error('DanmuWebSocket未连接');
             switch (Object.prototype.toString.call(data)) {
                 case '[object Object]':
-                    return this.sendData(JSON.stringify(data), code1, operation, code2);
+                    return this.sendData(JSON.stringify(data), protover, operation, sequence);
                 case '[object String]':
                     {
                         let dataUint8Array = BilibiliAPI.DanmuWebSocket.stringToUint(data);
@@ -1168,9 +1179,9 @@ var BilibiliAPI = {
                         let dv = new DataView(buffer);
                         dv.setUint32(0, BilibiliAPI.DanmuWebSocket.headerLength + dataUint8Array.byteLength);
                         dv.setUint16(4, BilibiliAPI.DanmuWebSocket.headerLength);
-                        dv.setUint16(6, parseInt(code1, 10));
+                        dv.setUint16(6, parseInt(protover, 10));
                         dv.setUint32(8, parseInt(operation, 10));
-                        dv.setUint32(12, parseInt(code2, 10));
+                        dv.setUint32(12, parseInt(sequence, 10));
                         for (let i = 0; i < dataUint8Array.byteLength; ++i) {
                             dv.setUint8(BilibiliAPI.DanmuWebSocket.headerLength + i, dataUint8Array[i]);
                         }
