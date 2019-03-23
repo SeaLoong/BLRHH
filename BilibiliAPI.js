@@ -1068,20 +1068,31 @@ var BilibiliAPI = {
             });
             this.addEventListener('message', (event) => {
                 const dv = new DataView(event.data);
-                let position = 0;
-                while (position < event.data.byteLength) {
+                let len = 0;
+                for (let position = 0; position < event.data.byteLength; position += len) {
                     /*
                     登录 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 08 + 00 00 00 01
                     心跳 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 03 + 00 00 00 01 + 直播间人气 int(4bytes)
                     弹幕消息/系统消息/送礼 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 00 + 00 00 00 05 + 00 00 00 00 + Data
                     */
-                    const len = dv.getUint32(position);
+                    len = dv.getUint32(position);
                     const headerLen = dv.getUint16(position + 4);
                     const protover = dv.getUint16(position + 6);
                     const operation = dv.getUint32(position + 8);
                     const sequence = dv.getUint32(position + 12);
                     let data = event.data.slice(position + headerLen, position + len);
                     if (protover === 2 && this.unpack) data = this.unpack(data);
+                    this.dispatchEvent(new CustomEvent('receive', {
+                        detail: {
+                            len: len,
+                            headerLen: headerLen,
+                            protover: protover,
+                            operation: operation,
+                            sequence: sequence,
+                            data: data
+                        }
+                    }));
+                    if (protover === 2 && !this.unpack) continue;
                     const dataV = new DataView(data);
                     switch (operation) {
                         case 3:
@@ -1096,7 +1107,7 @@ var BilibiliAPI = {
                         }
                         case 5:
                         {
-                            const str = BilibiliAPI.DanmuWebSocket.uintToString(data);
+                            const str = BilibiliAPI.DanmuWebSocket.uintToString(new Uint8Array(data));
                             const obj = JSON.parse(str);
                             this.dispatchEvent(new CustomEvent('cmd', {
                                 detail: {
@@ -1110,17 +1121,6 @@ var BilibiliAPI = {
                             this.dispatchEvent(new CustomEvent('login'));
                             break;
                     }
-                    this.dispatchEvent(new CustomEvent('receive', {
-                        detail: {
-                            len: len,
-                            headerLen: headerLen,
-                            protover: protover,
-                            operation: operation,
-                            sequence: sequence,
-                            data: data
-                        }
-                    }));
-                    position += len;
                 }
             });
         }
@@ -1194,7 +1194,7 @@ var BilibiliAPI = {
             return this;
         }
         sendLoginPacket(uid, roomid) {
-            // 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + + 00 01 + 00 00 00 07 + 00 00 00 01 + Data 登录数据包
+            // 总字节长度 int(4bytes) + 头字节长度 short(2bytes) + 00 01 + 00 00 00 07 + 00 00 00 01 + Data 登录数据包
             const data = {
                 'uid': parseInt(uid, 10),
                 'roomid': parseInt(roomid, 10),
