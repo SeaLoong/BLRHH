@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.12
+// @version      2.3.13
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -12,7 +12,7 @@
 // @include      /https?:\/\/live\.bilibili\.com\/blanc\d+\??.*/
 // @include      /https?:\/\/api\.live\.bilibili\.com\/_.*/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.5.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.6.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
@@ -21,7 +21,7 @@
 
 /*
 [greasyfork源]
-// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=680959
+// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=682548
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
@@ -30,7 +30,7 @@
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
 [腾讯云源]
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.5.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.6.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 */
 
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.12';
+    const VERSION = '2.3.13';
     document.domain = 'bilibili.com';
 
     let API;
@@ -90,7 +90,7 @@
         const p = $.Deferred();
         setTimeout(() => {
             const t = callback();
-            if (t.then) t.then((arg1, arg2, arg3, arg4, arg5, arg6) => p.resolve(arg1, arg2, arg3, arg4, arg5, arg6));
+            if (t && t.then) t.then((arg1, arg2, arg3, arg4, arg5, arg6) => p.resolve(arg1, arg2, arg3, arg4, arg5, arg6));
             else p.resolve();
         }, 10e3);
         return p;
@@ -146,9 +146,9 @@
                 Info = window.parent[NAME].Info;
                 CONFIG = window.parent[NAME].CONFIG;
                 CACHE = window.parent[NAME].CACHE;
-                const p_down = $.Deferred();
-                p_down.then(down);
-                window.frameElement[NAME].promise.down = p_down;
+                const pDown = $.Deferred();
+                pDown.then(down);
+                window.frameElement[NAME].promise.down = pDown;
             };
             window.frameElement[NAME].promise.down.then(down);
             const up = () => {
@@ -156,8 +156,9 @@
                 window.parent[NAME].CACHE = CACHE;
                 window.frameElement[NAME].promise.up.resolve();
             };
+            window.frameElement[NAME].promise.init.resolve();
             // 正式执行子脚本
-            if (window.frameElement[NAME].type === 'LOTTERY' || window.frameElement[NAME].type === 'GUARD') {
+            if (window.frameElement[NAME].type === 'LOTTERY') {
                 const Lottery = {
                     ws: undefined,
                     raffleIdSet: new Set(),
@@ -332,7 +333,14 @@
                 Lottery.ws = new API.DanmuWebSocket(Info.uid, window.frameElement[NAME].roomid);
                 Lottery.ws.bind((ws) => {
                     Lottery.ws = ws;
-                }, undefined, undefined, (obj) => {
+                }, () => {
+                    if (Info.blocked) {
+                        finish();
+                        return;
+                    }
+                    if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) Lottery.Gift.run(window.frameElement[NAME].roomid).always(readyFinish);
+                    if (CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) Lottery.Guard.run(window.frameElement[NAME].roomid).always(readyFinish);
+                }, undefined, (obj) => {
                     if (Info.blocked) {
                         finish();
                         return;
@@ -360,11 +368,6 @@
                     }
                     readyFinish();
                 });
-                if (window.frameElement[NAME].type === 'LOTTERY') {
-                    Lottery.Gift.run(window.frameElement[NAME].roomid).always(readyFinish());
-                } else if (window.frameElement[NAME].type === 'GUARD') {
-                    Lottery.Guard.run(window.frameElement[NAME].roomid).always(readyFinish());
-                }
             } else if (window.frameElement[NAME].type === 'GROUPSIGN|DAILYREWARD') {
                 const GroupSign = {
                     getGroups: () => {
@@ -556,6 +559,8 @@
                 }; // Once Run every day "api.live.bilibili.com"
                 if (CONFIG.AUTO_GROUP_SIGN) GroupSign.run();
                 if (CONFIG.AUTO_DAILYREWARD) DailyReward.run();
+            } else {
+                window.frameElement[NAME].promise.finish.resolve();
             }
         } catch (err) {
             console.error(`[${NAME}]子脚本运行时出现异常，已停止并关闭子页面`);
@@ -563,11 +568,9 @@
             window.frameElement[NAME].promise.finish.resolve();
         }
     } else {
-        const runUntilSucceed = (callback, delay = 1, period = 100) => {
+        const runUntilSucceed = (callback, delay = 0, period = 100) => {
             setTimeout(() => {
-                if (!callback()) {
-                    runUntilSucceed(callback, period, period);
-                }
+                if (!callback()) runUntilSucceed(callback, period, period);
             }, delay);
         };
 
@@ -1116,8 +1119,6 @@
                             if (iframe.promise.down) iframe.promise.down.resolve();
                         }
                     } catch (err) {
-                        console.error(`[${NAME}]`, '子脚本数据同步时出现异常');
-                        console.error(`[${NAME}]`, err);
                     }
                 }
             }
@@ -1961,7 +1962,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 301, rem = 9) => { // TODO
+                check: (aid, valid = 304, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
@@ -2092,28 +2093,32 @@
                 if (link_url) iframe.src = `${link_url.replace('https:', '').replace('http:', '')}&visit_id=${Info.visit_id}`;
                 else iframe.src = `//live.bilibili.com/${roomid}?visit_id=${Info.visit_id}`;
                 document.body.appendChild(iframe);
-                const p = $.Deferred();
-                p.then(() => {
+                const pFinish = $.Deferred();
+                pFinish.then(() => {
                     window[NAME].iframeMap.delete(iframe.name);
                     $(iframe).remove();
                 });
+                const autoDel = setTimeout(() => pFinish.resolve(), 60e3); // iframe默认在60s后自动删除
+                const pInit = $.Deferred();
+                pInit.then(() => clearTimeout(autoDel)); // 如果初始化成功，父脚本不自动删除，由子脚本决定何时删除，否则说明子脚本加载失败，这个iframe没有意义
                 const up = () => {
                     CACHE = window[NAME].CACHE;
                     Info = window[NAME].Info;
                     Essential.Cache.save();
-                    const p_up = $.Deferred();
-                    p_up.then(up);
-                    iframe[NAME].promise.up = p_up;
+                    const pUp = $.Deferred();
+                    pUp.then(up);
+                    iframe[NAME].promise.up = pUp;
                 };
-                const p2 = $.Deferred();
-                p2.then(up);
+                const pUp = $.Deferred();
+                pUp.then(up);
                 iframe[NAME] = {
                     roomid: real_roomid,
                     type: type,
                     promise: {
-                        finish: p, // 这个Promise在iframe需要删除时resolve
+                        init: pInit, // 这个Promise在子脚本加载完成时resolve
+                        finish: pFinish, // 这个Promise在iframe需要删除时resolve
                         down: $.Deferred(), // 这个Promise在子脚本的CONIG、CACHE、Info等需要重新读取时resolve
-                        up: p2
+                        up: pUp
                     }
                 };
                 window[NAME].iframeMap.set(iframe.name, iframe);
@@ -2128,6 +2133,8 @@
                     window.toast(`[自动抽奖]${area}(${roomid})弹幕服务器连接断开，尝试重连`, 'caution');
                 }, () => {
                     window.toast(`[自动抽奖]${area}(${roomid})连接弹幕服务器成功`, 'success');
+                    Lottery.Gift.run(roomid);
+                    Lottery.Guard.run(roomid);
                 }, undefined, (obj, str) => {
                     switch (obj.cmd) {
                         case 'DANMU_MSG':
@@ -2164,7 +2171,7 @@
                                     if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
                                     if (obj.real_roomid !== Info.roomid) {
                                         const p = $.Deferred();
-                                        p.then(() => Lottery.create(obj.roomid, obj.real_roomid, 'GUARD', obj.link_url));
+                                        p.then(() => Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url));
                                         setTimeout(p.resolve, Math.random() * 1e4);
                                     }
                                     break;
@@ -2186,7 +2193,7 @@
                             if (obj.data.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
                             else {
                                 const p = $.Deferred();
-                                p.then(() => Lottery.create(obj.data.roomid, obj.data.roomid, 'GUARD', obj.data.link));
+                                p.then(() => Lottery.create(obj.data.roomid, obj.data.roomid, 'LOTTERY', obj.data.link));
                                 setTimeout(p.resolve, Math.random() * 1e4);
                             }
                             break;
@@ -2238,7 +2245,6 @@
                         addCSS('#chat-popup-area-vm {display: none;}');
                     }
                     Lottery.listen(Info.uid, Info.roomid, '', false, true);
-                    Lottery.Gift.run(Info.roomid).always(() => Lottery.Guard.run(Info.roomid));
                     const areas = ['[娱乐区]', '[网游区]', '[手游区]', '[绘画区]', '[电台区]', '[单机区]'];
                     for (let i = 0; i < areas.length; ++i) {
                         API.room.getRoomList(i + 1, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER).then((response) => {
@@ -2246,7 +2252,6 @@
                             if (response.code === 0) {
                                 for (let j = 0; j < response.data.length; ++j) {
                                     Lottery.listen(Info.uid, response.data[j].roomid, areas[i], j);
-                                    Lottery.Gift.run(response.data[j].roomid).always(() => Lottery.Guard.run(response.data[j].roomid));
                                 }
                             }
                         });
@@ -2272,27 +2277,31 @@
             iframe.name = name;
             iframe.src = `${url}/${iframe.name}`;
             document.body.appendChild(iframe);
-            const p = $.Deferred();
-            p.then(() => {
+            const pFinish = $.Deferred();
+            pFinish.then(() => {
                 window[NAME].iframeMap.delete(iframe.name);
                 $(iframe).remove();
             });
+            const autoDel = setTimeout(() => pFinish.resolve(), 60e3); // iframe默认在60s后自动删除
+            const pInit = $.Deferred();
+            pInit.then(() => clearTimeout(autoDel)); // 如果初始化成功，父脚本不自动删除，由子脚本决定何时删除，否则说明子脚本加载失败，这个iframe没有意义
             const up = () => {
                 CACHE = window[NAME].CACHE;
                 Info = window[NAME].Info;
                 Essential.Cache.save();
-                const p_up = $.Deferred();
-                p_up.then(up);
-                iframe[NAME].promise.up = p_up;
+                const pUp = $.Deferred();
+                pUp.then(up);
+                iframe[NAME].promise.up = pUp;
             };
-            const p2 = $.Deferred();
-            p2.then(up);
+            const pUp = $.Deferred();
+            pUp.then(up);
             iframe[NAME] = {
                 type: type,
                 promise: {
-                    finish: p, // 这个Promise在iframe需要删除时resolve
+                    init: pInit, // 这个Promise在子脚本加载完成时resolve
+                    finish: pFinish, // 这个Promise在iframe需要删除时resolve
                     down: $.Deferred(), // 这个Promise在子脚本的CONIG、CACHE、Info等需要重新读取时resolve
-                    up: p2
+                    up: pUp
                 }
             };
             window[NAME].iframeMap.set(iframe.name, iframe);
@@ -2370,7 +2379,7 @@
                                     Info.ruid = window.BilibiliLive.ANCHOR_UID;
                                     Info.rnd = window.BilibiliLive.RND;
                                     Info.csrf_token = getCookie('bili_jct');
-                                    Info.visit_id = window.__statisObserver.__visitId;
+                                    Info.visit_id = window.__statisObserver.__visitId || '';
                                     const p1 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
                                         DEBUG('InitData: API.live_user.get_info_in_room', response);
                                         Info.silver = response.data.wallet.silver;

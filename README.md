@@ -53,7 +53,7 @@
         // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
         // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
         [腾讯云源]
-        // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.4.js
+        // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.6.js
         // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
         ```
 
@@ -88,6 +88,9 @@
 -----------------
 
 ## 更新日志
+> ###  2019-03-23 (Version 2.3.13)
+>     优化了访问API的方式
+>     修复了自动抽奖出现漏抽、漏领的问题
 > ###  2019-03-18 (Version 2.3.12)
 > ###  2019-03-18 (Version 2.3.11)
 >     修复了在网络环境差的情况下部分功能有时不能正常运行的问题
