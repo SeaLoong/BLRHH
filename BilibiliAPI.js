@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.6
+// @version      1.3.7
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -84,7 +84,7 @@ var BilibiliAPI = {
         });
         const p = jQuery.Deferred();
         BilibiliAPI.runUntilSucceed(() => {
-            if (BilibiliAPI.processing > 50) return false;
+            if (BilibiliAPI.processing > 8) return false;
             ++BilibiliAPI.processing;
             return jQuery.ajax(settings).then((arg1, arg2, arg3) => {
                 --BilibiliAPI.processing;
@@ -862,6 +862,21 @@ var BilibiliAPI = {
                 url: 'room/v1/Room/room_init?id=' + id
             });
         },
+        getConf: (room_id, platform = 'pc', player = 'web') => {
+            return BilibiliAPI.ajax({
+                url: 'room/v1/Danmu/getConf',
+                data: {
+                    room_id: room_id,
+                    platform: platform,
+                    player: player
+                }
+            });
+        },
+        getList: () => {
+            return BilibiliAPI.ajax({
+                url: 'room/v1/Area/getList'
+            });
+        },
         getRoomList: (parent_area_id = 1, cate_id = 0, area_id = 0, page = 1, page_size = 30, sort_type = 'online', platform = 'web') => {
             return BilibiliAPI.ajax({
                 url: 'room/v1/area/getRoomList',
@@ -988,8 +1003,7 @@ var BilibiliAPI = {
     },
     DanmuWebSocket: class extends WebSocket {
         static stringToUint(string) {
-            const str = unescape(encodeURIComponent(string));
-            const charList = str.split('');
+            const charList = string.split('');
             const uintArray = [];
             for (var i = 0; i < charList.length; ++i) {
                 uintArray.push(charList[i].charCodeAt(0));
@@ -997,9 +1011,7 @@ var BilibiliAPI = {
             return new Uint8Array(uintArray);
         }
         static uintToString(uintArray) {
-            const encodedString = String.fromCharCode.apply(null, uintArray);
-            const decodedString = decodeURIComponent(escape(encodedString));
-            return decodedString;
+            return String.fromCharCode.apply(null, uintArray);
         }
         constructor(uid, roomid, serveraddress = 'wss://broadcastlv.chat.bilibili.com/sub') {
             // 总字节长度 int(4bytes) + 头字节长度(16=4+2+2+4+4) short(2bytes) + protover(1,2) short(2bytes) + operation int(4bytes) + sequence(1,0) int(4bytes) + Data
@@ -1025,7 +1037,7 @@ var BilibiliAPI = {
                 setTimeout(() => {
                     const ws = new BilibiliAPI.DanmuWebSocket(uid, roomid, serveraddress);
                     ws.handlers = this.handlers;
-                    ws.unpack = this.unpack;
+                    ws.unzip = this.unzip;
                     for (const key in this.handlers) {
                         if (this.handlers.hasOwnProperty(key)) {
                             this.handlers[key].forEach(handler => {
@@ -1081,7 +1093,7 @@ var BilibiliAPI = {
                     const operation = dv.getUint32(position + 8);
                     const sequence = dv.getUint32(position + 12);
                     let data = event.data.slice(position + headerLen, position + len);
-                    if (protover === 2 && this.unpack) data = this.unpack(data);
+                    if (protover === 2 && this.unzip) data = this.unzip(data);
                     this.dispatchEvent(new CustomEvent('receive', {
                         detail: {
                             len: len,
@@ -1092,7 +1104,7 @@ var BilibiliAPI = {
                             data: data
                         }
                     }));
-                    if (protover === 2 && !this.unpack) continue;
+                    if (protover === 2 && !this.unzip) continue;
                     const dataV = new DataView(data);
                     switch (operation) {
                         case 3:
@@ -1124,8 +1136,8 @@ var BilibiliAPI = {
                 }
             });
         }
-        setUnpack(fn) {
-            this.unpack = fn;
+        setUnzip(fn) {
+            this.unzip = fn;
         }
         bind(onreconnect = undefined, onlogin = undefined, onheartbeat = undefined, oncmd = undefined, onreceive = undefined) {
             /*
