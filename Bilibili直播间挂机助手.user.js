@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.13
+// @version      2.3.14
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -12,7 +12,7 @@
 // @include      /https?:\/\/live\.bilibili\.com\/blanc\d+\??.*/
 // @include      /https?:\/\/api\.live\.bilibili\.com\/_.*/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.6.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
@@ -21,7 +21,7 @@
 
 /*
 [greasyfork源]
-// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=682548
+// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=683320
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
@@ -30,7 +30,7 @@
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
 [腾讯云源]
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.6.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 */
 
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.13';
+    const VERSION = '2.3.14';
     document.domain = 'bilibili.com';
 
     let API;
@@ -118,11 +118,12 @@
 
     if (isSubScript()) {
         try {
+            let server_host = '';
             try {
                 // 拦截弹幕服务器连接
                 const webSocketConstructor = WebSocket.prototype.constructor;
                 WebSocket.prototype.constructor = (url, protocols) => {
-                    if (url === 'wss://broadcastlv.chat.bilibili.com/sub') return webSocketConstructor(url, protocols);
+                    if (url === `wss://${server_host}/sub`) return webSocketConstructor(url, protocols);
                     throw new Error();
                 };
             } catch (err) {};
@@ -189,7 +190,8 @@
                                         return API.Lottery.Gift.check(roomid).then((response) => {
                                             DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
                                             if (response.code === 0) {
-                                                return Lottery.Gift.join(roomid, response.data.list);
+                                                if (response.data.list) return Lottery.Gift.join(roomid, response.data.list);
+                                                else return tryAgain(() => Lottery.Gift.run(roomid));
                                             } else if (response.code === -400) {
                                                 // 没有需要提示的小电视
                                             } else {
@@ -236,6 +238,8 @@
                                             Info.blocked = true;
                                             up();
                                             window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                                        } else if (response.msg.indexOf('快') > -1) {
+                                            return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
                                         } else {
                                             window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
                                         }
@@ -306,6 +310,8 @@
                                         Info.blocked = true;
                                         up();
                                         window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                                    } else if (response.msg.indexOf('快') > -1) {
+                                        return tryAgain(() => Lottery.Guard._join(roomid, id));
                                     } else {
                                         window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
                                     }
@@ -330,44 +336,52 @@
                     if (timer_next) clearTimeout(timer_next);
                     timer_next = setTimeout(finish, 9e3);
                 };
-                Lottery.ws = new API.DanmuWebSocket(Info.uid, window.frameElement[NAME].roomid);
-                Lottery.ws.bind((ws) => {
-                    Lottery.ws = ws;
-                }, () => {
-                    if (Info.blocked) {
-                        finish();
-                        return;
-                    }
-                    if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) Lottery.Gift.run(window.frameElement[NAME].roomid).always(readyFinish);
-                    if (CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) Lottery.Guard.run(window.frameElement[NAME].roomid).always(readyFinish);
-                }, undefined, (obj) => {
-                    if (Info.blocked) {
-                        finish();
-                        return;
-                    }
-                    switch (obj.cmd) {
-                        case 'GUARD_LOTTERY_START':
-                            if (obj.data.roomid === window.frameElement[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window.frameElement[NAME].roomid, obj.data.lottery.id);
-                            break;
-                        case 'RAFFLE_START':
-                        case 'TV_START':
-                            if (obj.data.msg.real_roomid === window.frameElement[NAME].roomid && obj.data.raffleId) Lottery.Gift._join(window.frameElement[NAME].roomid, obj.data.raffleId);
-                            break;
-                        case 'SPECIAL_GIFT':
-                            if (obj.data['39'] !== undefined) {
-                                switch (obj.data['39'].action) {
-                                    case 'start':
-                                        // 节奏风暴开始
-                                    case 'end':
-                                        // 节奏风暴结束
-                                }
-                            };
-                            break;
-                        default:
-                            return;
-                    }
-                    readyFinish();
-                });
+                const listen = () => {
+                    return API.room.getConf(window.frameElement[NAME].roomid).then((response) => {
+                        DEBUG('listen: API.room.getConf', response);
+                        server_host = 'broadcastlv.chat.bilibili.com';
+                        if (response.data.host_server_list.length > 1) server_host = response.data.host_server_list[Math.round(Math.random() * 100) % (response.data.host_server_list.length - 1)].host;
+                        Lottery.ws = new API.DanmuWebSocket(Info.uid, window.frameElement[NAME].roomid, `wss://${server_host}/sub`);
+                        Lottery.ws.bind((ws) => {
+                            Lottery.ws = ws;
+                        }, () => {
+                            if (Info.blocked) {
+                                finish();
+                                return;
+                            }
+                            if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) Lottery.Gift.run(window.frameElement[NAME].roomid).always(readyFinish);
+                            if (CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) Lottery.Guard.run(window.frameElement[NAME].roomid).always(readyFinish);
+                        }, undefined, (obj) => {
+                            if (Info.blocked) {
+                                finish();
+                                return;
+                            }
+                            switch (obj.cmd) {
+                                case 'GUARD_LOTTERY_START':
+                                    if (obj.data.roomid === window.frameElement[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window.frameElement[NAME].roomid, obj.data.lottery.id);
+                                    break;
+                                case 'RAFFLE_START':
+                                case 'TV_START':
+                                    if (obj.data.msg.real_roomid === window.frameElement[NAME].roomid && obj.data.raffleId) Lottery.Gift._join(window.frameElement[NAME].roomid, obj.data.raffleId);
+                                    break;
+                                case 'SPECIAL_GIFT':
+                                    if (obj.data['39'] !== undefined) {
+                                        switch (obj.data['39'].action) {
+                                            case 'start':
+                                                // 节奏风暴开始
+                                            case 'end':
+                                                // 节奏风暴结束
+                                        }
+                                    };
+                                    break;
+                                default:
+                                    return;
+                            }
+                            readyFinish();
+                        });
+                    }, () => tryAgain(() => listen()));
+                };
+                listen();
             } else if (window.frameElement[NAME].type === 'GROUPSIGN|DAILYREWARD') {
                 const GroupSign = {
                     getGroups: () => {
@@ -1108,14 +1122,14 @@
             DataSync: {
                 init: () => {
                     window[NAME] = {};
-                    window[NAME].iframeMap = new Map();
+                    window[NAME].iframeSet = new Set();
                 },
                 down: () => {
                     try {
                         window[NAME].Info = Info;
                         window[NAME].CONFIG = CONFIG;
                         window[NAME].CACHE = CACHE;
-                        for (const [, iframe] of window[NAME].iframeMap) {
+                        for (const iframe of window[NAME].iframeSet) {
                             if (iframe.promise.down) iframe.promise.down.resolve();
                         }
                     } catch (err) {
@@ -1785,8 +1799,8 @@
         }; // Constantly Run, Need Init
 
         const Lottery = {
-            wsList: [],
             createCount: 0,
+            roomidSet: new Set(),
             Gift: {
                 fishingCheck: (roomid) => {
                     const p = $.Deferred();
@@ -1813,7 +1827,8 @@
                                 return API.Lottery.Gift.check(roomid).then((response) => {
                                     DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
                                     if (response.code === 0) {
-                                        return Lottery.Gift.join(roomid, response.data.list);
+                                        if (response.data.list) return Lottery.Gift.join(roomid, response.data.list);
+                                        else return tryAgain(() => Lottery.Gift.run(roomid));
                                     } else if (response.code === -400) {
                                         // 没有需要提示的小电视
                                     } else {
@@ -1857,6 +1872,8 @@
                                     Info.blocked = true;
                                     Essential.DataSync.down();
                                     window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                                } else if (response.msg.indexOf('快') > -1) {
+                                    return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
                                 } else {
                                     window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
                                 }
@@ -1924,6 +1941,8 @@
                                 Info.blocked = true;
                                 Essential.DataSync.down();
                                 window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                            } else if (response.msg.indexOf('快') > -1) {
+                                return tryAgain(() => Lottery.Guard._join(roomid, id));
                             } else {
                                 window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
                             }
@@ -1962,7 +1981,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 304, rem = 9) => { // TODO
+                check: (aid, valid = 306, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
@@ -2086,8 +2105,8 @@
                 if (Lottery.createCount > 50) location.reload(true);
                 if (!real_roomid) real_roomid = roomid;
                 // roomid过滤，防止创建多个同样roomid的iframe
-                real_roomid += '';
-                if (window[NAME].iframeMap.has(real_roomid)) return;
+                if (Lottery.roomidSet.has(real_roomid)) return;
+                Lottery.roomidSet.add(real_roomid);
                 const iframe = $('<iframe style="display: none;"></iframe>')[0];
                 iframe.name = real_roomid;
                 if (link_url) iframe.src = `${link_url.replace('https:', '').replace('http:', '')}&visit_id=${Info.visit_id}`;
@@ -2095,8 +2114,9 @@
                 document.body.appendChild(iframe);
                 const pFinish = $.Deferred();
                 pFinish.then(() => {
-                    window[NAME].iframeMap.delete(iframe.name);
+                    window[NAME].iframeSet.delete(iframe);
                     $(iframe).remove();
+                    Lottery.roomidSet.delete(real_roomid);
                 });
                 const autoDel = setTimeout(() => pFinish.resolve(), 60e3); // iframe默认在60s后自动删除
                 const pInit = $.Deferred();
@@ -2121,113 +2141,125 @@
                         up: pUp
                     }
                 };
-                window[NAME].iframeMap.set(iframe.name, iframe);
+                window[NAME].iframeSet.add(iframe);
                 ++Lottery.createCount;
                 DEBUG('Lottery.create: iframe', iframe);
             },
             listen: (uid, roomid, area = '', onlyguard = false, debugall = false) => {
-                let ws = new API.DanmuWebSocket(uid, roomid);
-                Lottery.wsList.push(ws);
-                ws.bind((newws) => {
-                    ws = newws;
-                    window.toast(`[自动抽奖]${area}(${roomid})弹幕服务器连接断开，尝试重连`, 'caution');
-                }, () => {
-                    window.toast(`[自动抽奖]${area}(${roomid})连接弹幕服务器成功`, 'success');
-                    Lottery.Gift.run(roomid);
-                    Lottery.Guard.run(roomid);
-                }, undefined, (obj, str) => {
-                    switch (obj.cmd) {
-                        case 'DANMU_MSG':
-                        case 'SEND_GIFT':
-                        case 'ENTRY_EFFECT':
-                        case 'WELCOME':
-                        case 'WELCOME_GUARD':
-                        case 'COMBO_SEND':
-                        case 'COMBO_END':
-                        case 'WISH_BOTTLE':
-                        case 'ROOM_RANK':
-                            break;
-                        case 'NOTICE_MSG':
-                            if (debugall) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                            switch (obj.msg_type) {
-                                case 1:
-                                    // 系统
-                                    break;
-                                case 2:
-                                case 8:
-                                    // 礼物抽奖
-                                    if (onlyguard) break;
-                                    if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                                    if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
-                                    if (obj.real_roomid !== Info.roomid) {
-                                        const p = $.Deferred();
-                                        p.then(() => Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url));
-                                        setTimeout(p.resolve, Math.random() * 1e4);
-                                    }
-                                    break;
-                                case 3:
-                                    // 舰队领奖
-                                    if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
-                                    if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
-                                    if (obj.real_roomid !== Info.roomid) {
-                                        const p = $.Deferred();
-                                        p.then(() => Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url));
-                                        setTimeout(p.resolve, Math.random() * 1e4);
-                                    }
-                                    break;
-                                case 4:
-                                    // 登船
-                                    break;
-                                case 5:
-                                    // 获奖
-                                    break;
-                                case 6:
-                                    // 节奏风暴
-                                    break;
-                            }
-                            break;
-                        case 'GUARD_LOTTERY_START':
-                            DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
-                            if (Info.blocked || !obj.data.roomid || !obj.data.lottery.id) break;
-                            if (obj.data.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
-                            else {
-                                const p = $.Deferred();
-                                p.then(() => Lottery.create(obj.data.roomid, obj.data.roomid, 'LOTTERY', obj.data.link));
-                                setTimeout(p.resolve, Math.random() * 1e4);
-                            }
-                            break;
-                        case 'RAFFLE_START':
-                        case 'TV_START':
-                            if (onlyguard) break;
-                            DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                            if (Info.blocked || !obj.data.msg.roomid || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
-                            if (obj.data.msg.real_roomid === Info.roomid) Lottery.Gift._join(Info.roomid, obj.data.raffleId);
-                            else {
-                                const p = $.Deferred();
-                                p.then(() => Lottery.create(obj.data.msg.roomid, obj.data.msg.real_roomid, 'LOTTERY', obj.data.msg.url));
-                                setTimeout(p.resolve, Math.random() * 1e4);
-                            }
-                            break;
-                        case 'SPECIAL_GIFT':
-                            if (onlyguard) break;
-                            DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                            if (obj.data['39']) {
-                                switch (obj.data['39'].action) {
-                                    case 'start':
-                                        // 节奏风暴开始
-                                    case 'end':
-                                        // 节奏风暴结束
+                return API.room.getConf(roomid).then((response) => {
+                    DEBUG('Lottery.listen: API.room.getConf', response);
+                    let server_host = 'broadcastlv.chat.bilibili.com';
+                    if (response.data.host_server_list.length > 1) server_host = response.data.host_server_list[Math.round(Math.random() * 100) % (response.data.host_server_list.length - 1)].host;
+                    let ws = new API.DanmuWebSocket(uid, roomid, `wss://${server_host}/sub`);
+                    ws.bind((newws) => {
+                        ws = newws;
+                        window.toast(`[自动抽奖]${area}(${roomid})弹幕服务器连接断开，尝试重连`, 'caution');
+                    }, () => {
+                        window.toast(`[自动抽奖]${area}(${roomid})连接弹幕服务器成功`, 'success');
+                        Lottery.Gift.run(roomid);
+                        Lottery.Guard.run(roomid);
+                    }, undefined, (obj, str) => {
+                        switch (obj.cmd) {
+                            case 'DANMU_MSG':
+                            case 'SEND_GIFT':
+                            case 'ENTRY_EFFECT':
+                            case 'WELCOME':
+                            case 'WELCOME_GUARD':
+                            case 'COMBO_SEND':
+                            case 'COMBO_END':
+                            case 'WISH_BOTTLE':
+                            case 'ROOM_RANK':
+                                break;
+                            case 'NOTICE_MSG':
+                                if (debugall) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                switch (obj.msg_type) {
+                                    case 1:
+                                        // 系统
+                                        break;
+                                    case 2:
+                                    case 8:
+                                        // 礼物抽奖
+                                        if (onlyguard) break;
+                                        if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
+                                        if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
+                                        if (obj.real_roomid !== Info.roomid) {
+                                            Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url);
+                                        }
+                                        break;
+                                    case 3:
+                                        // 舰队领奖
+                                        if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
+                                        if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
+                                        if (obj.real_roomid !== Info.roomid) {
+                                            Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url);
+                                        }
+                                        break;
+                                    case 4:
+                                        // 登船
+                                        break;
+                                    case 5:
+                                        // 获奖
+                                        break;
+                                    case 6:
+                                        // 节奏风暴
+                                        break;
                                 }
-                            };
-                            break;
-                        default:
-                            if (onlyguard) break;
-                            if (debugall) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                            break;
-                    }
-                });
+                                break;
+                            case 'GUARD_LOTTERY_START':
+                                DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) break;
+                                if (Info.blocked || !obj.data.roomid || !obj.data.lottery.id) break;
+                                if (obj.data.roomid === Info.roomid) Lottery.Guard._join(Info.roomid, obj.data.lottery.id);
+                                else Lottery.create(obj.data.roomid, obj.data.roomid, 'LOTTERY', obj.data.link);
+                                break;
+                            case 'RAFFLE_START':
+                            case 'TV_START':
+                                if (onlyguard) break;
+                                DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
+                                if (Info.blocked || !obj.data.msg.roomid || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
+                                if (obj.data.msg.real_roomid === Info.roomid) Lottery.Gift._join(Info.roomid, obj.data.raffleId);
+                                else Lottery.create(obj.data.msg.roomid, obj.data.msg.real_roomid, 'LOTTERY', obj.data.msg.url);
+                                break;
+                            case 'SPECIAL_GIFT':
+                                if (onlyguard) break;
+                                DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                if (obj.data['39']) {
+                                    switch (obj.data['39'].action) {
+                                        case 'start':
+                                            // 节奏风暴开始
+                                        case 'end':
+                                            // 节奏风暴结束
+                                    }
+                                };
+                                break;
+                            default:
+                                if (onlyguard) break;
+                                if (debugall) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                break;
+                        }
+                    });
+                }, () => tryAgain(() => Lottery.listenAll()));
+            },
+            listenAll: () => {
+                Lottery.listen(Info.uid, Info.roomid, '', false, true);
+                const fn1 = () => {
+                    return API.room.getList().then((response) => {
+                        DEBUG('Lottery.listenAll: API.room.getList', response);
+                        for (const obj of response.data) {
+                            fn2(obj);
+                        }
+                    }, () => tryAgain(() => fn1()));
+                };
+                const fn2 = (obj) => {
+                    return API.room.getRoomList(obj.id, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER).then((response) => {
+                        DEBUG('Lottery.listenAll: API.room.getRoomList', response);
+                        for (let j = 0; j < response.data.length; ++j) {
+                            Lottery.listen(Info.uid, response.data[j].roomid, `[${obj.name}区]`, j);
+                        }
+                    }, () => tryAgain(() => fn2(obj)));
+                };
+                fn1();
             },
             run: () => {
                 try {
@@ -2244,18 +2276,7 @@
                     if (CONFIG.AUTO_LOTTERY_CONFIG.HIDE_POPUP) {
                         addCSS('#chat-popup-area-vm {display: none;}');
                     }
-                    Lottery.listen(Info.uid, Info.roomid, '', false, true);
-                    const areas = ['[娱乐区]', '[网游区]', '[手游区]', '[绘画区]', '[电台区]', '[单机区]'];
-                    for (let i = 0; i < areas.length; ++i) {
-                        API.room.getRoomList(i + 1, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER).then((response) => {
-                            DEBUG('Lottery.run: API.room.getRoomList', response);
-                            if (response.code === 0) {
-                                for (let j = 0; j < response.data.length; ++j) {
-                                    Lottery.listen(Info.uid, response.data[j].roomid, areas[i], j);
-                                }
-                            }
-                        });
-                    }
+                    Lottery.listenAll();
                     setInterval(() => {
                         if (Lottery.createCount > 0) --Lottery.createCount;
                     }, 10e3);
@@ -2279,7 +2300,7 @@
             document.body.appendChild(iframe);
             const pFinish = $.Deferred();
             pFinish.then(() => {
-                window[NAME].iframeMap.delete(iframe.name);
+                window[NAME].iframeSet.delete(iframe);
                 $(iframe).remove();
             });
             const autoDel = setTimeout(() => pFinish.resolve(), 60e3); // iframe默认在60s后自动删除
@@ -2304,7 +2325,7 @@
                     up: pUp
                 }
             };
-            window[NAME].iframeMap.set(iframe.name, iframe);
+            window[NAME].iframeSet.add(iframe);
             DEBUG('createIframe', iframe);
         };
 
