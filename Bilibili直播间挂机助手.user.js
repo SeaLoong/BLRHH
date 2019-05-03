@@ -12,7 +12,7 @@
 // @include      /https?:\/\/live\.bilibili\.com\/blanc\d+\??.*/
 // @include      /https?:\/\/api\.live\.bilibili\.com\/_.*/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
@@ -30,7 +30,7 @@
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
 [腾讯云源]
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 */
 
