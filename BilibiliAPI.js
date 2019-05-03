@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.3.7
+// @version      1.4.0
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -9,7 +9,13 @@
 // @license      MIT License
 // ==/UserScript==
 
+let csrf_token, visit_id;
+
 var BilibiliAPI = {
+    setCommonArgs: (csrfToken = '', visitId = '') => {
+        csrf_token = csrfToken;
+        visit_id = visitId;
+    },
     // 整合常用API
     TreasureBox: {
         getAward: (time_start, end_time, captcha) => BilibiliAPI.lottery.SilverBox.getAward(time_start, end_time, captcha),
@@ -17,8 +23,8 @@ var BilibiliAPI = {
         getCurrentTask: () => BilibiliAPI.lottery.SilverBox.getCurrentTask()
     },
     Exchange: {
-        coin2silver: (num, csrf_token, platform) => BilibiliAPI.pay.coin2silver(num, csrf_token, platform),
-        silver2coin: (csrf_token, platform) => BilibiliAPI.pay.silver2coin(csrf_token, platform),
+        coin2silver: (num, platform) => BilibiliAPI.pay.coin2silver(num, platform),
+        silver2coin: (platform) => BilibiliAPI.pay.silver2coin(platform),
         old: {
             coin2silver: (coin) => BilibiliAPI.exchange.coin2silver(coin),
             silver2coin: () => BilibiliAPI.exchange.silver2coin()
@@ -27,7 +33,7 @@ var BilibiliAPI = {
     Lottery: {
         Gift: {
             check: (roomid) => BilibiliAPI.gift.smalltv.check(roomid),
-            join: (roomid, raffleId, csrf_token, visit_id, type) => BilibiliAPI.gift.smalltv.join(roomid, raffleId, csrf_token, visit_id, type),
+            join: (roomid, raffleId, type) => BilibiliAPI.gift.smalltv.join(roomid, raffleId, type),
             notice: (raffleId, type) => BilibiliAPI.gift.smalltv.notice(raffleId, type)
         },
         Raffle: {
@@ -43,7 +49,7 @@ var BilibiliAPI = {
         },
         Guard: {
             check: (roomid) => BilibiliAPI.lottery.lottery.check_guard(roomid),
-            join: (roomid, id, csrf_token) => BilibiliAPI.lottery.lottery.join(roomid, id, csrf_token)
+            join: (roomid, id, type) => BilibiliAPI.lottery.lottery.join(roomid, id, type)
         }
     },
     Group: {
@@ -52,7 +58,7 @@ var BilibiliAPI = {
     },
     Storm: {
         check: (roomid) => BilibiliAPI.lottery.Storm.check(roomid),
-        join: (id, captcha_token, captcha_phrase, csrf_token, visit_id, color) => BilibiliAPI.lottery.Storm.join(id, captcha_token, captcha_phrase, csrf_token, visit_id, color)
+        join: (id, captcha_token, captcha_phrase, roomid, color) => BilibiliAPI.lottery.Storm.join(id, captcha_token, captcha_phrase, roomid, color)
     },
     HeartBeat: {
         web: () => BilibiliAPI.user.userOnlineHeart(),
@@ -62,9 +68,9 @@ var BilibiliAPI = {
         task: () => BilibiliAPI.home.reward(), // CORS
         exp: () => BilibiliAPI.exp(),
         login: () => BilibiliAPI.x.now(),
-        watch: (aid, cid, mid, csrf, start_ts, played_time, realtime, type, play_type, dt) => BilibiliAPI.x.heartbeat(aid, cid, mid, csrf, start_ts, played_time, realtime, type, play_type, dt),
-        coin: (aid, csrf, multiply) => BilibiliAPI.x.coin_add(aid, csrf, multiply),
-        share: (aid, csrf) => BilibiliAPI.x.share_add(aid, csrf)
+        watch: (aid, cid, mid, start_ts, played_time, realtime, type, play_type, dt) => BilibiliAPI.x.heartbeat(aid, cid, mid, start_ts, played_time, realtime, type, play_type, dt),
+        coin: (aid, multiply) => BilibiliAPI.x.coin_add(aid, multiply),
+        share: (aid) => BilibiliAPI.x.share_add(aid)
     },
     // ajax调用B站API
     runUntilSucceed: (callback, delay = 0, period = 50) => {
@@ -98,6 +104,13 @@ var BilibiliAPI = {
         });
         return p;
     },
+    ajaxWithCommonArgs: (settings) => {
+        if (!settings.data) settings.data = {};
+        settings.data.csrf = csrf_token;
+        settings.data.csrf_token = csrf_token;
+        settings.data.visit_id = visit_id;
+        return BilibiliAPI.ajax(settings);
+    },
     // 以下按照URL分类
     ajaxGetCaptchaKey: () => {
         return BilibiliAPI.ajax({
@@ -110,14 +123,12 @@ var BilibiliAPI = {
             url: '//www.bilibili.com/plus/account/exp.php'
         });
     },
-    msg: (roomid, csrf_token, visit_id) => {
-        return BilibiliAPI.ajax({
+    msg: (roomid) => {
+        return BilibiliAPI.ajaxWithCommonArgs({
             method: 'POST',
             url: 'ajax/msg',
             data: {
-                roomid: roomid,
-                csrf_token: csrf_token,
-                visit_id: visit_id
+                roomid: roomid
             }
         });
     },
@@ -239,27 +250,24 @@ var BilibiliAPI = {
                 }
             });
         },
-        receive_award: (task_id, csrf_token) => {
+        receive_award: (task_id) => {
             // 领取任务奖励
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'activity/v1/task/receive_award',
                 data: {
-                    task_id: task_id,
-                    csrf_token: csrf_token
+                    task_id: task_id
                 }
             });
         }
     },
     av: {
-        getTimestamp: (csrf_token, visit_id, platform = 'pc') => {
-            return BilibiliAPI.ajax({
+        getTimestamp: (platform = 'pc') => {
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'av/v1/Time/getTimestamp',
                 data: {
-                    platform: platform,
-                    csrf_token: csrf_token,
-                    visit_id: visit_id
+                    platform: platform
                 }
             });
         }
@@ -296,40 +304,35 @@ var BilibiliAPI = {
         }
     },
     fans_medal: {
-        get_fans_medal_info: (uid, target_id, csrf_token, visit_id, source = 1) => {
-            return BilibiliAPI.ajax({
+        get_fans_medal_info: (uid, target_id, source = 1) => {
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'fans_medal/v1/fans_medal/get_fans_medal_info',
                 data: {
                     source: source,
                     uid: uid,
-                    target_id: target_id,
-                    csrf_token: csrf_token,
-                    visit_id: visit_id
+                    target_id: target_id
                 }
             });
         }
     },
     feed_svr: {
-        notice: (csrf_token) => {
-            return BilibiliAPI.ajax({
+        notice: () => {
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'feed_svr/v1/feed_svr/notice',
-                data: {
-                    csrf_token: csrf_token
-                }
+                data: {}
             });
         },
-        my: (page_size, csrf_token, live_status = 0, type = 0, offset = 0) => {
-            return BilibiliAPI.ajax({
+        my: (page_size, live_status = 0, type = 0, offset = 0) => {
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'feed_svr/v1/feed_svr/my',
                 data: {
                     live_status: live_status,
                     type: type,
                     page_size: page_size,
-                    offset: offset,
-                    csrf_token: csrf_token
+                    offset: offset
                 }
             });
         }
@@ -341,9 +344,9 @@ var BilibiliAPI = {
                 url: 'gift/v2/gift/bag_list'
             });
         },
-        send: (uid, gift_id, ruid, gift_num, biz_id, rnd, csrf_token, visit_id, coin_type = 'silver', platform = 'pc', biz_code = 'live', storm_beat_id = 0, price = 0) => {
+        send: (uid, gift_id, ruid, gift_num, biz_id, rnd, coin_type = 'silver', platform = 'pc', biz_code = 'live', storm_beat_id = 0, price = 0) => {
             // 消耗瓜子送礼
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'gift/v2/gift/send',
                 data: {
@@ -359,15 +362,13 @@ var BilibiliAPI = {
                     rnd: rnd,
                     storm_beat_id: storm_beat_id,
                     metadata: '',
-                    price: price,
-                    csrf_token: csrf_token,
-                    visit_id: visit_id
+                    price: price
                 }
             });
         },
-        bag_send: (uid, gift_id, ruid, gift_num, bag_id, biz_id, rnd, csrf_token, visit_id, platform = 'pc', biz_code = 'live', storm_beat_id = 0, price = 0) => {
+        bag_send: (uid, gift_id, ruid, gift_num, bag_id, biz_id, rnd, platform = 'pc', biz_code = 'live', storm_beat_id = 0, price = 0) => {
             // 送出包裹中的礼物
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'gift/v2/live/bag_send',
                 data: {
@@ -382,9 +383,7 @@ var BilibiliAPI = {
                     rnd: rnd,
                     storm_beat_id: storm_beat_id,
                     metadata: '',
-                    price: price,
-                    csrf_token: csrf_token,
-                    visit_id: visit_id
+                    price: price
                 }
             });
         },
@@ -436,16 +435,14 @@ var BilibiliAPI = {
                     }
                 });
             },
-            join: (roomid, raffleId, csrf_token, visit_id, type = 'Gift') => {
-                return BilibiliAPI.ajax({
+            join: (roomid, raffleId, type = 'Gift') => {
+                return BilibiliAPI.ajaxWithCommonArgs({
                     method: 'POST',
                     url: 'gift/v3/smalltv/join',
                     data: {
                         roomid: roomid,
                         raffleId: raffleId,
-                        type: type,
-                        csrf_token: csrf_token,
-                        visit_id: visit_id
+                        type: type
                     }
                 });
             },
@@ -602,16 +599,14 @@ var BilibiliAPI = {
                 url: 'live_user/v1/UserInfo/get_info_in_room?roomid=' + roomid
             });
         },
-        get_weared_medal: (uid, target_id, visit_id, csrf_token, source = 1) => {
-            return BilibiliAPI.ajax({
+        get_weared_medal: (uid, target_id, source = 1) => {
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'live_user/v1/UserInfo/get_weared_medal',
                 data: {
                     source: source,
                     uid: uid,
-                    target_id: target_id, // ruid
-                    visit_id: visit_id,
-                    csrf_token: csrf_token
+                    target_id: target_id // ruid
                 }
             });
         },
@@ -692,9 +687,9 @@ var BilibiliAPI = {
                     url: 'lottery/v1/Storm/check?roomid=' + roomid
                 });
             },
-            join: (id, captcha_token, captcha_phrase, roomid, csrf_token, visit_id, color = 16777215) => {
+            join: (id, captcha_token, captcha_phrase, roomid, color = 16777215) => {
                 // 参加节奏风暴
-                return BilibiliAPI.ajax({
+                return BilibiliAPI.ajaxWithCommonArgs({
                     method: 'POST',
                     url: 'lottery/v1/Storm/join',
                     data: {
@@ -702,9 +697,7 @@ var BilibiliAPI = {
                         color: color,
                         captcha_token: captcha_token,
                         captcha_phrase: captcha_phrase,
-                        roomid: roomid,
-                        csrf_token: csrf_token,
-                        visit_id: visit_id
+                        roomid: roomid
                     }
                 });
             }
@@ -716,17 +709,15 @@ var BilibiliAPI = {
                     url: 'lottery/v1/Lottery/check_guard?roomid=' + roomid
                 });
             },
-            join: (roomid, id, csrf_token, visit_id, type = 'guard') => {
+            join: (roomid, id, type = 'guard') => {
                 // 参加总督领奖
-                return BilibiliAPI.ajax({
+                return BilibiliAPI.ajaxWithCommonArgs({
                     method: 'POST',
                     url: 'lottery/v2/Lottery/join',
                     data: {
                         roomid: roomid,
                         id: id,
-                        type: type,
-                        csrf_token: csrf_token,
-                        visit_id: visit_id
+                        type: type
                     }
                 });
             }
@@ -734,22 +725,22 @@ var BilibiliAPI = {
     },
     mobile: {
         userOnlineHeart: () => {
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
-                url: 'mobile/userOnlineHeart'
+                url: 'mobile/userOnlineHeart',
+                data: {}
             });
         }
     },
     pay: {
-        coin2silver: (num, csrf_token, platform = 'pc') => {
+        coin2silver: (num, platform = 'pc') => {
             // 硬币兑换银瓜子(新API)，1硬币=450银瓜子
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'pay/v1/Exchange/coin2silver',
                 data: {
                     num: num,
-                    platform: platform,
-                    csrf_token: csrf_token
+                    platform: platform
                 }
             });
         },
@@ -763,14 +754,13 @@ var BilibiliAPI = {
                 url: 'pay/v1/Exchange/getStatus?platform=' + platform
             });
         },
-        silver2coin: (csrf_token, platform = 'pc') => {
+        silver2coin: (platform = 'pc') => {
             // 银瓜子兑换硬币，700银瓜子=1硬币
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'pay/v1/Exchange/silver2coin',
                 data: {
-                    platform: platform,
-                    csrf_token: csrf_token
+                    platform: platform
                 }
             });
         }
@@ -845,15 +835,13 @@ var BilibiliAPI = {
                 }
             });
         },
-        room_entry_action: (room_id, visit_id, csrf_token, platform = 'pc') => {
-            return BilibiliAPI.ajax({
+        room_entry_action: (room_id, platform = 'pc') => {
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: 'room/v1/Room/room_entry_action',
                 data: {
                     room_id: room_id,
-                    visit_id: visit_id,
-                    platform: platform,
-                    csrf_token: csrf_token
+                    platform: platform
                 }
             });
         },
@@ -923,9 +911,10 @@ var BilibiliAPI = {
             });
         },
         userOnlineHeart: () => {
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
-                url: 'User/userOnlineHeart'
+                url: 'User/userOnlineHeart',
+                data: {}
             });
         },
         getUserInfo: (ts) => { // ms
@@ -935,41 +924,38 @@ var BilibiliAPI = {
         }
     },
     x: {
-        coin_add: (aid, csrf, multiply = 1) => {
+        coin_add: (aid, multiply = 1) => {
             // 投币
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: '//api.bilibili.com/x/web-interface/coin/add',
                 data: {
                     aid: aid,
                     multiply: multiply,
-                    cross_domain: true,
-                    csrf: csrf
+                    cross_domain: true
                 }
             });
         },
-        share_add: (aid, csrf) => {
+        share_add: (aid) => {
             // 分享
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: '//api.bilibili.com/x/web-interface/share/add',
                 data: {
                     aid: aid,
-                    csrf: csrf,
                     jsonp: 'jsonp'
                 }
             });
         },
-        heartbeat: (aid, cid, mid, csrf, start_ts, played_time = 0, realtime = 0, type = 3, play_type = 1, dt = 2) => {
+        heartbeat: (aid, cid, mid, start_ts, played_time = 0, realtime = 0, type = 3, play_type = 1, dt = 2) => {
             // B站视频心跳
-            return BilibiliAPI.ajax({
+            return BilibiliAPI.ajaxWithCommonArgs({
                 method: 'POST',
                 url: '//api.bilibili.com/x/report/web/heartbeat',
                 data: {
                     aid: aid,
                     cid: cid,
                     mid: mid, // uid
-                    csrf: csrf,
                     start_ts: start_ts || (Date.now() / 1000),
                     played_time: played_time,
                     realtime: realtime,
