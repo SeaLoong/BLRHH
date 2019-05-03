@@ -44,7 +44,7 @@
 
         ```js
         [greasyfork源]
-        // @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=683320
+        // @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=694701
         // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
         [github源]
         // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
@@ -53,7 +53,7 @@
         // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
         // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
         [腾讯云源]
-        // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
+        // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
         // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
         ```
 
@@ -88,6 +88,8 @@
 -----------------
 
 ## 更新日志
+> ###  2019-05-03 (Version 2.3.15)
+>     修复了移动端心跳失效的问题
 > ###  2019-03-26 (Version 2.3.14)
 >     增加了自动分流连接弹幕服务器的功能
 >     修复了有时候会出现访问过快的问题

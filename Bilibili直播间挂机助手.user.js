@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.14
+// @version      2.3.15
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -12,7 +12,7 @@
 // @include      /https?:\/\/live\.bilibili\.com\/blanc\d+\??.*/
 // @include      /https?:\/\/api\.live\.bilibili\.com\/_.*/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
@@ -21,7 +21,7 @@
 
 /*
 [greasyfork源]
-// @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=683320
+// @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=694701
 // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
@@ -30,7 +30,7 @@
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/BilibiliAPI.js
 // @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/OCRAD.min.js
 [腾讯云源]
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI-1.3.7.js
+// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
 */
 
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.14';
+    const VERSION = '2.3.15';
     document.domain = 'bilibili.com';
 
     let API;
@@ -143,6 +143,7 @@
             Info = window.parent[NAME].Info;
             CONFIG = window.parent[NAME].CONFIG;
             CACHE = window.parent[NAME].CACHE;
+            API.setCommonArgs(Info.csrf_token, '');
             const down = () => {
                 Info = window.parent[NAME].Info;
                 CONFIG = window.parent[NAME].CONFIG;
@@ -177,7 +178,7 @@
                             }, () => {
                                 p.reject();
                             }).always(() => {
-                                API.room.room_entry_action(roomid, Info.visit_id, Info.csrf_token);
+                                API.room.room_entry_action(roomid);
                             });
                             return p;
                         },
@@ -227,7 +228,7 @@
                             // raffleId过滤，防止重复参加
                             if (Lottery.raffleIdSet.has(raffleId)) return $.Deferred().resolve();
                             Lottery.raffleIdSet.add(raffleId); // 加入raffleId记录列表
-                            return API.Lottery.Gift.join(roomid, raffleId, Info.csrf_token, Info.visit_id).then((response) => {
+                            return API.Lottery.Gift.join(roomid, raffleId).then((response) => {
                                 DEBUG('Lottery.Gift._join: API.Lottery.Gift.join', response);
                                 switch (response.code) {
                                     case 0:
@@ -300,7 +301,7 @@
                             // id过滤，防止重复参加
                             if (Lottery.guardIdSet.has(id)) return $.Deferred().resolve();
                             Lottery.guardIdSet.add(id); // 加入id记录列表
-                            return API.Lottery.Guard.join(roomid, id, Info.csrf_token).then((response) => {
+                            return API.Lottery.Guard.join(roomid, id).then((response) => {
                                 DEBUG('Lottery.Guard._join: API.Lottery.Guard.join', response);
                                 if (response.code === 0) {
                                     window.toast(`[自动抽奖][舰队领奖]领取(roomid=${roomid},id=${id})成功`, 'success');
@@ -455,7 +456,7 @@
                     },
                     watch: (aid, cid) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.WATCH) return $.Deferred().resolve();
-                        return API.DailyReward.watch(aid, cid, Info.uid, Info.csrf_token, ts_s()).then((response) => {
+                        return API.DailyReward.watch(aid, cid, Info.uid, ts_s()).then((response) => {
                             DEBUG('DailyReward.watch: API.DailyReward.watch', response);
                             if (response.code === 0) {
                                 window.toast(`[自动每日奖励][每日观看]完成(av=${aid})`, 'success');
@@ -480,7 +481,7 @@
                         const obj = JSON.parse(cards[i].card);
                         let num = Math.min(2, n);
                         if (one) num = 1;
-                        return API.DailyReward.coin(obj.aid, Info.csrf_token, num).then((response) => {
+                        return API.DailyReward.coin(obj.aid, num).then((response) => {
                             DEBUG('DailyReward.coin: API.DailyReward.coin', response);
                             if (response.code === 0) {
                                 DailyReward.coin_exp += num * 10;
@@ -503,7 +504,7 @@
                     },
                     share: (aid) => {
                         if (!CONFIG.AUTO_DAILYREWARD_CONFIG.SHARE) return $.Deferred().resolve();
-                        return API.DailyReward.share(aid, Info.csrf_token).then((response) => {
+                        return API.DailyReward.share(aid).then((response) => {
                             DEBUG('DailyReward.share: API.DailyReward.share', response);
                             if (response.code === 0) {
                                 window.toast(`[自动每日奖励][每日分享]分享成功(av=${aid})`, 'success');
@@ -1194,7 +1195,7 @@
                 }
             },
             silver2coin: () => {
-                return API.Exchange.silver2coin(Info.csrf_token).then((response) => {
+                return API.Exchange.silver2coin().then((response) => {
                     DEBUG('Exchange.silver2coin: API.SilverCoinExchange.silver2coin', response);
                     if (response.code === 0) {
                         // 兑换成功
@@ -1255,7 +1256,7 @@
                 }
             },
             receiveAward: (task_id) => {
-                return API.activity.receive_award(task_id, Info.csrf_token).then((response) => {
+                return API.activity.receive_award(task_id).then((response) => {
                     DEBUG('Task.receiveAward: API.activity.receive_award', response);
                     if (response.code === 0) {
                         // 完成任务
@@ -1383,7 +1384,7 @@
                         let feed_num = Math.floor(Gift.remain_feed / feed);
                         if (feed_num > v.gift_num) feed_num = v.gift_num;
                         if (feed_num > 0) {
-                            return API.gift.bag_send(Info.uid, v.gift_id, Gift.ruid, feed_num, v.bag_id, Gift.room_id, Info.rnd, Info.csrf_token, Info.visit_id).then((response) => {
+                            return API.gift.bag_send(Info.uid, v.gift_id, Gift.ruid, feed_num, v.bag_id, Gift.room_id, Info.rnd).then((response) => {
                                 DEBUG('Gift.sendGift: API.gift.bag_send', response);
                                 if (response.code === 0) {
                                     Gift.remain_feed -= feed_num * feed;
@@ -1814,7 +1815,7 @@
                     }, () => {
                         p.reject();
                     }).always(() => {
-                        API.room.room_entry_action(roomid, Info.visit_id, Info.csrf_token);
+                        API.room.room_entry_action(roomid);
                     });
                     return p;
                 },
@@ -1861,7 +1862,7 @@
                     roomid = parseInt(roomid, 10);
                     raffleId = parseInt(raffleId, 10);
                     if (isNaN(roomid) || isNaN(raffleId)) return $.Deferred().reject();
-                    return API.Lottery.Gift.join(roomid, raffleId, Info.csrf_token, Info.visit_id).then((response) => {
+                    return API.Lottery.Gift.join(roomid, raffleId).then((response) => {
                         DEBUG('Lottery.Gift._join: API.Lottery.Gift.join', response);
                         switch (response.code) {
                             case 0:
@@ -1931,7 +1932,7 @@
                     roomid = parseInt(roomid, 10);
                     id = parseInt(id, 10);
                     if (isNaN(roomid) || isNaN(id)) return $.Deferred().reject();
-                    return API.Lottery.Guard.join(roomid, id, Info.csrf_token).then((response) => {
+                    return API.Lottery.Guard.join(roomid, id).then((response) => {
                         DEBUG('Lottery.Guard._join: API.Lottery.Guard.join', response);
                         if (response.code === 0) {
                             window.toast(`[自动抽奖][舰队领奖]领取(roomid=${roomid},id=${id})成功`, 'success');
@@ -1981,7 +1982,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 306, rem = 9) => { // TODO
+                check: (aid, valid = 331, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
@@ -2401,6 +2402,7 @@
                                     Info.rnd = window.BilibiliLive.RND;
                                     Info.csrf_token = getCookie('bili_jct');
                                     Info.visit_id = window.__statisObserver.__visitId || '';
+                                    API.setCommonArgs(Info.csrf_token, '');
                                     const p1 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
                                         DEBUG('InitData: API.live_user.get_info_in_room', response);
                                         Info.silver = response.data.wallet.silver;
