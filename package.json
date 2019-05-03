@@ -1,0 +1,9 @@
+{
+  "name": "bilibili-lrhh",
+  "scripts": {
+    "upload": "node upload.js"
+  },
+  "dependencies": {
+    "qcloud-cos-upload": "1.3.0"
+  }
+}
