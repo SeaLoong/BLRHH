@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.15
+// @version      2.3.16
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.15';
+    const VERSION = '2.3.16';
     document.domain = 'bilibili.com';
 
     let API;
@@ -1230,7 +1230,7 @@
                     if (CACHE.task_ts && !Task.MobileHeartbeat) {
                         const diff = ts_ms() - CACHE.task_ts;
                         if (diff < Task.interval) {
-                            Task.run_timer = setTimeout(Task.run, diff);
+                            Task.run_timer = setTimeout(Task.run, Task.interval - diff);
                             return $.Deferred().resolve();
                         }
                     }
@@ -1320,7 +1320,7 @@
                     if (CACHE.gift_ts) {
                         const diff = ts_ms() - CACHE.gift_ts;
                         if (diff < Gift.interval) {
-                            Gift.run_timer = setTimeout(Gift.run, diff);
+                            Gift.run_timer = setTimeout(Gift.run, Gift.interval - diff);
                             return $.Deferred().resolve();
                         }
                     }
@@ -1331,7 +1331,7 @@
                     return API.room.room_init(CONFIG.AUTO_GIFT_CONFIG.ROOMID).then((response) => {
                         DEBUG('Gift.run: API.room.room_init', response);
                         Gift.room_id = parseInt(response.data.room_id, 10);
-                        Gift.getMedalList().then(() => {
+                        return Gift.getMedalList().then(() => {
                             DEBUG('Gift.run: Gift.getMedalList().then: Gift.medal_list', Gift.medal_list);
                             $.each(Gift.medal_list, (i, v) => {
                                 if (parseInt(v.roomid, 10) === CONFIG.AUTO_GIFT_CONFIG.ROOMID) {
@@ -1963,8 +1963,9 @@
                     try {
                         if (CACHE.materialobject_ts) {
                             const diff = ts_ms() - CACHE.materialobject_ts;
-                            if (diff < (CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3)) {
-                                setTimeout(Lottery.MaterialObject.run, diff);
+                            const interval = CONFIG.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL * 60e3 || 600e3;
+                            if (diff < interval) {
+                                setTimeout(Lottery.MaterialObject.run, interval - diff);
                                 return $.Deferred().resolve();
                             }
                         }
@@ -1982,7 +1983,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 331, rem = 9) => { // TODO
+                check: (aid, valid = 348, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
@@ -2110,8 +2111,10 @@
                 Lottery.roomidSet.add(real_roomid);
                 const iframe = $('<iframe style="display: none;"></iframe>')[0];
                 iframe.name = real_roomid;
-                if (link_url) iframe.src = `${link_url.replace('https:', '').replace('http:', '')}&visit_id=${Info.visit_id}`;
-                else iframe.src = `//live.bilibili.com/${roomid}?visit_id=${Info.visit_id}`;
+                let url;
+                if (link_url) url = `${link_url.replace('https:', '').replace('http:', '')}` + (Info.visit_id ? `&visit_id=${Info.visit_id}` : '');
+                else url = `//live.bilibili.com/${roomid}` + (Info.visit_id ? `?visit_id=${Info.visit_id}` : '');
+                iframe.src = url;
                 document.body.appendChild(iframe);
                 const pFinish = $.Deferred();
                 pFinish.then(() => {
@@ -2149,6 +2152,7 @@
             listen: (uid, roomid, area = '', onlyguard = false, debugall = false) => {
                 return API.room.getConf(roomid).then((response) => {
                     DEBUG('Lottery.listen: API.room.getConf', response);
+                    if (Info.blocked) return;
                     let server_host = 'broadcastlv.chat.bilibili.com';
                     if (response.data.host_server_list.length > 1) server_host = response.data.host_server_list[Math.round(Math.random() * 100) % (response.data.host_server_list.length - 1)].host;
                     let ws = new API.DanmuWebSocket(uid, roomid, `wss://${server_host}/sub`);
@@ -2159,7 +2163,12 @@
                         window.toast(`[自动抽奖]${area}(${roomid})连接弹幕服务器成功`, 'success');
                         Lottery.Gift.run(roomid);
                         Lottery.Guard.run(roomid);
-                    }, undefined, (obj, str) => {
+                    }, () => {
+                        if (Info.blocked) {
+                            ws.close(1000);
+                            window.toast(`[自动抽奖]${area}(${roomid})主动与弹幕服务器断开连接`, 'info');
+                        }
+                    }, (obj, str) => {
                         switch (obj.cmd) {
                             case 'DANMU_MSG':
                             case 'SEND_GIFT':
@@ -2240,7 +2249,7 @@
                                 break;
                         }
                     });
-                }, () => tryAgain(() => Lottery.listenAll()));
+                }, () => tryAgain(() => Lottery.listen(uid, roomid, area, onlyguard, debugall)));
             },
             listenAll: () => {
                 Lottery.listen(Info.uid, Info.roomid, '', false, true);
@@ -2376,7 +2385,7 @@
                                         p.reject();
                                         return true;
                                     }
-                                    if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0 || !window.__statisObserver) return false;
+                                    if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0) return false;
                                     DEBUG('Init: InitData: BilibiliLive', window.BilibiliLive);
                                     DEBUG('Init: InitData: __statisObserver', window.__statisObserver);
                                     clearTimeout(timer_p2);
@@ -2401,7 +2410,7 @@
                                     Info.ruid = window.BilibiliLive.ANCHOR_UID;
                                     Info.rnd = window.BilibiliLive.RND;
                                     Info.csrf_token = getCookie('bili_jct');
-                                    Info.visit_id = window.__statisObserver.__visitId || '';
+                                    Info.visit_id = window.__statisObserver ? window.__statisObserver.__visitId : '';
                                     API.setCommonArgs(Info.csrf_token, '');
                                     const p1 = API.live_user.get_info_in_room(Info.roomid).then((response) => {
                                         DEBUG('InitData: API.live_user.get_info_in_room', response);
