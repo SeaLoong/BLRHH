@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.16
+// @version      2.3.17
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -21,8 +21,8 @@
 
 /*
 [greasyfork源]
-// @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=694701
-// @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
+// @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
+// @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
 [github源]
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/OCRAD.min.js
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.16';
+    const VERSION = '2.3.17';
     document.domain = 'bilibili.com';
 
     let API;

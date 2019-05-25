@@ -44,8 +44,8 @@
 
         ```js
         [greasyfork源]
-        // @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js?version=694701
-        // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js?version=271964
+        // @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
+        // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
         [github源]
         // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
         // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/OCRAD.min.js
@@ -88,6 +88,8 @@
 -----------------
 
 ## 更新日志
+> ###  2019-05-25 (Version 2.3.17)
+>     修复了主动断开弹幕服务器连接后仍自动重连的问题
 > ###  2019-05-22 (Version 2.3.16)
 >     修复了自动完成任务、自动送礼、自动实物抽奖计时不正确的问题
 > ###  2019-05-03 (Version 2.3.15)
