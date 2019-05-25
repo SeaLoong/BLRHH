@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.4.0
+// @version      1.4.1
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -1010,15 +1010,16 @@ var BilibiliAPI = {
                 cmd: [],
                 receive: []
             };
+            this.closed = false;
             this.addEventListener('open', () => {
                 this.sendLoginPacket(uid, roomid).sendHeartBeatPacket();
                 this.heartBeatHandler = setInterval(() => {
                     this.sendHeartBeatPacket();
                 }, 30e3);
             });
-            this.addEventListener('close', (event) => {
+            this.addEventListener('close', () => {
                 if (this.heartBeatHandler) clearInterval(this.heartBeatHandler);
-                if (event.code === 1000) return;
+                if (this.closed) return;
                 // 自动重连
                 setTimeout(() => {
                     const ws = new BilibiliAPI.DanmuWebSocket(uid, roomid, serveraddress);
@@ -1121,6 +1122,10 @@ var BilibiliAPI = {
                     }
                 }
             });
+        }
+        close(code, reason) {
+            this.closed = true;
+            super.close(code, reason);
         }
         setUnzip(fn) {
             this.unzip = fn;
