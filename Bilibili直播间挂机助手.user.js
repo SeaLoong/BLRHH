@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.17
+// @version      2.3.18
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.17';
+    const VERSION = '2.3.18';
     document.domain = 'bilibili.com';
 
     let API;
@@ -2385,7 +2385,7 @@
                                         p.reject();
                                         return true;
                                     }
-                                    if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0) return false;
+                                    if (!window.BilibiliLive || parseInt(window.BilibiliLive.ROOMID, 10) === 0 || !window.__statisObserver) return false;
                                     DEBUG('Init: InitData: BilibiliLive', window.BilibiliLive);
                                     DEBUG('Init: InitData: __statisObserver', window.__statisObserver);
                                     clearTimeout(timer_p2);
