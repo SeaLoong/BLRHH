@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.4.1
+// @version      1.4.2
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -997,7 +997,7 @@ var BilibiliAPI = {
             return new Uint8Array(uintArray);
         }
         static uintToString(uintArray) {
-            return String.fromCharCode.apply(null, uintArray);
+            return decodeURIComponent(escape(String.fromCharCode.apply(null, uintArray)));
         }
         constructor(uid, roomid, serveraddress = 'wss://broadcastlv.chat.bilibili.com/sub') {
             // 总字节长度 int(4bytes) + 头字节长度(16=4+2+2+4+4) short(2bytes) + protover(1,2) short(2bytes) + operation int(4bytes) + sequence(1,0) int(4bytes) + Data
