@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.3.18
+// @version      2.4.0
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.3.18';
+    const VERSION = '2.4.0';
     document.domain = 'bilibili.com';
 
     let API;
@@ -185,7 +185,7 @@
                         run: (roomid) => {
                             // 全部参加完成返回resolve，任意一个失败返回reject
                             try {
-                                if (Info.blocked) return $.Deferred().resolve();
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY || Info.blocked) return $.Deferred().resolve();
                                 return Lottery.Gift.fishingCheck(roomid).then((fishing) => {
                                     if (!fishing) {
                                         return API.Lottery.Gift.check(roomid).then((response) => {
@@ -266,7 +266,7 @@
                     Guard: {
                         run: (roomid) => {
                             try {
-                                if (Info.blocked) return $.Deferred().resolve();
+                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD || Info.blocked) return $.Deferred().resolve();
                                 return API.Lottery.Guard.check(roomid).then((response) => {
                                     DEBUG('Lottery.Guard.run: API.Lottery.Guard.check', response);
                                     if (response.code === 0) {
@@ -359,11 +359,15 @@
                             }
                             switch (obj.cmd) {
                                 case 'GUARD_LOTTERY_START':
-                                    if (obj.data.roomid === window.frameElement[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window.frameElement[NAME].roomid, obj.data.lottery.id);
+                                    if (CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) {
+                                        if (obj.data.roomid === window.frameElement[NAME].roomid && obj.data.lottery.id) Lottery.Guard._join(window.frameElement[NAME].roomid, obj.data.lottery.id);
+                                    }
                                     break;
                                 case 'RAFFLE_START':
                                 case 'TV_START':
-                                    if (obj.data.msg.real_roomid === window.frameElement[NAME].roomid && obj.data.raffleId) Lottery.Gift._join(window.frameElement[NAME].roomid, obj.data.raffleId);
+                                    if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) {
+                                        if (obj.data.msg.real_roomid === window.frameElement[NAME].roomid && obj.data.raffleId) Lottery.Gift._join(window.frameElement[NAME].roomid, obj.data.raffleId);
+                                    }
                                     break;
                                 case 'SPECIAL_GIFT':
                                     if (obj.data['39'] !== undefined) {
@@ -711,10 +715,13 @@
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY: true,
                         GIFT_LOTTERY_CONFIG: {
-                            LISTEN_NUMBER: 1,
                             REFRESH_INTERVAL: 0
                         },
                         GUARD_AWARD: true,
+                        GUARD_AWARD_CONFIG: {
+                            LISTEN_NUMBER: 1,
+                            CHANGE_ROOM_INTERVAL: 60
+                        },
                         MATERIAL_OBJECT_LOTTERY: true,
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
                             CHECK_INTERVAL: 10,
@@ -753,10 +760,13 @@
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY: '礼物抽奖',
                         GIFT_LOTTERY_CONFIG: {
-                            LISTEN_NUMBER: '监听倍数',
                             REFRESH_INTERVAL: '刷新间隔'
                         },
                         GUARD_AWARD: '舰队领奖',
+                        GUARD_AWARD_CONFIG: {
+                            LISTEN_NUMBER: '监听倍数',
+                            CHANGE_ROOM_INTERVAL: '换房间隔'
+                        },
                         MATERIAL_OBJECT_LOTTERY: '实物抽奖',
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
                             CHECK_INTERVAL: '检查间隔',
@@ -789,8 +799,11 @@
                 PLACEHOLDER: {
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY_CONFIG: {
-                            LISTEN_NUMBER: '1~5，默认1',
                             REFRESH_INTERVAL: '单位(分钟)'
+                        },
+                        GUARD_AWARD_CONFIG: {
+                            LISTEN_NUMBER: '1~5，默认1',
+                            CHANGE_ROOM_INTERVAL: '单位(分钟)'
                         },
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
                             CHECK_INTERVAL: '单位(分钟)'
@@ -808,8 +821,11 @@
                     AUTO_LOTTERY_CONFIG: {
                         GIFT_LOTTERY: '包括小电视、摩天大楼、C位光环及其他可以通过送礼触发广播的抽奖<br>内置几秒钟的延迟',
                         GIFT_LOTTERY_CONFIG: {
-                            LISTEN_NUMBER: '设置在四大分区中的每一个分区监听的直播间的数量，1~5之间的一个整数<br>可能导致占用大量内存或导致卡顿',
                             REFRESH_INTERVAL: '设置页面自动刷新的时间间隔，设置为0则不启用，单位为分钟<br>太久导致页面崩溃将无法正常运行脚本'
+                        },
+                        GUARD_AWARD_CONFIG: {
+                            LISTEN_NUMBER: '设置在各大分区中的每一个分区监听的直播间的数量，1~5之间的一个整数<br>可能导致占用大量内存或导致卡顿',
+                            CHANGE_ROOM_INTERVAL: '设置在多久之后改变监听的房间，单位为分钟，0表示不改变'
                         },
                         MATERIAL_OBJECT_LOTTERY: '部分房间设有实物奖励抽奖，脚本使用穷举的方式检查是否有实物抽奖<br>请注意中奖后记得及时填写相关信息领取实物奖励',
                         MATERIAL_OBJECT_LOTTERY_CONFIG: {
@@ -949,7 +965,7 @@
                                 });
                                 div_button_clear.click(() => {
                                     Essential.Cache.clear();
-                                    location.reload(true);
+                                    location.reload();
                                 });
                                 const getItemByElement = (element) => element.id.replace(`${NAME}_config_`, '');
                                 const getItemByHelpElement = (element) => element.id.replace(`${NAME}_config_`, '').replace('_help', '');
@@ -1044,14 +1060,18 @@
                 },
                 fix: (config) => {
                     // 修正设置项中不合法的参数，针对有输入框的设置项
-                    if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER === undefined) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER;
-                    config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = parseInt(config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER, 10);
-                    if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER < 1) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = 1;
-                    else if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER > 5) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER = 5;
+                    if (config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER === undefined) config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER;
+                    config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER = parseInt(config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER, 10);
+                    if (config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER < 1) config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER = 1;
+                    else if (config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER > 5) config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER = 5;
 
                     if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL === undefined) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL;
                     config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = parseInt(config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL, 10);
                     if (config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL < 0) config.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL = 0;
+
+                    if (config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL === undefined) config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL;
+                    config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL = parseInt(config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL, 10);
+                    if (config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL < 0) config.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL = 0;
 
                     if (config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL === undefined) config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL = Essential.Config.CONFIG_DEFAULT.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL;
                     config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL = parseInt(config.AUTO_LOTTERY_CONFIG.MATERIAL_OBJECT_LOTTERY_CONFIG.CHECK_INTERVAL, 10);
@@ -1800,6 +1820,7 @@
         }; // Constantly Run, Need Init
 
         const Lottery = {
+            hasWS: false,
             createCount: 0,
             roomidSet: new Set(),
             Gift: {
@@ -1822,7 +1843,7 @@
                 run: (roomid) => {
                     // 全部参加完成返回resolve，任意一个失败返回reject
                     try {
-                        if (Info.blocked) return $.Deferred().resolve();
+                        if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY || Info.blocked) return $.Deferred().resolve();
                         return Lottery.Gift.fishingCheck(roomid).then((fishing) => {
                             if (!fishing) {
                                 return API.Lottery.Gift.check(roomid).then((response) => {
@@ -1898,9 +1919,10 @@
                 }
             },
             Guard: {
+                wsList: [],
                 run: (roomid) => {
                     try {
-                        if (Info.blocked) return $.Deferred().resolve();
+                        if (!CONFIG.AUTO_GIFT_CONFIG.GUARD_AWARD || Info.blocked) return $.Deferred().resolve();
                         return API.Lottery.Guard.check(roomid).then((response) => {
                             DEBUG('Lottery.Guard.run: API.Lottery.Guard.check', response);
                             if (response.code === 0) {
@@ -1983,7 +2005,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 348, rem = 9) => { // TODO
+                check: (aid, valid = 380, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
@@ -2104,7 +2126,7 @@
                 }
             },
             create: (roomid, real_roomid, type, link_url) => {
-                if (Lottery.createCount > 50) location.reload(true);
+                if (Lottery.createCount > 50) location.reload();
                 if (!real_roomid) real_roomid = roomid;
                 // roomid过滤，防止创建多个同样roomid的iframe
                 if (Lottery.roomidSet.has(real_roomid)) return;
@@ -2149,23 +2171,25 @@
                 ++Lottery.createCount;
                 DEBUG('Lottery.create: iframe', iframe);
             },
-            listen: (uid, roomid, area = '', onlyguard = false, debugall = false) => {
+            listen: (uid, roomid, area = '', gift = false, volatile = true) => {
                 return API.room.getConf(roomid).then((response) => {
                     DEBUG('Lottery.listen: API.room.getConf', response);
                     if (Info.blocked) return;
                     let server_host = 'broadcastlv.chat.bilibili.com';
                     if (response.data.host_server_list.length > 1) server_host = response.data.host_server_list[Math.round(Math.random() * 100) % (response.data.host_server_list.length - 1)].host;
                     let ws = new API.DanmuWebSocket(uid, roomid, `wss://${server_host}/sub`);
+                    let id = 0;
+                    if (volatile) id = Lottery.Guard.wsList.push(ws);
                     ws.bind((newws) => {
-                        ws = newws;
+                        if (volatile && id) Lottery.Guard.wsList[id - 1] = newws;
                         window.toast(`[自动抽奖]${area}(${roomid})弹幕服务器连接断开，尝试重连`, 'caution');
                     }, () => {
                         window.toast(`[自动抽奖]${area}(${roomid})连接弹幕服务器成功`, 'success');
-                        Lottery.Gift.run(roomid);
-                        Lottery.Guard.run(roomid);
+                        if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) Lottery.Gift.run(roomid);
+                        if (CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD) Lottery.Guard.run(roomid);
                     }, () => {
                         if (Info.blocked) {
-                            ws.close(1000);
+                            ws.close();
                             window.toast(`[自动抽奖]${area}(${roomid})主动与弹幕服务器断开连接`, 'info');
                         }
                     }, (obj, str) => {
@@ -2181,7 +2205,7 @@
                             case 'ROOM_RANK':
                                 break;
                             case 'NOTICE_MSG':
-                                if (debugall) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                if (gift) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
                                 switch (obj.msg_type) {
                                     case 1:
                                         // 系统
@@ -2189,11 +2213,12 @@
                                     case 2:
                                     case 8:
                                         // 礼物抽奖
-                                        if (onlyguard) break;
-                                        if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                                        if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
-                                        if (obj.real_roomid !== Info.roomid) {
-                                            Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url);
+                                        if (gift) {
+                                            if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
+                                            if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
+                                            if (obj.real_roomid !== Info.roomid) {
+                                                Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url);
+                                            }
                                         }
                                         break;
                                     case 3:
@@ -2224,35 +2249,42 @@
                                 break;
                             case 'RAFFLE_START':
                             case 'TV_START':
-                                if (onlyguard) break;
                                 DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                                if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
-                                if (Info.blocked || !obj.data.msg.roomid || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
-                                if (obj.data.msg.real_roomid === Info.roomid) Lottery.Gift._join(Info.roomid, obj.data.raffleId);
-                                else Lottery.create(obj.data.msg.roomid, obj.data.msg.real_roomid, 'LOTTERY', obj.data.msg.url);
+                                if (gift) {
+                                    if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
+                                    if (Info.blocked || !obj.data.msg.roomid || !obj.data.msg.real_roomid || !obj.data.raffleId) break;
+                                    if (obj.data.msg.real_roomid === Info.roomid) Lottery.Gift._join(Info.roomid, obj.data.raffleId);
+                                    else Lottery.create(obj.data.msg.roomid, obj.data.msg.real_roomid, 'LOTTERY', obj.data.msg.url);
+                                }
                                 break;
                             case 'SPECIAL_GIFT':
-                                if (onlyguard) break;
                                 DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
-                                if (obj.data['39']) {
-                                    switch (obj.data['39'].action) {
-                                        case 'start':
+                                if (gift) {
+                                    if (obj.data['39']) {
+                                        switch (obj.data['39'].action) {
+                                            case 'start':
                                             // 节奏风暴开始
-                                        case 'end':
+                                            case 'end':
                                             // 节奏风暴结束
-                                    }
-                                };
+                                        }
+                                    };
+                                }
                                 break;
                             default:
-                                if (onlyguard) break;
-                                if (debugall) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
+                                if (gift) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);
                                 break;
                         }
                     });
-                }, () => tryAgain(() => Lottery.listen(uid, roomid, area, onlyguard, debugall)));
+                }, () => tryAgain(() => Lottery.listen(uid, roomid, area, volatile)));
             },
             listenAll: () => {
-                Lottery.listen(Info.uid, Info.roomid, '', false, true);
+                if (Info.blocked) return;
+                if (!Lottery.hasWS) {
+                    Lottery.listen(Info.uid, Info.roomid, '', true, false);
+                    Lottery.hasWS = true;
+                }
+                Lottery.Guard.wsList.forEach(v => v.close());
+                Lottery.Guard.wsList = [];
                 const fn1 = () => {
                     return API.room.getList().then((response) => {
                         DEBUG('Lottery.listenAll: API.room.getList', response);
@@ -2262,10 +2294,10 @@
                     }, () => tryAgain(() => fn1()));
                 };
                 const fn2 = (obj) => {
-                    return API.room.getRoomList(obj.id, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.LISTEN_NUMBER).then((response) => {
+                    return API.room.getRoomList(obj.id, 0, 0, 1, CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD ? CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.LISTEN_NUMBER : 1).then((response) => {
                         DEBUG('Lottery.listenAll: API.room.getRoomList', response);
                         for (let j = 0; j < response.data.length; ++j) {
-                            Lottery.listen(Info.uid, response.data[j].roomid, `[${obj.name}区]`, j);
+                            Lottery.listen(Info.uid, response.data[j].roomid, `[${obj.name}区]`, !j, true);
                         }
                     }, () => tryAgain(() => fn2(obj)));
                 };
@@ -2287,12 +2319,17 @@
                         addCSS('#chat-popup-area-vm {display: none;}');
                     }
                     Lottery.listenAll();
+                    if (CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL > 0) {
+                        setInterval(() => {
+                            Lottery.listenAll();
+                        }, CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD_CONFIG.CHANGE_ROOM_INTERVAL * 60e3);
+                    }
                     setInterval(() => {
                         if (Lottery.createCount > 0) --Lottery.createCount;
                     }, 10e3);
                     if (CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL > 0) {
                         setTimeout(() => {
-                            location.reload(true);
+                            location.reload();
                         }, CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY_CONFIG.REFRESH_INTERVAL * 60e3);
                     }
                 } catch (err) {
