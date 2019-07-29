@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.4.2
+// @version      1.4.3
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -32,9 +32,9 @@ var BilibiliAPI = {
     },
     Lottery: {
         Gift: {
-            check: (roomid) => BilibiliAPI.gift.smalltv.check(roomid),
-            join: (roomid, raffleId, type) => BilibiliAPI.gift.smalltv.join(roomid, raffleId, type),
-            notice: (raffleId, type) => BilibiliAPI.gift.smalltv.notice(raffleId, type)
+            check: (roomid) => BilibiliAPI.xlive.smalltv.check(roomid),
+            join: (roomid, raffleId, type) => BilibiliAPI.xlive.smalltv.join(roomid, raffleId, type),
+            notice: (raffleId, type) => BilibiliAPI.xlive.smalltv.notice(raffleId, type)
         },
         Raffle: {
             check: (roomid) => BilibiliAPI.activity.check(roomid),
@@ -973,6 +973,38 @@ var BilibiliAPI = {
                     jsonp: 'jsonp'
                 }
             });
+        }
+    },
+    xlive: {
+        smalltv: {
+            check: (roomid) => {
+                return BilibiliAPI.ajax({
+                    url: 'xlive/lottery-interface/v3/smalltv/Check',
+                    data: {
+                        roomid: roomid
+                    }
+                });
+            },
+            join: (roomid, raffleId, type = 'Gift') => {
+                return BilibiliAPI.ajaxWithCommonArgs({
+                    method: 'POST',
+                    url: 'xlive/lottery-interface/v3/smalltv/Join',
+                    data: {
+                        roomid: roomid,
+                        raffleId: raffleId,
+                        type: type
+                    }
+                });
+            },
+            notice: (raffleId, type = 'small_tv') => {
+                return BilibiliAPI.ajax({
+                    url: 'xlive/lottery-interface/v3/smalltv/Notice',
+                    data: {
+                        type: type,
+                        raffleId: raffleId
+                    }
+                });
+            }
         }
     },
     YearWelfare: {
