@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.0
+// @version      2.4.1
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.0';
+    const VERSION = '2.4.1';
     document.domain = 'bilibili.com';
 
     let API;
@@ -192,7 +192,6 @@
                                             DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
                                             if (response.code === 0) {
                                                 if (response.data.list) return Lottery.Gift.join(roomid, response.data.list);
-                                                else return tryAgain(() => Lottery.Gift.run(roomid));
                                             } else if (response.code === -400) {
                                                 // 没有需要提示的小电视
                                             } else {
@@ -1850,7 +1849,6 @@
                                     DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
                                     if (response.code === 0) {
                                         if (response.data.list) return Lottery.Gift.join(roomid, response.data.list);
-                                        else return tryAgain(() => Lottery.Gift.run(roomid));
                                     } else if (response.code === -400) {
                                         // 没有需要提示的小电视
                                     } else {
@@ -2203,6 +2201,7 @@
                             case 'COMBO_END':
                             case 'WISH_BOTTLE':
                             case 'ROOM_RANK':
+                            case 'ROOM_REAL_TIME_MESSAGE_UPDATE':
                                 break;
                             case 'NOTICE_MSG':
                                 if (gift) DEBUG(`DanmuWebSocket${area}(${roomid})`, str);

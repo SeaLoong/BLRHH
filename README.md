@@ -44,7 +44,7 @@
 
         ```js
         [greasyfork源]
-        // @require https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
+        // @require      https://greasyfork.org/scripts/38140-bilibiliapi/code/BilibiliAPI.js
         // @require      https://greasyfork.org/scripts/44866-ocrad/code/OCRAD.js
         [github源]
         // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/BilibiliAPI.js
@@ -88,6 +88,8 @@
 -----------------
 
 ## 更新日志
+> ###  2019-07-29 (Version 2.4.1)
+>     更新了抽奖接口
 > ###  2019-07-02 (Version 2.4.0)
 >     修复了在未启用舰队领奖时仍然会领取奖励的问题
 >     增加了自动更换监听房间的功能
