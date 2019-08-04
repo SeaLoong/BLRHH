@@ -12,8 +12,8 @@
 // @include      /https?:\/\/live\.bilibili\.com\/blanc\d+\??.*/
 // @include      /https?:\/\/api\.live\.bilibili\.com\/_.*/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
-// @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/BilibiliAPI.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
 // @license      MIT License
@@ -32,6 +32,9 @@
 [腾讯云源]
 // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
+[jsDelivr源]
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/BilibiliAPI.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/OCRAD.min.js
 */
 
 (function BLRHH() {
