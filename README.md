@@ -55,6 +55,9 @@
         [腾讯云源]
         // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
         // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
+        [jsDelivr源]
+        // @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/BilibiliAPI.js
+        // @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/OCRAD.min.js
         ```
 
 2. 开启自动抽奖后，直播间页面经常崩溃
