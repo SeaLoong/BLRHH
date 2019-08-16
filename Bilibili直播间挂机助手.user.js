@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.1
+// @version      2.4.2
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -38,7 +38,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.1';
+    const VERSION = '2.4.2';
     document.domain = 'bilibili.com';
 
     let API;
@@ -233,17 +233,6 @@
                                     case 0:
                                         window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})`, 'success');
                                         break;
-                                    case 400:
-                                        if (response.msg.indexOf('拒绝') > -1) {
-                                            Info.blocked = true;
-                                            up();
-                                            window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
-                                        } else if (response.msg.indexOf('快') > -1) {
-                                            return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
-                                        } else {
-                                            window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
-                                        }
-                                        break;
                                     case 402:
                                         // 抽奖已过期，下次再来吧
                                         break;
@@ -254,7 +243,15 @@
                                         window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，已停止`, 'error');
                                         break;
                                     default:
-                                        window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                        if (response.msg.indexOf('拒绝') > -1) {
+                                            Info.blocked = true;
+                                            up();
+                                            window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                                        } else if (response.msg.indexOf('快') > -1) {
+                                            return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
+                                        } else {
+                                            window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                        }
                                 }
                             }, () => {
                                 window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，请检查网络`, 'error');
@@ -305,16 +302,12 @@
                                 if (response.code === 0) {
                                     window.toast(`[自动抽奖][舰队领奖]领取(roomid=${roomid},id=${id})成功`, 'success');
                                     window.toast(`[自动抽奖][舰队领奖]${response.data.message}`, 'success');
-                                } else if (response.code === 400) {
-                                    if (response.msg.indexOf('拒绝') > -1) {
-                                        Info.blocked = true;
-                                        up();
-                                        window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
-                                    } else if (response.msg.indexOf('快') > -1) {
-                                        return tryAgain(() => Lottery.Guard._join(roomid, id));
-                                    } else {
-                                        window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
-                                    }
+                                } else if (response.msg.indexOf('拒绝') > -1) {
+                                    Info.blocked = true;
+                                    up();
+                                    window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                                } else if (response.msg.indexOf('快') > -1) {
+                                    return tryAgain(() => Lottery.Guard._join(roomid, id));
                                 } else {
                                     window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
                                 }
@@ -1887,17 +1880,6 @@
                             case 0:
                                 window.toast(`[自动抽奖][礼物抽奖]已参加抽奖(roomid=${roomid},raffleId=${raffleId})`, 'success');
                                 break;
-                            case 400:
-                                if (response.msg.indexOf('拒绝') > -1) {
-                                    Info.blocked = true;
-                                    Essential.DataSync.down();
-                                    window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
-                                } else if (response.msg.indexOf('快') > -1) {
-                                    return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
-                                } else {
-                                    window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
-                                }
-                                break;
                             case 402:
                                 // 抽奖已过期，下次再来吧
                                 break;
@@ -1908,7 +1890,15 @@
                                 window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，已停止`, 'error');
                                 break;
                             default:
-                                window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                if (response.msg.indexOf('拒绝') > -1) {
+                                    Info.blocked = true;
+                                    Essential.DataSync.down();
+                                    window.toast('[自动抽奖][礼物抽奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                                } else if (response.msg.indexOf('快') > -1) {
+                                    return tryAgain(() => Lottery.Gift._join(roomid, raffleId));
+                                } else {
+                                    window.toast(`[自动抽奖][礼物抽奖](roomid=${roomid},raffleId=${raffleId})${response.msg}`, 'caution');
+                                }
                         }
                     }, () => {
                         window.toast(`[自动抽奖][礼物抽奖]参加抽奖(roomid=${roomid},raffleId=${raffleId})失败，请检查网络`, 'error');
@@ -1957,16 +1947,12 @@
                         if (response.code === 0) {
                             window.toast(`[自动抽奖][舰队领奖]领取(roomid=${roomid},id=${id})成功`, 'success');
                             window.toast(`[自动抽奖][舰队领奖]${response.data.message}`, 'success');
-                        } else if (response.code === 400) {
-                            if (response.msg.indexOf('拒绝') > -1) {
-                                Info.blocked = true;
-                                Essential.DataSync.down();
-                                window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
-                            } else if (response.msg.indexOf('快') > -1) {
-                                return tryAgain(() => Lottery.Guard._join(roomid, id));
-                            } else {
-                                window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
-                            }
+                        } else if (response.msg.indexOf('拒绝') > -1) {
+                            Info.blocked = true;
+                            Essential.DataSync.down();
+                            window.toast('[自动抽奖][舰队领奖]访问被拒绝，您的帐号可能已经被关小黑屋，已停止', 'error');
+                        } else if (response.msg.indexOf('快') > -1) {
+                            return tryAgain(() => Lottery.Guard._join(roomid, id));
                         } else {
                             window.toast(`[自动抽奖][舰队领奖](roomid=${roomid},id=${id})${response.msg}`, 'caution');
                         }
