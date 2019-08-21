@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.4.3
+// @version      1.4.4
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -49,7 +49,7 @@ var BilibiliAPI = {
         },
         Guard: {
             check: (roomid) => BilibiliAPI.lottery.lottery.check_guard(roomid),
-            join: (roomid, id, type) => BilibiliAPI.lottery.lottery.join(roomid, id, type)
+            join: (roomid, id, type) => BilibiliAPI.xlive.guard.join(roomid, id, type)
         }
     },
     Group: {
@@ -976,6 +976,29 @@ var BilibiliAPI = {
         }
     },
     xlive: {
+        guard: {
+            join: (roomid, id, type = 'guard') => {
+                return BilibiliAPI.ajaxWithCommonArgs({
+                    method: 'POST',
+                    url: 'xlive/lottery-interface/v3/guard/join',
+                    data: {
+                        roomid: roomid,
+                        id: id,
+                        type: type
+                    }
+                });
+            }
+        },
+        lottery: {
+            check: (roomid) => {
+                return BilibiliAPI.ajax({
+                    url: 'xlive/lottery-interface/v1/lottery/Check',
+                    data: {
+                        roomid: roomid
+                    }
+                });
+            }
+        },
         smalltv: {
             check: (roomid) => {
                 return BilibiliAPI.ajax({
@@ -985,13 +1008,13 @@ var BilibiliAPI = {
                     }
                 });
             },
-            join: (roomid, raffleId, type = 'Gift') => {
+            join: (roomid, id, type = 'small_tv') => {
                 return BilibiliAPI.ajaxWithCommonArgs({
                     method: 'POST',
-                    url: 'xlive/lottery-interface/v3/smalltv/Join',
+                    url: 'xlive/lottery-interface/v5/smalltv/join',
                     data: {
                         roomid: roomid,
-                        raffleId: raffleId,
+                        id: id,
                         type: type
                     }
                 });
