@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         BilibiliAPI
 // @namespace    SeaLoong
-// @version      1.4.4
+// @version      1.4.4-plus
 // @description  BilibiliAPI，PC端抓包研究所得
 // @author       SeaLoong
 // @require      http://code.jquery.com/jquery-3.3.1.min.js
@@ -50,6 +50,10 @@ var BilibiliAPI = {
         Guard: {
             check: (roomid) => BilibiliAPI.lottery.lottery.check_guard(roomid),
             join: (roomid, id, type) => BilibiliAPI.xlive.guard.join(roomid, id, type)
+        },
+        Pk:{
+            check: (roomid) => BilibiliAPI.xlive.pk.check(roomid),
+            join: (roomid, id) => BilibiliAPI.xlive.pk.join(roomid, id)
         }
     },
     Group: {
@@ -1025,6 +1029,26 @@ var BilibiliAPI = {
                     data: {
                         type: type,
                         raffleId: raffleId
+                    }
+                });
+            }
+        },
+        pk: {
+            check: (roomid) => {
+                return BilibiliAPI.ajax({
+                    url: 'xlive/lottery-interface/v1/pk/check',
+                    data: {
+                        roomid: roomid
+                    }
+                });
+            },
+            join: (roomid, id) => {
+                return BilibiliAPI.ajaxWithCommonArgs({
+                    method: 'POST',
+                    url: 'xlive/lottery-interface/v1/pk/join',
+                    data: {
+                        roomid: roomid,
+                        id: id
                     }
                 });
             }
