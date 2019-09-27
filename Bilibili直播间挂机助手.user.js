@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.3
+// @version      2.4.4
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -41,7 +41,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.3';
+    const VERSION = '2.4.4';
     document.domain = 'bilibili.com';
 
     let API;
@@ -1913,7 +1913,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 400, rem = 9) => { // TODO
+                check: (aid, valid = 421, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
@@ -2034,7 +2034,7 @@
                 }
             },
             create: (roomid, real_roomid, type, link_url) => {
-                if (Lottery.createCount > 50) location.reload();
+                if (Lottery.createCount > 99) location.reload();
                 if (!real_roomid) real_roomid = roomid;
                 if (Info.roomid === real_roomid) return;
                 // roomid过滤，防止创建多个同样roomid的iframe
@@ -2086,9 +2086,7 @@
                 return API.room.getConf(roomid).then((response) => {
                     DEBUG('Lottery.listen: API.room.getConf', response);
                     if (Info.blocked) return;
-                    let server_host = 'broadcastlv.chat.bilibili.com';
-                    if (response.data.host_server_list.length > 1) server_host = response.data.host_server_list[Math.round(Math.random() * 100) % (response.data.host_server_list.length - 1)].host;
-                    let ws = new API.DanmuWebSocket(uid, roomid, `wss://${server_host}/sub`);
+                    let ws = new API.DanmuWebSocket(uid, roomid, response.data.host_server_list, response.data.token);
                     let id = 0;
                     if (volatile) id = Lottery.Guard.wsList.push(ws);
                     ws.bind((newws) => {
