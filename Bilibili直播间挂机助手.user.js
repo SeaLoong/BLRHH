@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.7
+// @version      2.4.8
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -40,7 +40,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.7';
+    const VERSION = '2.4.8';
     document.domain = 'bilibili.com';
 
     let API;
@@ -52,7 +52,7 @@
         return;
     }
 
-    const isSubScript = () => window.frameElement && window.parent[NAME];
+    const isSubScript = () => window.frameElement && window.parent[NAME] && window.frameElement[NAME];
 
     const DEBUGMODE = false || window.top.localStorage.getItem('BLRHH-DEBUG');
     const DEBUG = (sign, ...data) => {
@@ -120,12 +120,12 @@
 
     if (isSubScript()) {
         try {
-            let server_host = '';
+            let host_server_list = [];
             try {
                 // 拦截弹幕服务器连接
                 const webSocketConstructor = WebSocket.prototype.constructor;
                 WebSocket.prototype.constructor = (url, protocols) => {
-                    if (url === `wss://${server_host}/sub`) return webSocketConstructor(url, protocols);
+                    if (host_server_list.some(v => url.indexOf(v) > -1)) return webSocketConstructor(url, protocols);
                     throw new Error();
                 };
             } catch (err) {};
@@ -336,7 +336,8 @@
                 const listen = () => {
                     return API.room.getConf(window.frameElement[NAME].roomid).then((response) => {
                         DEBUG('listen: API.room.getConf', response);
-                        Lottery.ws = new API.DanmuWebSocket(Info.uid, window.frameElement[NAME].roomid, response.data.host_server_list, response.data.token);
+                        host_server_list = response.data.host_server_list;
+                        Lottery.ws = new API.DanmuWebSocket(Info.uid, window.frameElement[NAME].roomid, host_server_list, response.data.token);
                         Lottery.ws.bind((ws) => {
                             Lottery.ws = ws;
                         }, () => {
@@ -1910,7 +1911,7 @@
                         return $.Deferred().reject();
                     }
                 },
-                check: (aid, valid = 421, rem = 9) => { // TODO
+                check: (aid, valid = 436, rem = 9) => { // TODO
                     aid = parseInt(aid || (CACHE.last_aid), 10);
                     if (isNaN(aid)) aid = valid;
                     DEBUG('Lottery.MaterialObject.check: aid=', aid);
