@@ -87,7 +87,7 @@
 
 ## 捐赠作者
 
-+ 支付宝 => ![支付宝二维码](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/AliPay2.png) 微信 => ![微信二维码](https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/WeChat2.png)
++ 支付宝 => ![支付宝二维码](https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/AliPay2.png) 微信 => ![微信二维码](https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/WeChat2.png)
 
 -----------------
 
