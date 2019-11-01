@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.6
+// @version      2.4.7
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
 // @supportURL   https://github.com/SeaLoong/Bilibili-LRHH/issues
 // @updateURL    https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js
 // @downloadURL  https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js
-// @include      /https?:\/\/live\.bilibili\.com\/[^?]*?\d+\??.*/
-// @include      /https?:\/\/api\.live\.bilibili\.com\/_.*/
+// @include      /^https?:\/\/live\.bilibili\.com\/[^?]*?\d+\??[^?]*$/
+// @include      /^https?:\/\/api\.live\.bilibili\.com\/_.*$/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
 // @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
 // @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
@@ -40,7 +40,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.6';
+    const VERSION = '2.4.7';
     document.domain = 'bilibili.com';
 
     let API;
