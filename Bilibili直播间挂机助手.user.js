@@ -40,7 +40,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.8';
+    const VERSION = '2.4.9';
     document.domain = 'bilibili.com';
 
     let API;
