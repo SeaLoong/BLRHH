@@ -6,8 +6,8 @@
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
 // @supportURL   https://github.com/SeaLoong/Bilibili-LRHH/issues
-// @updateURL    https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js
-// @downloadURL  https://gitee.com/SeaLoong/Bilibili-LRHH/raw/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js
+// @updateURL    https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js
+// @downloadURL  https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/Bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B.user.js
 // @include      /^https?:\/\/live\.bilibili\.com\/[^?]*?\d+\??[^?]*$/
 // @include      /^https?:\/\/api\.live\.bilibili\.com\/_.*$/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
