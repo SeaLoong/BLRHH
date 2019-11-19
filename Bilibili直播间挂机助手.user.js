@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.8
+// @version      2.4.9
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -1170,7 +1170,7 @@
                             window.toast(`[自动签到]${response.data.text}`, 'success');
                             CACHE.sign_ts = ts_ms();
                             Essential.Cache.save();
-                        } else if (response.code === -500) {
+                        } else if (response.code === -500 || response.msg.indexOf('已签到') > -1) {
                             // 今天已签到过
                         } else {
                             window.toast(`[自动签到]${response.data.text}`, 'caution');
