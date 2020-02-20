@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.9
+// @version      2.4.10
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -40,7 +40,7 @@
     'use strict';
 
     const NAME = 'BLRHH';
-    const VERSION = '2.4.9';
+    const VERSION = '2.4.10';
     document.domain = 'bilibili.com';
 
     let API;
@@ -278,10 +278,10 @@
                         run: (roomid) => {
                             try {
                                 if (!CONFIG.AUTO_LOTTERY_CONFIG.GUARD_AWARD || Info.blocked) return $.Deferred().resolve();
-                                return API.Lottery.Guard.check(roomid).then((response) => {
-                                    DEBUG('Lottery.Guard.run: API.Lottery.Guard.check', response);
+                                return API.xlive.lottery.check(roomid).then((response) => {
+                                    DEBUG('Lottery.Guard.run: API.xlive.lottery.check', response);
                                     if (response.code === 0) {
-                                        return Lottery.Guard.join(roomid, response.data);
+                                        return Lottery.Guard.join(roomid, response.data.guard);
                                     } else {
                                         window.toast(`[自动抽奖][舰队领奖](roomid=${roomid})${response.msg}`, 'caution');
                                     }
