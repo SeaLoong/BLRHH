@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.10
+// @version      2.4.11
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -398,6 +398,8 @@
                     signInList: (list, i = 0) => {
                         if (i >= list.length) return $.Deferred().resolve();
                         const obj = list[i];
+                        //自己不能给自己的应援团应援
+                        if(obj.owner_uid==Info.uid) return $.Deferred().resolve();
                         return API.Group.sign_in(obj.group_id, obj.owner_uid).then((response) => {
                             DEBUG('GroupSign.signInList: API.Group.sign_in', response);
                             const p = $.Deferred();
