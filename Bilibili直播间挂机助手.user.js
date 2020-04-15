@@ -399,7 +399,7 @@
                         if (i >= list.length) return $.Deferred().resolve();
                         const obj = list[i];
                         //自己不能给自己的应援团应援
-                        if(obj.owner_uid==Info.uid) return $.Deferred().resolve();
+                        if(obj.owner_uid==Info.uid) return $.when(GroupSign.signInList(list, i + 1), p);
                         return API.Group.sign_in(obj.group_id, obj.owner_uid).then((response) => {
                             DEBUG('GroupSign.signInList: API.Group.sign_in', response);
                             const p = $.Deferred();
