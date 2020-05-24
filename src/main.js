@@ -27,11 +27,9 @@ const BLRHH = {
 (async () => {
   if (await GM.getValue('DEBUG')) {
     localStorage.setItem('videoVolume', 0);
-    BLRHH.GM = GM;
-    BLRHH.debug = function (...args) {
-      console.debug.call(this, `[${BLRHH.NAME}]`, ...args);
-    };
     window.top.BLRHH = BLRHH;
+    BLRHH.GM = GM;
+    BLRHH.debug = console.debug;
     BLRHH.debug(BLRHH);
   }
 
