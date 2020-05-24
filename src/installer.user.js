@@ -34,7 +34,7 @@
 // @grant        GM.getTabs
 // @run-at       document-start
 // @license      MIT License
-// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/import.js
-// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/main.js
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/import.js
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/main.js
 // @resource     toastr.css https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.css
 // ==/UserScript==
