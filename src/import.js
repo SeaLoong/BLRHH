@@ -18,6 +18,7 @@ function createImportModuleFunc (...context) {
   const importUrlMap = new Map();
   async function importModule (name, reImport = false) {
     try {
+      name = name.toLowerCase();
       if (!reImport && importUrlMap.has(name)) return importUrlMap.get(name);
       let ret = await import(RESOURCE[name] ?? (RESOURCE.base + '/modules/' + name + '.js'));
       const def = ret.default;
@@ -42,6 +43,7 @@ function createImportModuleFuncFromGM (...context) {
   const importModuleMap = new Map();
   async function importModule (name, reImport = false) {
     try {
+      name = name.toLowerCase();
       if (!reImport && importModuleMap.has(name)) return importModuleMap.get(name);
       const code = await GM.getResourceText(name);
       // eslint-disable-next-line no-new-func
