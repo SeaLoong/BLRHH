@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 const RESOURCE = {
-  base: 'https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/src',
+  base: 'https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src',
   lodash: 'https://cdn.bootcdn.net/ajax/libs/lodash.js/4.17.15/lodash.min.js',
   toastr: 'https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.js',
   jquery: 'https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js'
