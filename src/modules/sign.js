@@ -11,7 +11,7 @@ export default async function (importModule, BLRHH, GM) {
       const response = await BLRHH.Request.fetch('https://api.live.bilibili.com/sign/doSign');
       const obj = await response.json();
       if (obj.code === 0) {
-        BLRHH.Logger.success(NAME_LIVE, obj.message);
+        BLRHH.Logger.success(NAME_LIVE, obj.data.text);
         return BLRHH.Util.removeRetry(live);
       } else if (obj.code === 1011040 || obj.message.includes('已签到')) {
         BLRHH.Logger.info(NAME_LIVE, obj.message);

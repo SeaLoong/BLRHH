@@ -40,7 +40,7 @@ const BLRHH = {
   // 特殊直播间页面，如 6 55 76
   if (document.getElementById('player-ctnr')) return;
 
-  const importModule = createImportModuleFunc(BLRHH, GM); // eslint-disable-line no-undef
+  const importModule = isLocalResource() ? createImportModuleFromGMFunc([BLRHH, GM]) : createImportModuleFromResourceFunc([BLRHH, GM]); // eslint-disable-line no-undef
 
   await importModule('jquery');
   await importModule('Toast');
