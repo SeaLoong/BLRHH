@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手
 // @namespace    SeaLoong
-// @version      2.4.11
+// @version      2.4.12
 // @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
@@ -11,8 +11,8 @@
 // @include      /^https?:\/\/live\.bilibili\.com\/[^?]*?\d+\??[^?]*$/
 // @include      /^https?:\/\/api\.live\.bilibili\.com\/_.*$/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js
-// @require      https://js-1258131272.file.myqcloud.com/BilibiliAPI.js
-// @require      https://js-1258131272.file.myqcloud.com/OCRAD.min.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/BilibiliAPI.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/OCRAD.min.js
 // @grant        none
 // @run-at       document-start
 // @license      MIT License
@@ -202,10 +202,10 @@
                                 if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY || Info.blocked) return $.Deferred().resolve();
                                 return Lottery.Gift.fishingCheck(roomid).then((fishing) => {
                                     if (!fishing) {
-                                        return API.Lottery.Gift.check(roomid).then((response) => {
-                                            DEBUG('Lottery.Gift.run: API.Lottery.Gift.check', response);
+                                        return API.xlive.lottery.check(roomid).then((response) => {
+                                            DEBUG('Lottery.Gift.run: API.xlive.lottery.check', response);
                                             if (response.code === 0) {
-                                                if (response.data.list) return Lottery.Gift.join(roomid, response.data.list);
+                                                if (response.data.gift) return Lottery.Gift.join(roomid, response.data.gift);
                                             } else if (response.code === -400) {
                                                 // 没有需要提示的小电视
                                             } else {
@@ -2126,7 +2126,7 @@
                                             if (!CONFIG.AUTO_LOTTERY_CONFIG.GIFT_LOTTERY) break;
                                             if (Info.blocked || !obj.roomid || !obj.real_roomid) break;
                                             if (obj.real_roomid !== Info.roomid) {
-                                                delayCall(() => Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url), 60e3);
+                                                delayCall(() => Lottery.create(obj.roomid, obj.real_roomid, 'LOTTERY', obj.link_url), 120e3);
                                             }
                                         }
                                         break;
@@ -2261,7 +2261,7 @@
                 window[NAME].iframeSet.delete(iframe);
                 $(iframe).remove();
             });
-            const autoDel = setTimeout(() => pFinish.resolve(), 60e3); // iframe默认在60s后自动删除
+            const autoDel = setTimeout(() => pFinish.resolve(), 180e3); // iframe默认在60s后自动删除
             const pInit = $.Deferred();
             pInit.then(() => clearTimeout(autoDel)); // 如果初始化成功，父脚本不自动删除，由子脚本决定何时删除，否则说明子脚本加载失败，这个iframe没有意义
             const up = () => {
