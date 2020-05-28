@@ -1,3 +1,6 @@
+const config = {
+  hideToast: false
+};
 export default async function (importModule, BLRHH, GM) {
   await importModule('toastr');
   await GM.addStyle(await GM.getResourceText('toastr.css'));
@@ -21,11 +24,9 @@ export default async function (importModule, BLRHH, GM) {
     hideMethod: 'slideUp'
   };
 
-  let hideToast = false;
-
   function toast (msg, type = 'success') {
     try {
-      if (hideToast) return;
+      if (config.hideToast) return;
       if (this !== BLRHH.Logger) {
         const logger = BLRHH.Logger ?? console;
         logger[type === 'success' ? 'log' : type].call(BLRHH.Toast, logger === console ? msg.replace('<br>', ' ') : msg);
@@ -53,10 +54,10 @@ export default async function (importModule, BLRHH, GM) {
   }
 
   BLRHH.onpreinit.push(() => {
-    BLRHH.Config.addItem('hideToast', '隐藏浮动提示', hideToast, '浮动提示就是会在右上角显示的那个框框');
+    BLRHH.Config.addItem('hideToast', '隐藏浮动提示', config.hideToast, { help: '浮动提示就是会在右上角显示的那个框框' });
 
     BLRHH.Config.onload.push(() => {
-      hideToast = BLRHH.Config.get('hideToast');
+      config.hideToast = BLRHH.Config.get('hideToast');
     });
   });
 

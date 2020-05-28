@@ -1,3 +1,8 @@
+const config = {
+  maxLog: 1000,
+  showDateTime: true,
+  outputConsole: false
+};
 export default async function (importModule, BLRHH, GM) {
   const cssLogger = `${BLRHH.NAME}-logger`;
   const cssLoggerItem = `${BLRHH.NAME}-logger-item`;
@@ -19,18 +24,14 @@ export default async function (importModule, BLRHH, GM) {
   const logs = [];
   let keepScroll = true;
 
-  let maxLog = 1000;
-  let showDateTime = true;
-  let outputConsole = false;
-
   function log (msg, type = 'success') {
     try {
-      while (logs.length >= maxLog) {
+      while (logs.length >= config.maxLog) {
         logs.shift().remove();
       }
       const element = $(`<div class="${cssLoggerItem} ${type}"></div>`);
       let dateTime;
-      if (showDateTime) {
+      if (config.showDateTime) {
         dateTime = dateTimeFormat.format(Date.now());
         element.append($(`<span class="${cssLoggerDateTime}">${dateTime}</span>`));
       }
@@ -44,7 +45,7 @@ export default async function (importModule, BLRHH, GM) {
       if (this !== BLRHH.Toast && (type === 'error' || type === 'warn')) {
         BLRHH.Toast[type].call(BLRHH.Logger, msg);
       }
-      if (outputConsole || type === 'error' || type === 'warn') {
+      if (config.outputConsole || type === 'error' || type === 'warn') {
         msg = msg.replace('<br>', ' ');
         console[type === 'success' ? 'log' : type].call(this, dateTime ? `[${BLRHH.NAME}][${dateTime}]${msg}` : `[${dateTime}]${msg}`);
       }
@@ -87,14 +88,14 @@ export default async function (importModule, BLRHH, GM) {
     });
 
     BLRHH.Config.addObjectItem('logger', '日志设置', false);
-    BLRHH.Config.addItem('logger.showDateTime', '显示日期时间', showDateTime);
-    BLRHH.Config.addItem('logger.maxLog', '日志上限', maxLog, '最多显示多少条日志，数值过大可能会导致性能问题');
-    BLRHH.Config.addItem('logger.outputConsole', '同时输出到控制台', outputConsole);
+    BLRHH.Config.addItem('logger.showDateTime', '显示日期时间', config.showDateTime);
+    BLRHH.Config.addItem('logger.maxLog', '日志上限', config.maxLog, { help: '最多显示多少条日志，数值过大可能会导致性能问题' });
+    BLRHH.Config.addItem('logger.outputConsole', '同时输出到控制台', config.outputConsole);
 
     BLRHH.Config.onload.push(() => {
-      showDateTime = BLRHH.Config.get('logger.showDateTime');
-      maxLog = BLRHH.Config.get('logger.maxLog');
-      outputConsole = BLRHH.Config.get('logger.outputConsole');
+      config.showDateTime = BLRHH.Config.get('logger.showDateTime');
+      config.maxLog = BLRHH.Config.get('logger.maxLog');
+      config.outputConsole = BLRHH.Config.get('logger.outputConsole');
     });
   });
 

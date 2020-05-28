@@ -1,12 +1,14 @@
-const NAME = '自动签到';
+const NAME = '签到';
+const config = {
+  sign: true,
+  live: true,
+  linkGroup: true
+};
 export default async function (importModule, BLRHH, GM) {
   const NAME_LIVE = NAME + '-直播';
-
-  let sign = true;
-  let signLive = true;
   async function live () {
     BLRHH.debug('Sign.live');
-    if (!signLive) return;
+    if (!config.live) return;
     try {
       const response = await BLRHH.Request.fetch('https://api.live.bilibili.com/sign/doSign');
       const obj = await response.json();
@@ -25,22 +27,17 @@ export default async function (importModule, BLRHH, GM) {
   }
 
   const NAME_LINKGROUP = NAME + '-应援团';
-
-  let signLinkGroup = true;
   async function linkGroup () {
     BLRHH.debug('Sign.linkGroup');
-    if (!signLinkGroup) return;
+    if (!config.linkGroup) return;
     try {
-      const response = await BLRHH.Request.fetch({
-        url: 'https://api.vc.bilibili.com/link_group/v1/member/my_groups',
-        referrer: ''
-      });
+      const response = await BLRHH.Request.fetch('https://api.vc.bilibili.com/link_group/v1/member/my_groups');
       const obj = await response.json();
       if (obj.code === 0) {
         /* eslint-disable camelcase */
         const promises = [];
         for (const { owner_uid, group_id } of obj.data.list) {
-          if (owner_uid === BLRHH.info.uid) continue; // 自己不能给自己的应援团应援
+          if (owner_uid === BLRHH.INFO.UID) continue; // 自己不能给自己的应援团应援
           const signOneLinkGroup = async () => {
             try {
               const msg = `应援团(group_id=${group_id},owner_uid=${owner_uid})`;
@@ -49,8 +46,7 @@ export default async function (importModule, BLRHH, GM) {
                 search: {
                   group_id,
                   owner_id: owner_uid
-                },
-                referrer: ''
+                }
               });
               const obj = await response.json();
               if (obj.code === 0) {
@@ -83,25 +79,27 @@ export default async function (importModule, BLRHH, GM) {
 
   async function run () {
     BLRHH.debug('Sign.run');
-    if (!sign) return;
+    if (!config.sign) return;
     if (!BLRHH.Util.isToday(await GM.getValue(timestampName) ?? 0)) {
       await Promise.all([live(), linkGroup()]);
       await GM.setValue(timestampName, Date.now());
     }
     BLRHH.Util.callTomorrow(run);
     if (this !== BLRHH.Config) {
-      BLRHH.Logger.info(NAME, '等待下次签到');
+      BLRHH.Logger.info(NAME, '今日已进行过签到，等待下次签到');
     }
   }
 
+  BLRHH.onupgrade.push(() => GM.deleteValue(timestampName));
+
   BLRHH.oninit.push(() => {
-    BLRHH.Config.addObjectItem('sign', NAME, sign);
-    BLRHH.Config.addItem('sign.live', '直播', signLive);
-    BLRHH.Config.addItem('sign.linkGroup', '应援团', signLinkGroup);
+    BLRHH.Config.addObjectItem('sign', NAME, config.sign);
+    BLRHH.Config.addItem('sign.live', '直播', config.live);
+    BLRHH.Config.addItem('sign.linkGroup', '应援团', config.linkGroup);
     BLRHH.Config.onload.push(() => {
-      sign = BLRHH.Config.get('sign');
-      signLive = BLRHH.Config.get('sign.live');
-      signLinkGroup = BLRHH.Config.get('sign.linkGroup');
+      config.sign = BLRHH.Config.get('sign');
+      config.live = BLRHH.Config.get('sign.live');
+      config.linkGroup = BLRHH.Config.get('sign.linkGroup');
     });
   });
 

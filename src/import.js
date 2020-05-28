@@ -1,6 +1,7 @@
 /* eslint-disable no-unused-vars */
 const RESOURCE = {
-  base: 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src',
+  base: 'http://127.0.0.1:8080/src',
+  // base: 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src',
   lodash: 'https://cdn.bootcdn.net/ajax/libs/lodash.js/4.17.15/lodash.min.js',
   toastr: 'https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.js',
   jquery: 'https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js'
@@ -86,7 +87,7 @@ function createImportModuleFromCodeGMFunc (context, keepContext = false) {
 }
 
 function isLocalResource () {
-  return (GM.info.script.resources.length > 1);
+  return GM.info.script.resources.some(o => o.url.endsWith('.js'));
 }
 
 async function checkResetResource () {
@@ -106,10 +107,13 @@ async function checkResetResource () {
 
 function preinitImport (BLRHH) {
   if (isLocalResource()) return;
-  BLRHH.Config.addObjectItem('resource', '自定义源', false, '该设置项只在非本地源模式下有效');
-  BLRHH.Config.addItem('resource.base', '根目录', RESOURCE.base, 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src<br>https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src', null, null, v => {
-    const i = v.trim().search(/\/+$/);
-    return i > -1 ? v.substring(0, i) : v;
+  BLRHH.Config.addObjectItem('resource', '自定义源', false, { help: '该设置项只在非本地源模式下有效' });
+  BLRHH.Config.addItem('resource.base', '根目录', RESOURCE.base, {
+    help: 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src<br>https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src',
+    validator: v => {
+      const i = v.trim().search(/\/+$/);
+      return i > -1 ? v.substring(0, i) : v;
+    }
   });
   for (const name of ['jquery', 'toastr', 'lodash']) {
     BLRHH.Config.addItem(`resource.${name}`, name, RESOURCE[name]);

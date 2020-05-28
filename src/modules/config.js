@@ -27,20 +27,22 @@ export default async function (importModule, BLRHH, GM) {
   const innerOnClickMap = new Map();
 
   // 返回与 config 对应的一个DOM树(jQuery对象)
-  const generate = (config = CONFIG_DEFAULT, path = '') => {
+  const generate = async (config = CONFIG_DEFAULT, path = '') => {
     if (!path) {
       DOMMap.clear();
       innerOnClickMap.clear();
       const divElement = $('<div/>');
       for (const key in config) {
-        divElement.append(generate(config[key], key));
+        divElement.append(await generate(config[key], key));
       }
       return divElement;
     }
     const name = nameMap.get(path);
-    const help = helpMap.get(path);
+    let help = helpMap.get(path);
+    help = help instanceof Function ? await help() : help;
     const onclick = onclickMap.get(path);
-    const placeholder = placeholderMap.get(path) ?? name;
+    let placeholder = placeholderMap.get(path) ?? name;
+    placeholder = placeholder instanceof Function ? await placeholder() : placeholder;
     const itemElement = $(`<div class="${cssConfigItem}"></div>`);
     const labelElement = $(`<label title="${name}"></label>`);
     let inputElement, helpElement, controlElement;
@@ -63,7 +65,7 @@ export default async function (importModule, BLRHH, GM) {
         controlElement = $(`<div class="${cssConfigControlItem}"></div>`);
         for (const key in config) {
           if (key.startsWith('_')) continue;
-          controlElement.append(generate(config[key], path + '.' + key));
+          controlElement.append(await generate(config[key], path + '.' + key));
         }
         break;
     }
@@ -71,12 +73,9 @@ export default async function (importModule, BLRHH, GM) {
       helpElement = $(`<span class="${cssHelpButton}">?</span>`);
       helpElement.click(() => {
         if (BLRHH.Dialog) {
-          const dialog = BLRHH.Dialog.create(help, '帮助',
-            [
-              BLRHH.Dialog.createButton('知道了', () => BLRHH.Dialog.close(dialog))
-            ]
-          );
-          BLRHH.Dialog.show(dialog);
+          const dialog = new BLRHH.Dialog(help, '帮助');
+          dialog.addButton('知道了', dialog.close);
+          dialog.show();
         } else {
           alert(help);
         }
@@ -234,22 +233,22 @@ export default async function (importModule, BLRHH, GM) {
     let value;
     switch ($.type(defaultValue)) {
       case 'string':
-        value = inputElement.val() ?? '';
+        value = inputElement.val() ?? defaultValue;
         break;
       case 'number':
         value = parseFloat(inputElement.val());
-        if (_.isNaN(value)) value = 0;
+        if (_.isNaN(value)) value = defaultValue;
         break;
       case 'boolean':
-        value = inputElement.is(':checked');
+        value = inputElement.is(':checked') ?? defaultValue;
         break;
       case 'array':
-        value = inputElement.val().replace(/(\s|\u00A0)+/, '');
+        value = inputElement.val().replace?.(/(\s|\u00A0)+/, '');
         if (value === '') value = [];
         else value = value.split(',');
         break;
       case 'object':
-        value = inputElement.is(':checked');
+        value = inputElement.is(':checked') ?? defaultValue;
         for (const key in defaultValue) {
           if (key.startsWith('_')) continue;
           await saveFromContext(path + '.' + key);
@@ -259,8 +258,9 @@ export default async function (importModule, BLRHH, GM) {
     await set(path, value);
   };
 
-  const addItem = (path, name, defaultValue, help, onclick, placeholder, validator) => {
+  const addItem = (path, name, defaultValue, options) => {
     _.set(CONFIG_DEFAULT, path, defaultValue);
+    const { help, onclick, placeholder, validator } = options ?? {};
     nameMap.set(path, name);
     helpMap.set(path, help);
     onclickMap.set(path, onclick);
@@ -268,8 +268,9 @@ export default async function (importModule, BLRHH, GM) {
     validatorMap.set(path, validator);
   };
 
-  const addObjectItem = (path, name, enable, help, onclick) => {
+  const addObjectItem = (path, name, enable, options) => {
     _.set(CONFIG_DEFAULT, path, { _VALUE_: enable });
+    const { help, onclick } = options ?? {};
     nameMap.set(path, name);
     helpMap.set(path, help);
     onclickMap.set(path, onclick);
@@ -283,36 +284,28 @@ export default async function (importModule, BLRHH, GM) {
       await load();
     }
     const btnResetClick = async () => {
-      const dialog = BLRHH.Dialog.create('真的要恢复默认设置吗?', '提示',
-        [
-          BLRHH.Dialog.createButton('确定', async () => {
-            await reset();
-            BLRHH.Dialog.close(dialog);
-            window.location.reload(true);
-          }),
-          BLRHH.Dialog.createButton('取消', () => BLRHH.Dialog.close(dialog), true)
-        ]
-      );
-      BLRHH.Dialog.show(dialog);
+      const dialog = new BLRHH.Dialog('真的要恢复默认设置吗?', '提示');
+      dialog.addButton('确定', dialog.close(true));
+      dialog.addButton('取消', dialog.close(false), 1);
+      if (await dialog.show()) {
+        await reset();
+        window.location.reload(true);
+      }
     };
     const btnClick = async () => {
-      const div = generate();
-      const dialog = BLRHH.Dialog.create(div, '设置',
-        [
-          BLRHH.Dialog.createButton('确定', async () => {
-            await saveFromContext();
-            await save();
-            BLRHH.Dialog.close(dialog);
-            BLRHH.Logger.success(NAME, '已保存');
-            await load();
-          }),
-          BLRHH.Dialog.createButton('恢复默认设置', btnResetClick, true),
-          BLRHH.Dialog.createButton('取消', () => BLRHH.Dialog.close(dialog), true)
-        ]
-      );
+      const div = await generate();
       await load();
       loadToContext();
-      BLRHH.Dialog.show(dialog);
+      const dialog = new BLRHH.Dialog(div, '设置');
+      dialog.addButton('确定', () => dialog.close(true));
+      dialog.addButton('恢复默认设置', btnResetClick, 1);
+      dialog.addButton('取消', () => dialog.close(false), 1);
+      if (await dialog.show()) {
+        await saveFromContext();
+        await save();
+        BLRHH.Logger.success(NAME, '已保存');
+        await load();
+      }
     };
     BLRHH.Page.addTopItem('设置', null, btnClick);
     /* eslint-disable no-unused-expressions */

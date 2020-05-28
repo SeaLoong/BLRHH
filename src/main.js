@@ -16,7 +16,8 @@ const BLRHH = {
   ENVIRONMENT_VERSION: GM.info.version,
   VERSION: GM.info.script.version,
   RESOURCE: RESOURCE,
-  info: {},
+  INFO: {},
+  onupgrade: [],
   onpreinit: [],
   oninit: [],
   onpostinit: [],
@@ -56,10 +57,10 @@ const BLRHH = {
   await importModule('lodash');
   const Util = BLRHH.Util = await importModule('Util');
 
-  BLRHH.info.uid = Util.getCookie('DedeUserID');
-  BLRHH.info.csrf = Util.getCookie('bili_jct');
+  BLRHH.INFO.UID = Util.getCookie('DedeUserID');
+  BLRHH.INFO.CSRF = Util.getCookie('bili_jct');
 
-  if (!BLRHH.info.uid || !BLRHH.info.csrf) {
+  if (!BLRHH.INFO.UID || !BLRHH.INFO.CSRF) {
     BLRHH.Toast.warn('你还没有登录呢~');
     return;
   }
@@ -74,12 +75,23 @@ const BLRHH = {
     await GM.deleteValue(mark);
   });
 
+  await importModule('Dialog');
+
+  /*
+  if (await (async () => {
+    const dialog = new BLRHH.Dialog('这是协议内容', '最终用户许可协议');
+    dialog.addButton('我同意', () => dialog.close(false));
+    dialog.addButton('我拒绝', () => dialog.close(true), 1);
+    return dialog.show();
+  })()) return;
+  */
+
   await importModule('Page');
   await importModule('Logger');
-  await importModule('Dialog');
   await importModule('Config');
   await importModule('Request');
   await importModule('Sign');
+  await importModule('Exchange');
 
   /* eslint-disable no-undef */
   BLRHH.onpreinit.push(preinitImport);
@@ -88,8 +100,17 @@ const BLRHH = {
 
   console.log('GlobalScope:', Util.getGlobalScope());
 
-  await Util.callUntilTrue(() => window.BilibiliLive?.ROOMID !== 0);
+  await Util.callUntilTrue(() => window.BilibiliLive?.ROOMID && window.__statisObserver);
 
+  BLRHH.INFO.ROOMID = window.BilibiliLive.ROOMID;
+  BLRHH.INFO.ANCHOR_UID = window.BilibiliLive.ANCHOR_UID;
+  BLRHH.INFO.SHORT_ROOMID = window.BilibiliLive.SHORT_ROOMID;
+  BLRHH.INFO.VISIT_ID = window.__statisObserver.__visitId ?? '';
+
+  if (await GM.getValue('version') !== BLRHH.VERSION) {
+    await Util.callEachAndWait(BLRHH.onupgrade, BLRHH, BLRHH, GM);
+    await GM.setValue('version', BLRHH.VERSION);
+  }
   await Util.callEachAndWait(BLRHH.onpreinit, BLRHH, BLRHH, GM);
   await Util.callEachAndWait(BLRHH.oninit, BLRHH, BLRHH, GM);
   await Util.callEachAndWait(BLRHH.onpostinit, BLRHH, BLRHH, GM);

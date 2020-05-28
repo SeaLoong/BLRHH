@@ -42,10 +42,11 @@
 // @resource     toastr.css https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.css
 // @resource     Toast https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/toast.js
 // @resource     Util https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/util.js
+// @resource     Dialog https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/dialog.js
 // @resource     Page https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/page.js
 // @resource     Logger https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/logger.js
-// @resource     Dialog https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/dialog.js
 // @resource     Config https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/config.js
 // @resource     Request https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/request.js
 // @resource     Sign https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/sign.js
+// @resource     Exchange https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/exchange.js
 // ==/UserScript==

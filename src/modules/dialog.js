@@ -27,69 +27,112 @@ export default async function (importModule, BLRHH, GM) {
   .${cssDialogButtonGhost}:hover { border-color: #39b5e7; background-color: #39b5e7; color: #fff; }
   `);
 
-  const dialogs = new Map();
-  let curDialog = null;
-
-  const create = (content, title = '提示', buttons = null) => {
-    const dialog = $(`<div class="${cssDialog}"></div>`);
-    const divPosition = $(`<div class="${cssDialogPosition}"></div>`);
-    const divWidth = $(`<div class="${cssDialogWidth}"></div>`);
-    const divStyle = $(`<div class="${cssDialogStyle}"></div>`);
-    dialog.append(divPosition);
-    divPosition.append(divWidth);
-    divWidth.append(divStyle);
-
-    const divTitle = $(`<div class="${cssDialogTitle}"><h2 class="${cssDialogTitleText}">${title}</h2></div>`);
-    divStyle.append(divTitle);
-
-    const divContent = $(`<div class="${cssDialogContent}"></div>`);
-    divStyle.append(divContent);
-    divContent.append(content);
-
-    if (buttons) {
-      const divButtons = $('<div style="text-align: center;"></div>');
-      if (!(buttons instanceof Array)) buttons = [buttons];
-      for (const button of buttons) {
-        divButtons.append(button);
-      }
-      divStyle.append(divButtons);
+  class Dialog {
+    constructor (content, title) {
+      this.dialog = $(`<div class="${cssDialog}"></div>`);
+      this.divPosition = $(`<div class="${cssDialogPosition}"></div>`);
+      this.divWidth = $(`<div class="${cssDialogWidth}"></div>`);
+      this.divStyle = $(`<div class="${cssDialogStyle}"></div>`);
+      this.title = '提示';
+      if (title) this.setTitle(title);
+      this.contents = [];
+      if (content) this.addContent(content);
+      this.buttons = [];
     }
 
-    const divClose = $(`<div class="${cssDialogButtonClose}">❌</div>`);
-    divStyle.append(divClose);
+    setTitle (title) {
+      if (!this.dialog) return;
+      this.title = title ?? '提示';
+      return this;
+    }
 
-    divClose.click(() => close());
-    return dialog;
-  };
+    addContent (content) {
+      if (!this.dialog) return;
+      content = content ?? '';
+      this.contents.push(content);
+      return this;
+    }
 
-  const createButton = (text, onclick, ghost = false) => {
-    const style = ghost ? cssDialogButtonGhost : cssDialogButtonPrimary;
-    const button = $(`<button class="${cssDialogButton} ${style}">${text}</button>`);
-    button.click(onclick);
-    return button;
-  };
+    removeContent (index) {
+      if (!this.dialog) return;
+      index = index ?? this.contents.length - 1;
+      if (index >= 0) {
+        this.contents.splice(index, 1);
+      }
+      return this;
+    }
 
-  const show = (dialog) => {
-    if (!dialog || dialogs.has(dialog)) return;
-    dialogs.set(dialog, curDialog);
-    curDialog = dialog;
-    $('body').append(dialog);
-  };
+    addButton (text, onclick, style) {
+      if (!this.dialog) return;
+      let cssStyle;
+      switch (style) {
+        case 1:
+          cssStyle = cssDialogButtonGhost;
+          break;
+        default:
+          cssStyle = cssDialogButtonPrimary;
+      }
+      const button = $(`<button class="${cssDialogButton} ${cssStyle}">${text}</button>`);
+      if (onclick instanceof Function) button.click(() => onclick.call(this));
+      this.buttons.push(button);
+      return this;
+    }
 
-  const close = (dialog) => {
-    dialog = dialog ?? curDialog;
-    if (dialog !== curDialog) return;
-    curDialog = dialogs.get(dialog);
-    dialogs.delete(dialog);
-    dialog.remove();
-  };
+    removeButton (index) {
+      if (!this.dialog) return;
+      index = index ?? this.buttons.length - 1;
+      if (index >= 0) {
+        this.buttons.splice(index, 1);
+      }
+      return this;
+    }
 
-  BLRHH.Dialog = {
-    create,
-    createButton,
-    show,
-    close
-  };
+    show () {
+      if (!this.dialog) return;
+      if (this.promise) return this.promise;
+
+      this.dialog.append(this.divPosition);
+      this.divPosition.append(this.divWidth);
+      this.divWidth.append(this.divStyle);
+      this.divStyle.append(this.divTitle);
+      // 标题
+      const divTitle = $(`<div class="${cssDialogTitle}"><h2 class="${cssDialogTitleText}">${this.title}</h2></div>`);
+      this.divStyle.append(divTitle);
+      // 内容
+      const divContent = $(`<div class="${cssDialogContent}"></div>`);
+      this.divStyle.append(divContent);
+      for (const content of this.contents) {
+        divContent.append(content);
+      }
+      // 按钮
+      if (this.buttons.length > 0) {
+        const divButtons = $('<div style="text-align: center;"></div>');
+        this.divStyle.append(divButtons);
+        for (const button of this.buttons) {
+          divButtons.append(button);
+        }
+      }
+      // 关闭按钮
+      const divClose = $(`<div class="${cssDialogButtonClose}">❌</div>`);
+      this.divStyle.append(divClose);
+      divClose.click(() => this.close());
+
+      $('body').append(this.dialog);
+
+      this.promise = new Promise(resolve => (this.resolve = resolve));
+      return this.promise;
+    }
+
+    close (...returnValues) {
+      if (!this.dialog || !this.promise) return;
+      this.dialog.remove();
+      this.dialog = null;
+      this.promise = null;
+      return this.resolve.apply(this, returnValues);
+    }
+  }
+
+  BLRHH.Dialog = Dialog;
 
   BLRHH.debug('Module Loaded: Dialog', BLRHH.Dialog);
 

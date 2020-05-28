@@ -6,17 +6,19 @@
   url: 'https://example.com',
   search: {}, // 查询字符串
   headers: {},
-  data: {} // POST用，类型取决于 Content-type
+  data: {} // POST用，fetch下会自动转换为 URLSearchParam ，monkeyx想类型取决于 Content-type
   /// 剩余参数取决于所选择的实现
 }
  */
+const config = {
+  interval: 50,
+  maxRequesting: 8
+};
 export default async function (importModule, BLRHH, GM) {
   const toURLSearchParamString = (search) => {
     return (search instanceof URLSearchParams ? search : new URLSearchParams(search)).toString();
   };
 
-  let interval = 50;
-  let maxRequesting = 8;
   let requesting = 0;
 
   const monkey = async (options) => {
@@ -32,16 +34,16 @@ export default async function (importModule, BLRHH, GM) {
       },
       responseType: 'json'
     });
-    if (details.search) {
+    if (!_.isEmpty(details.search)) {
       details.url += '?' + toURLSearchParamString(details.search);
     }
-    if (details.method === 'POST' && details.data) {
+    if (details.method === 'POST' && !_.isEmpty(details.data)) {
       _.defaultsDeep(details, { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
     }
     const responseType = details.responseType;
     // eslint-disable-next-line no-unmodified-loop-condition
-    while (requesting >= maxRequesting) {
-      await BLRHH.Util.sleep(interval);
+    while (requesting >= config.maxRequesting) {
+      await BLRHH.Util.sleep(config.interval);
     }
     return new Promise((resolve, reject) => {
       requesting++;
@@ -89,56 +91,54 @@ export default async function (importModule, BLRHH, GM) {
       },
       cache: 'no-cache',
       credentials: 'include',
-      referrer: 'no-referrer'
+      referrer: ''
     });
-    if (init.search) {
+    if (!_.isEmpty(init.search)) {
       init.url += '?' + toURLSearchParamString(init.search);
     }
-    if (init.method === 'POST' && init.data) {
-      init.body = toURLSearchParamString(init.data);
+    if (init.method === 'POST' && !_.isEmpty(init.data)) {
       _.defaultsDeep(init, { headers: { 'content-type': 'application/x-www-form-urlencoded' } });
-    }
-    if (init.referrer !== undefined && init.referrer !== 'client' && init.referrer !== 'no-referrer') {
-      init.referrerPolicy = 'unsafe-url';
+      if (init.headers?.['content-type'] === 'application/x-www-form-urlencoded') {
+        init.body = toURLSearchParamString(init.data);
+      } else {
+        init.body = init.data;
+      }
     }
     // eslint-disable-next-line no-unmodified-loop-condition
-    while (requesting >= maxRequesting) {
-      await BLRHH.Util.sleep(interval);
+    while (requesting >= config.maxRequesting) {
+      await BLRHH.Util.sleep(config.interval);
     }
     return new Promise((resolve, reject) => {
       requesting++;
-      window.fetch(init.url, init).then(response => {
+      const req = new Request(init.url, init);
+      window.fetch(req).then(response => {
         requesting--;
-        BLRHH.debug('Request.fetch:', init, response);
+        BLRHH.debug('Request.fetch:', req, response);
         return resolve(response);
       }, reason => {
         requesting--;
-        BLRHH.debug('Request.fetch:', init, reason);
+        BLRHH.debug('Request.fetch:', req, reason);
         return reject(reason);
       });
     });
   };
 
   BLRHH.onpreinit.push(() => {
-    BLRHH.Config.addObjectItem('request', '网络请求设置', false, null, checked => checked ? new Promise((resolve, reject) => {
-      const dialog = BLRHH.Dialog.create('除非您知道自己在做什么，否则不建议修改这项设置。确定要继续？', '警告',
-        [
-          BLRHH.Dialog.createButton('确定', () => confirm(true)),
-          BLRHH.Dialog.createButton('取消', () => confirm(false), true)
-        ]
-      );
-      const confirm = (select) => {
-        resolve(select);
-        BLRHH.Dialog.close(dialog);
-      };
-      BLRHH.Dialog.show(dialog);
-    }) : null);
-    BLRHH.Config.addItem('request.interval', '请求间隔', interval, null, null, '单位(ms)');
-    BLRHH.Config.addItem('request.maxRequesting', '最大并发数', maxRequesting, null, null, null);
+    BLRHH.Config.addObjectItem('request', '网络请求设置', false, {
+      onclick: async (checked) => {
+        if (!checked) return;
+        const dialog = new BLRHH.Dialog('除非您知道自己在做什么，否则不建议修改这项设置。确定要继续？', '警告');
+        dialog.addButton('确定', () => dialog.close(true));
+        dialog.addButton('取消', () => dialog.close(false), 1);
+        return dialog.show();
+      }
+    });
+    BLRHH.Config.addItem('request.interval', '请求间隔', config.interval, { placeholder: '单位(ms)' });
+    BLRHH.Config.addItem('request.maxRequesting', '最大并发数', config.maxRequesting);
 
     BLRHH.Config.onload.push(() => {
-      interval = BLRHH.Config.get('request.interval');
-      maxRequesting = BLRHH.Config.get('request.maxRequesting');
+      config.interval = BLRHH.Config.get('request.interval');
+      config.maxRequesting = BLRHH.Config.get('request.maxRequesting');
     });
   });
 

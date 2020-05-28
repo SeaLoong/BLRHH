@@ -34,7 +34,13 @@
 // @grant        GM.getTabs
 // @run-at       document-start
 // @license      MIT License
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/import.js
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/main.js
+// @require      http://127.0.0.1:8080/src/import.js
+// @require      http://127.0.0.1:8080/src/main.js
 // @resource     toastr.css https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.css
 // ==/UserScript==
+
+/**
+ *
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/import.js
+// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/main.js
+ */
