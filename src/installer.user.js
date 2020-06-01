@@ -36,6 +36,6 @@
 // @license      MIT License
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/import.js
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/main.js
-// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/installer.local.user.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/installer.user.js
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/main.js
 // ==/UserScript==
