@@ -34,19 +34,10 @@
 // @grant        GM.getTabs
 // @run-at       document-start
 // @license      MIT License
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/import.js
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/main.js
-// @resource     jquery https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js
-// @resource     lodash https://cdn.bootcdn.net/ajax/libs/lodash.js/4.17.15/lodash.min.js
-// @resource     toastr https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.js
-// @resource     toastr.css https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.css
-// @resource     Toast https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/toast.js
-// @resource     Util https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/util.js
-// @resource     Dialog https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/dialog.js
-// @resource     Page https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/page.js
-// @resource     Logger https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/logger.js
-// @resource     Config https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/config.js
-// @resource     Request https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/request.js
-// @resource     Sign https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/sign.js
-// @resource     Exchange https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/modules/exchange.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/import.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/main.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/installer.local.user.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/main.js
+// @resource     Sign https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/sign.js
+// @resource     Exchange https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/exchange.js
 // ==/UserScript==

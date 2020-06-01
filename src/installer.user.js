@@ -34,13 +34,8 @@
 // @grant        GM.getTabs
 // @run-at       document-start
 // @license      MIT License
-// @require      http://127.0.0.1:8080/src/import.js
-// @require      http://127.0.0.1:8080/src/main.js
-// @resource     toastr.css https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.css
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/import.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/main.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/installer.local.user.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/main.js
 // ==/UserScript==
-
-/**
- *
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/import.js
-// @require      https://gitee.com/SeaLoong/Bilibili-LRHH/raw/dev/src/main.js
- */

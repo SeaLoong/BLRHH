@@ -3,7 +3,7 @@ const config = {
   exchange: false,
   silver2coin: false,
   coin2silver: false,
-  quantity: 0
+  quantity: 1
 };
 export default async function (importModule, BLRHH, GM) {
   const NAME_SILVER2COIN = NAME + '-银瓜子兑换硬币';
@@ -85,13 +85,10 @@ export default async function (importModule, BLRHH, GM) {
   BLRHH.onupgrade.push(() => GM.deleteValue(timestampName));
 
   BLRHH.oninit.push(() => {
-    BLRHH.Config.addObjectItem('exchange', NAME, config.exchange);
-    BLRHH.Config.addItem('exchange.silver2coin', '银瓜子兑换硬币', config.silver2coin, { help: '700银瓜子=1硬币，每天最多兑换1次' });
-    BLRHH.Config.addObjectItem('exchange.coin2silver', '硬币兑换银瓜子', config.coin2silver, { help: '1硬币=450银瓜子（老爷或大会员500银瓜子）普通用户每天兑换上限25硬币；老爷或大会员每天兑换上限50硬币。' });
-    BLRHH.Config.addItem('exchange.coin2silver.quantity', '兑换数量', config.quantity, {
-      placeholder: '默认为1',
-      validator: v => v > 0 ? v : 1
-    });
+    BLRHH.Config.addItem('exchange', NAME, config.exchange, { tag: 'input', attribute: { type: 'checkbox' } });
+    BLRHH.Config.addItem('exchange.silver2coin', '银瓜子兑换硬币', config.silver2coin, { tag: 'input', help: '700银瓜子=1硬币，每天最多兑换1次', attribute: { type: 'checkbox' } });
+    BLRHH.Config.addItem('exchange.coin2silver', '硬币兑换银瓜子', config.coin2silver, { tag: 'input', help: '1硬币=450银瓜子（老爷或大会员500银瓜子）普通用户每天兑换上限25硬币；老爷或大会员每天兑换上限50硬币。', attribute: { type: 'checkbox' } });
+    BLRHH.Config.addItem('exchange.coin2silver.quantity', '兑换数量', config.quantity, { tag: 'input', corrector: v => v > 1 ? v : 1, attribute: { type: 'number', placeholder: '默认为1', min: 1, max: 50 } });
     BLRHH.Config.onload.push(() => {
       config.exchange = BLRHH.Config.get('exchange');
       config.silver2coin = BLRHH.Config.get('exchange.silver2coin');

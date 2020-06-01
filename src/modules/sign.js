@@ -93,9 +93,9 @@ export default async function (importModule, BLRHH, GM) {
   BLRHH.onupgrade.push(() => GM.deleteValue(timestampName));
 
   BLRHH.oninit.push(() => {
-    BLRHH.Config.addObjectItem('sign', NAME, config.sign);
-    BLRHH.Config.addItem('sign.live', '直播', config.live);
-    BLRHH.Config.addItem('sign.linkGroup', '应援团', config.linkGroup);
+    BLRHH.Config.addItem('sign', NAME, config.sign, { tag: 'input', attribute: { type: 'checkbox' } });
+    BLRHH.Config.addItem('sign.live', '直播', config.live, { tag: 'input', attribute: { type: 'checkbox' } });
+    BLRHH.Config.addItem('sign.linkGroup', '应援团', config.linkGroup, { tag: 'input', attribute: { type: 'checkbox' } });
     BLRHH.Config.onload.push(() => {
       config.sign = BLRHH.Config.get('sign');
       config.live = BLRHH.Config.get('sign.live');
