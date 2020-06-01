@@ -3,7 +3,7 @@
 
 (async () => {
   BLUL.NAME = 'BLRHH';
-  BLUL.RESOURCE.base = 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@master/src';
+  BLUL.RESOURCE.base = 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src';
   await BLUL.preload({ debug: true, slient: false, unique: true, login: true, EULA: '' });
   BLUL.onpreinit.push(() => {
     BLUL.Config.addItem('resource.base', '根目录', BLUL.RESOURCE.base, {
