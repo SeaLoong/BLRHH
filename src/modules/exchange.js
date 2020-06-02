@@ -24,10 +24,10 @@ export default async function (importModule, BLRHH, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         BLRHH.Logger.success(NAME_SILVER2COIN, obj.message);
-        return BLRHH.Util.removeRetry(silver2coin);
+        return BLRHH.Util.cancelRetry(silver2coin);
       } else if (obj.message.includes('最多')) {
         BLRHH.Logger.info(NAME_SILVER2COIN, obj.message);
-        return BLRHH.Util.removeRetry(silver2coin);
+        return BLRHH.Util.cancelRetry(silver2coin);
       }
       BLRHH.Logger.warn(NAME_SILVER2COIN, obj.message);
     } catch (error) {
@@ -55,10 +55,10 @@ export default async function (importModule, BLRHH, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         BLRHH.Logger.success(NAME_COIN2SILVER, obj.message);
-        return BLRHH.Util.removeRetry(coin2silver);
+        return BLRHH.Util.cancelRetry(coin2silver);
       } else if (obj.message.includes('最多')) {
         BLRHH.Logger.info(NAME_COIN2SILVER, obj.message);
-        return BLRHH.Util.removeRetry(coin2silver);
+        return BLRHH.Util.cancelRetry(coin2silver);
       }
       BLRHH.Logger.warn(NAME_COIN2SILVER, obj.message);
     } catch (error) {

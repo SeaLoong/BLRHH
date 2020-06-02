@@ -14,10 +14,10 @@ export default async function (importModule, BLRHH, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         BLRHH.Logger.success(NAME_LIVE, obj.data.text);
-        return BLRHH.Util.removeRetry(live);
+        return BLRHH.Util.cancelRetry(live);
       } else if (obj.code === 1011040 || obj.message.includes('已签到')) {
         BLRHH.Logger.info(NAME_LIVE, obj.message);
-        return BLRHH.Util.removeRetry(live);
+        return BLRHH.Util.cancelRetry(live);
       }
       BLRHH.Logger.warn(NAME_LIVE, obj.message);
     } catch (error) {
@@ -52,10 +52,10 @@ export default async function (importModule, BLRHH, GM) {
               if (obj.code === 0) {
                 if (obj.data.status === 0) {
                   BLRHH.Logger.success(NAME_LINKGROUP, msg, `签到成功，对应勋章亲密度+${obj.data.add_num}`);
-                  return BLRHH.Util.removeRetry(signOneLinkGroup);
+                  return BLRHH.Util.cancelRetry(signOneLinkGroup);
                 } else if (obj.data.status === 1) {
                   BLRHH.Logger.info(NAME_LINKGROUP, msg, '今日已签到过');
-                  return BLRHH.Util.removeRetry(signOneLinkGroup);
+                  return BLRHH.Util.cancelRetry(signOneLinkGroup);
                 }
               }
               BLRHH.Logger.warn(NAME_LINKGROUP, msg, obj.message);
