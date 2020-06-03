@@ -5,31 +5,31 @@ const config = {
   linkGroup: true
 };
 export default async function (importModule, BLRHH, GM) {
+  const Util = BLRHH.Util;
+
   const NAME_LIVE = NAME + '-直播';
   async function live () {
     BLRHH.debug('Sign.live');
-    if (!config.live) return;
     try {
       const response = await BLRHH.Request.fetch('https://api.live.bilibili.com/sign/doSign');
       const obj = await response.json();
       if (obj.code === 0) {
         BLRHH.Logger.success(NAME_LIVE, obj.data.text);
-        return BLRHH.Util.cancelRetry(live);
+        return Util.cancelRetry?.(live);
       } else if (obj.code === 1011040 || obj.message.includes('已签到')) {
         BLRHH.Logger.info(NAME_LIVE, obj.message);
-        return BLRHH.Util.cancelRetry(live);
+        return Util.cancelRetry?.(live);
       }
       BLRHH.Logger.warn(NAME_LIVE, obj.message);
     } catch (error) {
       BLRHH.Logger.error(NAME_LIVE, error);
     }
-    return BLRHH.Util.retry(live);
+    return Util.retry?.(live);
   }
 
   const NAME_LINKGROUP = NAME + '-应援团';
   async function linkGroup () {
     BLRHH.debug('Sign.linkGroup');
-    if (!config.linkGroup) return;
     try {
       const response = await BLRHH.Request.fetch('https://api.vc.bilibili.com/link_group/v1/member/my_groups');
       const obj = await response.json();
@@ -52,17 +52,17 @@ export default async function (importModule, BLRHH, GM) {
               if (obj.code === 0) {
                 if (obj.data.status === 0) {
                   BLRHH.Logger.success(NAME_LINKGROUP, msg, `签到成功，对应勋章亲密度+${obj.data.add_num}`);
-                  return BLRHH.Util.cancelRetry(signOneLinkGroup);
+                  return Util.cancelRetry?.(signOneLinkGroup);
                 } else if (obj.data.status === 1) {
                   BLRHH.Logger.info(NAME_LINKGROUP, msg, '今日已签到过');
-                  return BLRHH.Util.cancelRetry(signOneLinkGroup);
+                  return Util.cancelRetry?.(signOneLinkGroup);
                 }
               }
               BLRHH.Logger.warn(NAME_LINKGROUP, msg, obj.message);
             } catch (error) {
               BLRHH.Logger.error(NAME_LINKGROUP, error);
             }
-            return BLRHH.Util.retry(signOneLinkGroup);
+            return Util.retry?.(signOneLinkGroup);
           };
           promises.push(signOneLinkGroup());
         }
@@ -72,25 +72,35 @@ export default async function (importModule, BLRHH, GM) {
     } catch (error) {
       BLRHH.Logger.error(NAME_LINKGROUP, error);
     }
-    return BLRHH.Util.retry(linkGroup);
+    return Util.retry?.(linkGroup);
   }
 
-  const timestampName = 'signTimestamp';
+  const TIMESTAMP_NAME_LIVE = 'timestampSign-live';
+  const TIMESTAMP_NAME_LINKGROUP = 'timestampSign-linkGroup';
 
   async function run () {
-    BLRHH.debug('Sign.run');
     if (!config.sign) return;
-    if (!BLRHH.Util.isToday(await GM.getValue(timestampName) ?? 0)) {
-      await Promise.all([live(), linkGroup()]);
-      await GM.setValue(timestampName, Date.now());
-    }
-    BLRHH.Util.callTomorrow(run);
-    if (this !== BLRHH.Config) {
-      BLRHH.Logger.info(NAME, '今日已进行过签到，等待下次签到');
-    }
+    BLRHH.debug('Sign.run');
+    (async function runLive () {
+      if (!config.live || Util.inOneDay(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) return;
+      await live();
+      await GM.setValue(TIMESTAMP_NAME_LIVE, Date.now());
+      Util.callAtTime(runLive);
+      BLRHH.Logger.info(NAME_LIVE, '今日已进行过签到，等待下次签到');
+    })();
+    (async function runLinkGroup () {
+      if (!config.linkGroup || Util.inOneDay(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0)) return;
+      await linkGroup();
+      await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
+      Util.callAtTime(runLinkGroup, 9);
+      BLRHH.Logger.info(NAME_LINKGROUP, '今日已进行过签到，等待下次签到');
+    })();
   }
 
-  BLRHH.onupgrade.push(() => GM.deleteValue(timestampName));
+  BLRHH.onupgrade.push(() => {
+    GM.deleteValue(TIMESTAMP_NAME_LIVE);
+    GM.deleteValue(TIMESTAMP_NAME_LINKGROUP);
+  });
 
   BLRHH.oninit.push(() => {
     BLRHH.Config.addItem('sign', NAME, config.sign, { tag: 'input', attribute: { type: 'checkbox' } });

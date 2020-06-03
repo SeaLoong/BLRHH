@@ -6,10 +6,11 @@ const config = {
   quantity: 1
 };
 export default async function (importModule, BLRHH, GM) {
+  const Util = BLRHH.Util;
+
   const NAME_SILVER2COIN = NAME + '-银瓜子兑换硬币';
   async function silver2coin () {
     BLRHH.debug('Exchange.silver2coin');
-    if (!config.silver2coin) return;
     try {
       const response = await BLRHH.Request.fetch({
         method: 'POST',
@@ -24,22 +25,21 @@ export default async function (importModule, BLRHH, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         BLRHH.Logger.success(NAME_SILVER2COIN, obj.message);
-        return BLRHH.Util.cancelRetry(silver2coin);
+        return Util.cancelRetry?.(silver2coin);
       } else if (obj.message.includes('最多')) {
         BLRHH.Logger.info(NAME_SILVER2COIN, obj.message);
-        return BLRHH.Util.cancelRetry(silver2coin);
+        return Util.cancelRetry?.(silver2coin);
       }
       BLRHH.Logger.warn(NAME_SILVER2COIN, obj.message);
     } catch (error) {
       BLRHH.Logger.error(NAME_SILVER2COIN, error);
     }
-    return BLRHH.Util.retry(silver2coin);
+    return Util.retry?.(silver2coin);
   }
 
   const NAME_COIN2SILVER = NAME + '-硬币兑换银瓜子';
   async function coin2silver () {
     BLRHH.debug('Exchange.coin2silver');
-    if (!config.coin2silver) return;
     try {
       const response = await BLRHH.Request.fetch({
         method: 'POST',
@@ -55,34 +55,44 @@ export default async function (importModule, BLRHH, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         BLRHH.Logger.success(NAME_COIN2SILVER, obj.message);
-        return BLRHH.Util.cancelRetry(coin2silver);
+        return Util.cancelRetry?.(coin2silver);
       } else if (obj.message.includes('最多')) {
         BLRHH.Logger.info(NAME_COIN2SILVER, obj.message);
-        return BLRHH.Util.cancelRetry(coin2silver);
+        return Util.cancelRetry?.(coin2silver);
       }
       BLRHH.Logger.warn(NAME_COIN2SILVER, obj.message);
     } catch (error) {
       BLRHH.Logger.error(NAME_COIN2SILVER, error);
     }
-    return BLRHH.Util.retry(coin2silver);
+    return Util.retry?.(coin2silver);
   }
 
-  const timestampName = 'exchangeTimestamp';
+  const TIMESTAMP_NAME_SILVER2COIN = 'timestampExchange-silver2coin';
+  const TIMESTAMP_NAME_COIN2SILVER = 'timestampExchange-coin2silver';
 
   async function run () {
-    BLRHH.debug('Exchange.run');
     if (!config.exchange) return;
-    if (!BLRHH.Util.isToday(await GM.getValue(timestampName) ?? 0)) {
-      await Promise.all([silver2coin(), coin2silver()]);
-      await GM.setValue(timestampName, Date.now());
-    }
-    BLRHH.Util.callTomorrow(run);
-    if (this !== BLRHH.Config) {
-      BLRHH.Logger.info(NAME, '今日已进行过兑换，等待下次兑换');
-    }
+    BLRHH.debug('Exchange.run');
+    (async function runSilver2coin () {
+      if (!config.silver2coin || Util.inOneDay(await GM.getValue(TIMESTAMP_NAME_SILVER2COIN) ?? 0)) return;
+      await silver2coin();
+      await GM.setValue(TIMESTAMP_NAME_SILVER2COIN, Date.now());
+      Util.callAtTime(runSilver2coin);
+      BLRHH.Logger.info(TIMESTAMP_NAME_SILVER2COIN, '今日已进行过兑换，等待下次兑换');
+    })();
+    (async function runCoin2silver () {
+      if (!config.silver2coin || Util.inOneDay(await GM.getValue(TIMESTAMP_NAME_COIN2SILVER) ?? 0)) return;
+      await coin2silver();
+      await GM.setValue(TIMESTAMP_NAME_COIN2SILVER, Date.now());
+      Util.callAtTime(runCoin2silver);
+      BLRHH.Logger.info(TIMESTAMP_NAME_COIN2SILVER, '今日已进行过兑换，等待下次兑换');
+    })();
   }
 
-  BLRHH.onupgrade.push(() => GM.deleteValue(timestampName));
+  BLRHH.onupgrade.push(() => {
+    GM.deleteValue(TIMESTAMP_NAME_SILVER2COIN);
+    GM.deleteValue(TIMESTAMP_NAME_COIN2SILVER);
+  });
 
   BLRHH.oninit.push(() => {
     BLRHH.Config.addItem('exchange', NAME, config.exchange, { tag: 'input', attribute: { type: 'checkbox' } });
