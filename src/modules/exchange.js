@@ -74,14 +74,14 @@ export default async function (importModule, BLRHH, GM) {
     if (!config.exchange) return;
     BLRHH.debug('Exchange.run');
     (async function runSilver2coin () {
-      if (!config.silver2coin || Util.inOneDay(await GM.getValue(TIMESTAMP_NAME_SILVER2COIN) ?? 0)) return;
+      if (!config.silver2coin || Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_SILVER2COIN) ?? 0)) return;
       await silver2coin();
       await GM.setValue(TIMESTAMP_NAME_SILVER2COIN, Date.now());
       Util.callAtTime(runSilver2coin);
       BLRHH.Logger.info(TIMESTAMP_NAME_SILVER2COIN, '今日已进行过兑换，等待下次兑换');
     })();
     (async function runCoin2silver () {
-      if (!config.silver2coin || Util.inOneDay(await GM.getValue(TIMESTAMP_NAME_COIN2SILVER) ?? 0)) return;
+      if (!config.silver2coin || Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_COIN2SILVER) ?? 0)) return;
       await coin2silver();
       await GM.setValue(TIMESTAMP_NAME_COIN2SILVER, Date.now());
       Util.callAtTime(runCoin2silver);
