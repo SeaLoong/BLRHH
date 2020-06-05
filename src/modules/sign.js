@@ -82,18 +82,22 @@ export default async function (importModule, BLRHH, GM) {
     if (!config.sign) return;
     BLRHH.debug('Sign.run');
     (async function runLive () {
-      if (!config.live || Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) return;
-      await live();
-      await GM.setValue(TIMESTAMP_NAME_LIVE, Date.now());
-      Util.callAtTime(runLive);
+      if (!config.live) return;
+      if (!Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) {
+        await live();
+        await GM.setValue(TIMESTAMP_NAME_LIVE, Date.now());
+      }
       BLRHH.Logger.info(NAME_LIVE, '今日已进行过签到，等待下次签到');
+      Util.callAtTime(runLive);
     })();
     (async function runLinkGroup () {
-      if (!config.linkGroup || Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0)) return;
-      await linkGroup();
-      await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
-      Util.callAtTime(runLinkGroup, 9);
+      if (!config.linkGroup) return;
+      if (!Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0)) {
+        await linkGroup();
+        await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
+      }
       BLRHH.Logger.info(NAME_LINKGROUP, '今日已进行过签到，等待下次签到');
+      Util.callAtTime(runLinkGroup, 9);
     })();
   }
 
