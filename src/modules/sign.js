@@ -83,7 +83,7 @@ export default async function (importModule, BLRHH, GM) {
     BLRHH.debug('Sign.run');
     (async function runLive () {
       if (!config.live) return;
-      if (!Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) {
+      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) {
         await live();
         await GM.setValue(TIMESTAMP_NAME_LIVE, Date.now());
       }
@@ -92,7 +92,7 @@ export default async function (importModule, BLRHH, GM) {
     })();
     (async function runLinkGroup () {
       if (!config.linkGroup) return;
-      if (!Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0)) {
+      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0)) {
         await linkGroup();
         await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
       }

@@ -75,7 +75,7 @@ export default async function (importModule, BLRHH, GM) {
     BLRHH.debug('Exchange.run');
     (async function runSilver2coin () {
       if (!config.silver2coin) return;
-      if (!Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_SILVER2COIN) ?? 0)) {
+      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_SILVER2COIN) ?? 0)) {
         await silver2coin();
         await GM.setValue(TIMESTAMP_NAME_SILVER2COIN, Date.now());
       }
@@ -84,7 +84,7 @@ export default async function (importModule, BLRHH, GM) {
     })();
     (async function runCoin2silver () {
       if (!config.coin2silver) return;
-      if (!Util.beforeNow(await GM.getValue(TIMESTAMP_NAME_COIN2SILVER) ?? 0)) {
+      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_COIN2SILVER) ?? 0)) {
         await coin2silver();
         await GM.setValue(TIMESTAMP_NAME_COIN2SILVER, Date.now());
       }

@@ -3,7 +3,10 @@
 
 (async () => {
   BLUL.NAME = 'BLRHH';
-  await BLUL.preload({ debug: true, slient: false, unique: true, login: true, EULA: '' });
+  if (!await BLUL.preload({ debug: true, slient: false, unique: true, login: true, EULA: '' })) {
+    console.error('[BLRHH] BLUL预加载失败');
+    return;
+  }
   BLUL.setBase('https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src');
   const { Util, importModule } = BLUL;
   await importModule('Sign');
