@@ -3,22 +3,8 @@
 
 (async () => {
   BLUL.NAME = 'BLRHH';
-  BLUL.RESOURCE.base = 'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src';
   await BLUL.preload({ debug: true, slient: false, unique: true, login: true, EULA: '' });
-  BLUL.onpreinit.push(() => {
-    BLUL.Config.addItem('resource.base', '根目录', BLUL.RESOURCE.base, {
-      tag: 'input',
-      list: [
-        'http://127.0.0.1:8080/src',
-        'https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src',
-        'https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src'
-      ],
-      attribute: { type: 'url' }
-    });
-    BLUL.Config.onload.push(() => {
-      BLUL.RESOURCE.base = BLUL.Config.get('resource.base');
-    });
-  });
+  BLUL.setBase('https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src');
   const { Util, importModule } = BLUL;
   await importModule('Sign');
   await importModule('Exchange');
