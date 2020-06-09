@@ -92,7 +92,7 @@ export default async function (importModule, BLRHH, GM) {
     })();
     (async function runLinkGroup () {
       if (!config.linkGroup) return;
-      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0)) {
+      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0, 9)) {
         await linkGroup();
         await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
       }
