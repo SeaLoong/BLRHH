@@ -90,34 +90,35 @@ export default async function (importModule, BLRHH, GM) {
       BLRHH.Logger.info(NAME_LIVE, '今日已进行过签到，等待下次签到');
       Util.callAtTime(runLive);
     })();
+    const hourRunLinkGroup = 9;
     (async function runLinkGroup () {
       if (!config.linkGroup) return;
-      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0, 9)) {
+      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0, hourRunLinkGroup)) {
         await linkGroup();
         await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
       }
       BLRHH.Logger.info(NAME_LINKGROUP, '今日已进行过签到，等待下次签到');
-      Util.callAtTime(runLinkGroup, 9);
+      Util.callAtTime(runLinkGroup, hourRunLinkGroup);
     })();
   }
 
-  BLRHH.onupgrade.push(() => {
+  BLRHH.onupgrade(() => {
     GM.deleteValue(TIMESTAMP_NAME_LIVE);
     GM.deleteValue(TIMESTAMP_NAME_LINKGROUP);
   });
 
-  BLRHH.oninit.push(() => {
+  BLRHH.oninit(() => {
     BLRHH.Config.addItem('sign', NAME, config.sign, { tag: 'input', attribute: { type: 'checkbox' } });
     BLRHH.Config.addItem('sign.live', '直播', config.live, { tag: 'input', attribute: { type: 'checkbox' } });
     BLRHH.Config.addItem('sign.linkGroup', '应援团', config.linkGroup, { tag: 'input', attribute: { type: 'checkbox' } });
-    BLRHH.Config.onload.push(() => {
+    BLRHH.Config.onload(() => {
       config.sign = BLRHH.Config.get('sign');
       config.live = BLRHH.Config.get('sign.live');
       config.linkGroup = BLRHH.Config.get('sign.linkGroup');
     });
   });
 
-  BLRHH.onrun.push(run);
+  BLRHH.onrun(run);
 
   BLRHH.Sign = {
     run,
