@@ -26,7 +26,7 @@ export default async function (importModule, BLUL, GM) {
       if (obj.code === 0) {
         BLUL.Logger.success(NAME_SILVER2COIN, obj.message);
         return Util.cancelRetry(silver2coin);
-      } else if (obj.message.includes('最多')) {
+      } else if (obj.message.includes('最多') || obj.message.includes('余额不足')) {
         BLUL.Logger.info(NAME_SILVER2COIN, obj.message);
         return Util.cancelRetry(silver2coin);
       }
@@ -56,7 +56,7 @@ export default async function (importModule, BLUL, GM) {
       if (obj.code === 0) {
         BLUL.Logger.success(NAME_COIN2SILVER, obj.message);
         return Util.cancelRetry(coin2silver);
-      } else if (obj.message.includes('最多')) {
+      } else if (obj.message.includes('最多') || obj.message.includes('余额不足')) {
         BLUL.Logger.info(NAME_COIN2SILVER, obj.message);
         return Util.cancelRetry(coin2silver);
       }

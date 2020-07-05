@@ -83,11 +83,15 @@ export default async function (importModule, BLUL, GM) {
     BLUL.debug('Sign.run');
     (async function runLive () {
       if (!config.live) return;
-      if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) {
-        await live();
-        await GM.setValue(TIMESTAMP_NAME_LIVE, Date.now());
+      if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
+        if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) {
+          await live();
+          await GM.setValue(TIMESTAMP_NAME_LIVE, Date.now());
+        }
+        BLUL.Logger.info(NAME_LIVE, '今日已进行过签到，等待下次签到');
+      } else {
+        BLUL.Logger.warn(NAME_LIVE, '未绑定手机，不能签到');
       }
-      BLUL.Logger.info(NAME_LIVE, '今日已进行过签到，等待下次签到');
       Util.callAtTime(runLive);
     })();
     const hourRunLinkGroup = 9;
