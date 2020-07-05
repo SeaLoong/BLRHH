@@ -73,7 +73,7 @@ export default async function (importModule, BLUL, GM) {
         url: 'https://api.live.bilibili.com/lottery/v1/SilverBox/getAward',
         search: {
           time_start: silverBoxData.time_start,
-          end_time: silverBoxData.end_time,
+          end_time: silverBoxData.time_end,
           captcha: result
         }
       });
@@ -95,7 +95,10 @@ export default async function (importModule, BLUL, GM) {
           return Util.cancelRetry(silverBoxAward);
         case -902: // -902: 验证码错误
         case -901: // -901: 验证码过期
+          BLUL.Logger.info(NAME_SILVER_BOX, obj.message);
+          break;
         default:
+          BLUL.Logger.warn(NAME_SILVER_BOX, obj.message);
       }
     } catch (error) {
       BLUL.Logger.error(NAME_SILVER_BOX, error);
@@ -108,8 +111,14 @@ export default async function (importModule, BLUL, GM) {
     BLUL.debug('TreasureBox.run');
     (async function runSilverBox () {
       if (!config.silverBox) return;
-      await worker.loadModel(await BLUL.getResourceUrl('TreasureBox_Model'));
-      await silverBox();
+      /* eslint-disable camelcase */
+      if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
+        await worker.loadModel(await BLUL.getResourceUrl('TreasureBox_Model'));
+        await silverBox();
+      } else {
+        BLUL.Logger.warn(NAME_SILVER_BOX, '未绑定手机，不能领取银瓜子');
+      }
+      /* eslint-enable camelcase */
       Util.callAtTime(runSilverBox);
     })();
   }
