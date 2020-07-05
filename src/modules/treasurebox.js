@@ -41,16 +41,18 @@ export default async function (importModule, BLUL, GM) {
       timerElement.interval = null;
     }
     time = Math.ceil(time);
+    if (time <= 0) return;
     return new Promise(resolve => {
+      timerElement.html(time);
       timerElement.show();
       timerElement.interval = setInterval(() => {
-        if (time <= 0) {
+        if (--time <= 0) {
           clearInterval(timerElement.interval);
           timerElement.interval = null;
           timerElement.hide();
           resolve();
         } else {
-          timerElement.html(time--);
+          timerElement.html(time);
         }
       }, 1e3);
     });
@@ -142,7 +144,7 @@ export default async function (importModule, BLUL, GM) {
     BLUL.debug('TreasureBox.run');
     (async function runSilverBox () {
       if (!config.silverBox) return;
-      if (!$('.draw-box.gift-left-part').length) {
+      if (!tipElement && !timerElement && !$('.draw-box.gift-left-part').length) {
         const box = $('#gift-control-vm div.treasure-box.p-relative').first();
         box.attr('id', 'old_treasure_box');
         box.hide();
@@ -153,7 +155,7 @@ export default async function (importModule, BLUL, GM) {
         .${cssTreasureBoxText} { text-align: center; user-select: none; max-width: 40px; padding: 2px 4px; margin-top: 3px; font-size: 12px; color: #fff; background-color: rgba(0,0,0,.5); border-radius: 10px; }
         `);
         const div = $(`<div class="${cssTreasureBox}"></div>`);
-        tipElement = $(`<div class="${cssTreasureBoxText}"></div>`);
+        tipElement = $(`<div class="${cssTreasureBoxText}">自动<br>领取中</div>`);
         timerElement = $(`<div class="${cssTreasureBoxText}"></div>`);
         timerElement.hide();
         box.after(div);
