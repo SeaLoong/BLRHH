@@ -14,7 +14,7 @@
     "@babel/preset-env": "^7.9.0",
     "@tensorflow/tfjs": "^1.5.2",
     "@tensorflow/tfjs-node": "^1.5.2",
-    "@tensorflow/tfjs-vis": "^1.4.0",
+    "@tensorflow/tfjs-vis": "^1.4.3",
     "babel-eslint": "^10.1.0",
     "canvas": "^2.6.1",
     "eslint": "^6.8.0",
@@ -29,7 +29,11 @@
       "jquery": true,
       "greasemonkey": true
     },
-    "ignore": ["/dist/*"],
-    "global": ["$"]
+    "ignore": [
+      "/dist/*"
+    ],
+    "global": [
+      "$"
+    ]
   }
 }

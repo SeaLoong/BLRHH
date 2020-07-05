@@ -5,7 +5,7 @@ const config = {
 };
 export default async function (importModule, BLUL, GM) {
   await BLUL.addResource('tfjs', ['https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.1/dist/tf.min.js']);
-  await BLUL.addResource('TreasureBox_Model', ['https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/models/v1a95/model.json']);
+  await BLUL.addResource('TreasureBox_Model', ['https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/models/treasurebox_captcha/model.json']);
   const Util = BLUL.Util;
 
   const worker = await BLUL.Worker.importModule('TreasureBox/worker');
@@ -40,6 +40,7 @@ export default async function (importModule, BLUL, GM) {
       clearInterval(timerElement.interval);
       timerElement.interval = null;
     }
+    time = Math.ceil(time);
     return new Promise(resolve => {
       timerElement.show();
       timerElement.interval = setInterval(() => {
