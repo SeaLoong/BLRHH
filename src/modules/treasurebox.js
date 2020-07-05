@@ -67,13 +67,14 @@ export default async function (importModule, BLUL, GM) {
       await loadImage(obj.data.img);
       ctx.drawImage(image, 0, 0);
       const captcha = await worker.predict(ctx.getImageData(0, 0, image.width, image.height));
-      BLUL.debug('验证码识别结果: ', captcha);
+      const result = (0, eval)(captcha); // eslint-disable-line no-eval
+      BLUL.debug('验证码识别结果: ', `${captcha}=${result}`);
       response = await BLUL.Request.fetch({
         url: 'https://api.live.bilibili.com/lottery/v1/SilverBox/getAward',
         search: {
           time_start: silverBoxData.time_start,
           end_time: silverBoxData.end_time,
-          captcha: captcha
+          captcha: result
         }
       });
       obj = await response.json();
