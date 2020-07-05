@@ -68,7 +68,8 @@ export default async function (importModule, BLUL, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         silverBoxData = obj.data;
-        BLUL.Logger.info(NAME_SILVER_BOX, `${silverBoxData.minute} 分钟, ${silverBoxData.silver} 银瓜子, 次数 ${silverBoxData.times}/${silverBoxData.max_times}`);
+        setTip(`次数<br>${silverBoxData.times}/${silverBoxData.max_times}<br>银瓜子<br>${silverBoxData.silver}`);
+        BLUL.Logger.info(NAME_SILVER_BOX, `任务:${silverBoxData.minute} 分钟, ${silverBoxData.silver} 银瓜子, 次数 ${silverBoxData.times}/${silverBoxData.max_times}`);
         await timing(silverBoxData.time_end - Date.now() / 1000 + 1);
         return silverBoxAward();
       } else if (obj.code === -10017) {
