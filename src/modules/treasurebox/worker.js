@@ -50,6 +50,15 @@ export default async function (importModule, BLUL, GM) {
     return { width, height, data: filteredData };
   }
 
+  function normalization (array) {
+    let n = array.length;
+    const arr = new Float32Array(n);
+    while (n--) {
+      arr[n] = array[n] / 255.0;
+    }
+    return arr;
+  }
+
   const TEXT_LENGTH = 4;
   const CHAR_SET_LEN = 12;
 
@@ -82,7 +91,7 @@ export default async function (importModule, BLUL, GM) {
   }
 
   function predict (imageData) {
-    const arr = Float32Array.from(filter(binarization(RGBA2Gray(imageData))).data);
+    const arr = normalization(filter(binarization(RGBA2Gray(imageData))).data);
     return tf.tidy(() => {
       return array2Str(model.predict(tf.tensor(arr, [1, 40, 120, 1])).arraySync());
     });
