@@ -164,6 +164,7 @@ export default async function (importModule, BLUL, GM) {
       }
       /* eslint-disable camelcase */
       if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
+        setTip('自动<br>领取中');
         await worker.loadModel(await BLUL.getResourceUrl('TreasureBox_Model'));
         await silverBox();
       } else {

@@ -82,13 +82,17 @@ export default async function (importModule, BLUL, GM) {
     return str;
   }
 
+  let modelUrl;
+
   async function loadModel (url) {
+    if (modelUrl === url) return;
     console.info(`[${NAME}] loading model`, url);
     model = await tf.loadLayersModel(url);
     tf.tidy(() => {
       model.predict(tf.zeros([1, 40, 120, 1]));
     });
     console.info(`[${NAME}] model loaded.`);
+    modelUrl = url;
   }
 
   function predict (imageData) {
