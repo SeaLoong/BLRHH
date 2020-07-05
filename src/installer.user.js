@@ -23,6 +23,7 @@
 // @grant        GM.unregisterMenuCommand
 // @run-at       document-start
 // @license      MIT License
+// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/eula.html
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/dist/require.js
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/main.js
 // ==/UserScript==

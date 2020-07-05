@@ -23,6 +23,7 @@
 // @grant        GM.unregisterMenuCommand
 // @run-at       document-start
 // @license      MIT License
+// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/eula.html
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/dist/require.js
 // @resource     jquery https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js
 // @resource     lodash https://cdn.bootcdn.net/ajax/libs/lodash.js/4.17.15/lodash.min.js
@@ -36,6 +37,10 @@
 // @resource     Logger https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/logger.js
 // @resource     Config https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/config.js
 // @resource     Request https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/request.js
+// @resource     Worker https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/worker.js
+// @resource     Worker/env https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/worker/env.js
+// @resource     Worker/channel https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/worker/channel.js
+// @resource     AppClient https://cdn.jsdelivr.net/gh/SeaLoong/BLUL@master/src/modules/appclient.js
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/main.js
 // @resource     Sign https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/sign.js
 // @resource     Exchange https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/exchange.js
