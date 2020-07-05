@@ -38,7 +38,7 @@ export default async function (importModule, BLUL, GM) {
       const obj = await response.json();
       if (obj.code === 0) {
         silverBoxData = obj.data;
-        BLUL.Logger.info(NAME_SILVER_BOX, obj, `${silverBoxData.minute} 分钟, ${silverBoxData.silver} 银瓜子, 次数 ${silverBoxData.times}/${silverBoxData.max_times}`);
+        BLUL.Logger.info(NAME_SILVER_BOX, `${silverBoxData.minute} 分钟, ${silverBoxData.silver} 银瓜子, 次数 ${silverBoxData.times}/${silverBoxData.max_times}`);
         let t = silverBoxData.time_end - Date.now() / 1000 + 1;
         if (t < 0) t = 0;
         await Util.sleep(t * 1e3);

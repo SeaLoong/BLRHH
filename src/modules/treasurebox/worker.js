@@ -82,7 +82,7 @@ export default async function (importModule, BLUL, GM) {
   }
 
   function predict (imageData) {
-    const arr = filter(binarization(RGBA2Gray(imageData))).data;
+    const arr = Float32Array.from(filter(binarization(RGBA2Gray(imageData))).data);
     return tf.tidy(() => {
       return array2Str(model.predict(tf.tensor(arr, [1, 40, 120, 1])).arraySync());
     });
