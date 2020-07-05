@@ -63,6 +63,7 @@ export default async function (importModule, BLUL, GM) {
   const CHAR_SET_LEN = 12;
 
   function array2Str (arr) {
+    while (arr.length === 1) arr = arr[0];
     let str = '';
     const n = TEXT_LENGTH * CHAR_SET_LEN;
     for (let i = 0; i < n; i += CHAR_SET_LEN) {
