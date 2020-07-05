@@ -18,9 +18,11 @@
       BLUL.Logger.warn(obj.message);
     }
     /* eslint-disable camelcase */
-    BLUL.Logger.info('用户信息', `uid: ${BLUL.INFO.UID} 用户名: ${BLUL.INFO.InfoByUser?.info?.uname} 手机绑定: ${BLUL.INFO.InfoByUser?.info?.mobile_verify} 实名认真: ${BLUL.INFO.InfoByUser?.info?.identification}`,
+    const color = Number(BLUL.INFO.InfoByUser?.property?.danmu?.color).toString(16).toUpperCase();
+    BLUL.Logger.info('用户信息', `uid: ${BLUL.INFO.UID} 用户名: ${BLUL.INFO.InfoByUser?.info?.uname}`,
+    `手机绑定: ${BLUL.INFO.InfoByUser?.info?.mobile_verify ? '是' : '否'} 实名认证: ${BLUL.INFO.InfoByUser?.info?.identification ? '是' : '否'}`,
     `UL: ${BLUL.INFO.InfoByUser?.user_level?.level} 金瓜子: ${BLUL.INFO.InfoByUser?.wallet?.gold} 银瓜子: ${BLUL.INFO.InfoByUser?.wallet?.silver}`,
-    `弹幕模式: ${BLUL.INFO.InfoByUser?.property?.danmu?.mode} 弹幕颜色: ${BLUL.INFO.InfoByUser?.property?.danmu?.color} 弹幕长度: ${BLUL.INFO.InfoByUser?.property?.danmu?.length}`,
+    `弹幕模式: ${BLUL.INFO.InfoByUser?.property?.danmu?.mode} 弹幕颜色: <span style="color: #${color};">${color}</span> 弹幕长度: ${BLUL.INFO.InfoByUser?.property?.danmu?.length}`,
     `房间id: ${BLUL.INFO.ROOMID} 短id: ${BLUL.INFO.SHORT_ROOMID} 主播uid: ${BLUL.INFO.ANCHOR_UID}`);
     /* eslint-enable camelcase */
   } catch (error) {

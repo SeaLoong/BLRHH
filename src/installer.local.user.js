@@ -44,4 +44,6 @@
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/main.js
 // @resource     Sign https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/sign.js
 // @resource     Exchange https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/exchange.js
+// @resource     TreasureBox https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/treasurebox.js
+// @resource     TreasureBox/worker https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src/modules/treasurebox/worker.js
 // ==/UserScript==
