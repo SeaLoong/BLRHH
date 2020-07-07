@@ -663,7 +663,7 @@
                         const div_position = $('<div/>');
                         div_position[0].style = 'display: table-cell;vertical-align: middle;';
                         const div_style = $('<div/>');
-                        div_style[0].style = 'position: relative;top: 50%;width: 40%;padding: 16px;border-radius: 5px;background-color: #fff;margin: 0 auto;';
+                        div_style[0].style = 'position: relative;top: 50%;width: 40%;padding: 16px;border-radius: 5px;background-color: #fff;margin: 0 auto;max-height: 50%;overflow:scroll';
                         div_position.append(div_style);
                         div_background.append(div_position);
 
