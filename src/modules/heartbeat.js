@@ -20,7 +20,7 @@ export default async function (importModule, BLUL, GM) {
         method: 'POST',
         url: 'https://api.live.bilibili.com/heartbeat/v1/OnLine/mobileOnline',
         headers: BLUL.AppToken.headers,
-        search: BLUL.AppToken.sign({ access_key: BLUL.AppToken.getAccessToken() }),
+        search: BLUL.AppToken.sign({ access_key: await BLUL.AppToken.getAccessToken() }),
         data: {
           roomid: BLUL.INFO.ROOMID,
           scale: 'xxhdpi'
