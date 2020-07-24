@@ -30,7 +30,7 @@ export default async function (importModule, BLUL, GM) {
       if (obj.code !== 0) {
         BLUL.Logger.warn(NAME_MOBILE, obj.message);
       }
-      mobileTimer = setTimeout(mobile, config.interval * 1e3);
+      mobileTimer = setTimeout(mobile, config.mobileInterval * 1e3);
       return Util.cancelRetry(mobile);
     } catch (error) {
       BLUL.Logger.error(NAME_MOBILE, error);
