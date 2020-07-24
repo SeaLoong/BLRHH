@@ -16,7 +16,7 @@ export default async function (importModule, BLUL, GM) {
       mobileTimer = null;
     }
     try {
-      const response = await BLUL.Request.fetch({
+      const response = await BLUL.Request.monkey({
         method: 'POST',
         url: 'https://api.live.bilibili.com/heartbeat/v1/OnLine/mobileOnline',
         headers: BLUL.AppToken.headers,
