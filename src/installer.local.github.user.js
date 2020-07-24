@@ -40,10 +40,11 @@
 // @resource     Worker https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/worker.js
 // @resource     Worker/env https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/worker/env.js
 // @resource     Worker/channel https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/worker/channel.js
-// @resource     AppClient https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/appclient.js
+// @resource     AppToken https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/apptoken.js
 // @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/main.js
 // @resource     Sign https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/sign.js
 // @resource     Exchange https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/exchange.js
 // @resource     TreasureBox https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/treasurebox.js
 // @resource     TreasureBox/worker https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/treasurebox/worker.js
+// @resource     Heartbeat https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/heartbeat.js
 // ==/UserScript==

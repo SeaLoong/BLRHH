@@ -9,7 +9,7 @@
     return;
   }
   BLUL.Logger.info('脚本信息', `运行环境: ${BLUL.ENVIRONMENT} ${BLUL.ENVIRONMENT_VERSION}`, `版本: ${BLUL.VERSION}`);
-  const { Util, importModule } = BLUL;
+  const { importModule } = BLUL;
   try {
     const r = await BLUL.Request.fetch('https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByUser?room_id=' + BLUL.INFO.ROOMID);
     const obj = await r.json();
@@ -32,4 +32,5 @@
   await importModule('Sign');
   await importModule('Exchange');
   await importModule('TreasureBox');
+  await importModule('Heartbeat');
 })();
