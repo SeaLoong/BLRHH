@@ -176,11 +176,7 @@ export default async function (importModule, BLUL, GM) {
     try {
       const r = await BLUL.Request.monkey({
         url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getStatus?aid=' + aid,
-        headers: {
-          Origin: 'https://live.bilibili.com',
-          Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid,
-          Cookie: document.cookie
-        }
+        referrer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
       });
       const obj = await r.json();
       if (obj.code !== 0) {
@@ -223,11 +219,7 @@ export default async function (importModule, BLUL, GM) {
             aid,
             number
           },
-          headers: {
-            Origin: 'https://live.bilibili.com',
-            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid,
-            Cookie: document.cookie
-          }
+          referrer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
         });
         const obj = await r.json();
         if (obj.code === 0) {
@@ -244,17 +236,13 @@ export default async function (importModule, BLUL, GM) {
     const timeoutEnd = async () => {
       BLUL.debug('TreasureBox.draw.timeoutEnd');
       try {
-        const r = await BLUL.Request.monkey({
+        const r = await BLUL.Request.fetch({
           url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getWinnerGroupInfo',
           search: {
             aid,
             number
           },
-          headers: {
-            Origin: 'https://live.bilibili.com',
-            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid,
-            Cookie: document.cookie
-          }
+          referrer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
         });
         const obj = await r.json();
         if (obj.code === 0) {
