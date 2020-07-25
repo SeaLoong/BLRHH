@@ -6,8 +6,7 @@
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
 // @supportURL   https://github.com/SeaLoong/Bilibili-LRHH/issues
-// @include      /^https?:\/\/live\.bilibili\.com\/\d+.*$/
-// @include      /^https?:\/\/live\.bilibili\.com\/blanc\/\d+.*$/
+// @include      /^https?:\/\/live\.bilibili\.com\/(blanc\/)?\d+.*$/
 // @connect      bilibili.com
 // @connect      *
 // @grant        unsafeWindow

@@ -346,7 +346,9 @@ export default async function (importModule, BLUL, GM) {
       timing
     },
     goldBox: {
-      goldBox
+      goldBox,
+      joinActivity,
+      draw
     }
   };
 
