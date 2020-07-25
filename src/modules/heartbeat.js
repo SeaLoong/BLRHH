@@ -8,34 +8,41 @@ export default async function (importModule, BLUL, GM) {
   const Util = BLUL.Util;
 
   const NAME_MOBILE = NAME + '-移动端';
-  let mobileTimer;
-  async function mobile () {
+  const roomidSet = new Set();
+  function mobile (roomid = BLUL.INFO.ROOMID) {
     BLUL.debug('Heartbeat.mobile');
-    if (mobileTimer) {
-      clearTimeout(mobileTimer);
-      mobileTimer = null;
-    }
-    try {
-      const response = await BLUL.Request.monkey({
-        method: 'POST',
-        url: 'https://api.live.bilibili.com/heartbeat/v1/OnLine/mobileOnline',
-        headers: BLUL.AppToken.headers,
-        search: BLUL.AppToken.sign({ access_key: await BLUL.AppToken.getAccessToken() }),
-        data: {
-          roomid: BLUL.INFO.ROOMID,
-          scale: 'xxhdpi'
+    if (roomidSet.has(roomid)) return;
+    roomidSet.add(roomid);
+    const heartbeat = async () => {
+      if (!roomidSet.has(roomid)) return;
+      try {
+        const response = await BLUL.Request.monkey({
+          method: 'POST',
+          url: 'https://api.live.bilibili.com/heartbeat/v1/OnLine/mobileOnline',
+          headers: BLUL.AppToken.headers,
+          search: BLUL.AppToken.sign({ access_key: await BLUL.AppToken.getAccessToken() }),
+          data: {
+            roomid: roomid,
+            scale: 'xxhdpi'
+          }
+        });
+        const obj = await response.json();
+        if (obj.code !== 0) {
+          BLUL.Logger.warn(NAME_MOBILE, roomid, obj.message);
         }
-      });
-      const obj = await response.json();
-      if (obj.code !== 0) {
-        BLUL.Logger.warn(NAME_MOBILE, obj.message);
+        setTimeout(heartbeat, config.mobileInterval * 1e3);
+        return Util.cancelRetry(heartbeat);
+      } catch (error) {
+        BLUL.Logger.error(NAME_MOBILE, roomid, error);
       }
-      mobileTimer = setTimeout(mobile, config.mobileInterval * 1e3);
-      return Util.cancelRetry(mobile);
-    } catch (error) {
-      BLUL.Logger.error(NAME_MOBILE, error);
-    }
-    return Util.retry(mobile);
+      return Util.retry(heartbeat);
+    };
+    heartbeat();
+  }
+
+  function stopMobile (roomid = BLUL.INFO.ROOMID) {
+    BLUL.debug('Heartbeat.stopMobile');
+    roomidSet.delete(roomid);
   }
 
   async function run () {
@@ -58,7 +65,8 @@ export default async function (importModule, BLUL, GM) {
 
   BLUL.Heartbeat = {
     run,
-    mobile
+    mobile,
+    stopMobile
   };
 
   BLUL.debug('Module Loaded: Heartbeat', BLUL.Heartbeat);
