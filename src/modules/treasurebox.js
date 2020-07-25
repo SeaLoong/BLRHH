@@ -178,7 +178,8 @@ export default async function (importModule, BLUL, GM) {
         url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getStatus?aid=' + aid,
         headers: {
           Origin: 'https://live.bilibili.com',
-          Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+          Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid,
+          Cookie: document.cookie
         }
       });
       const obj = await r.json();
@@ -224,7 +225,8 @@ export default async function (importModule, BLUL, GM) {
           },
           headers: {
             Origin: 'https://live.bilibili.com',
-            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid,
+            Cookie: document.cookie
           }
         });
         const obj = await r.json();
@@ -250,7 +252,8 @@ export default async function (importModule, BLUL, GM) {
           },
           headers: {
             Origin: 'https://live.bilibili.com',
-            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid,
+            Cookie: document.cookie
           }
         });
         const obj = await r.json();
