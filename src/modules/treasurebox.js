@@ -167,6 +167,7 @@ export default async function (importModule, BLUL, GM) {
       if (await joinActivity(aid)) continue;
       config.aid = aid - 1;
       await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
+      break;
     }
   }
 
