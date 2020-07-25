@@ -3,7 +3,8 @@ const config = {
   treasureBox: false,
   silverBox: false,
   goldBox: false,
-  aid: 598
+  aid: 598,
+  ignoreKeywords: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼']
 };
 export default async function (importModule, BLUL, GM) {
   await BLUL.addResource('tfjs', ['https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.1/dist/tf.min.js']);
@@ -189,13 +190,17 @@ export default async function (importModule, BLUL, GM) {
       if (!joinedSet.has(aid)) {
         joinedSet.add(aid);
         const title = obj.data.title;
-        for (const o of obj.data.typeB) {
-          if (o.status === 0 || o.status === -1) {
-            const names = [];
-            for (const g of o.list) {
-              names.push(g.jp_name);
+        if (config.ignoreKeywords.some(v => title.includes(v))) {
+          BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖 ${title}(aid=${aid})`);
+        } else {
+          for (const o of obj.data.typeB) {
+            if (o.status === 0 || o.status === -1) {
+              const names = [];
+              for (const g of o.list) {
+                names.push(g.jp_name);
+              }
+              draw(aid, o.round_num, o.join_start_time, o.join_end_time, title, ...names);
             }
-            draw(aid, o.round_num, o.join_start_time, o.join_end_time, title, ...names);
           }
         }
       }
@@ -327,12 +332,14 @@ export default async function (importModule, BLUL, GM) {
     BLUL.Config.addItem('treasureBox.silverBox', '银瓜子宝箱', config.silverBox, { tag: 'input', help: '领取银瓜子宝箱，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.goldBox', '金宝箱', config.silverBox, { tag: 'input', help: '参加金宝箱抽奖(即实物抽奖)，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.goldBox.aid', 'aid', config.aid, { tag: 'input', attribute: { type: 'number', readonly: true } });
+    BLUL.Config.addItem('treasureBox.goldBox.ignoreKeywords', '忽略关键字', config.ignoreKeywords.join(','), { tag: 'input', help: '忽略含有以下关键字的抽奖，用英文逗号隔开', attribute: { type: 'text' } });
 
     BLUL.Config.onload(() => {
       config.treasureBox = BLUL.Config.get('treasureBox');
       config.silverBox = BLUL.Config.get('treasureBox.silverBox');
       config.goldBox = BLUL.Config.get('treasureBox.goldBox');
       config.aid = BLUL.Config.get('treasureBox.goldBox.aid');
+      config.ignoreKeywords = BLUL.Config.get('treasureBox.goldBox.ignoreKeywords').split(',').map(v => v.trim());
     });
   });
   BLUL.onrun(run);
