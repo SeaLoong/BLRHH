@@ -1,7 +1,9 @@
 const NAME = '宝箱';
 const config = {
   treasureBox: false,
-  silverBox: false
+  silverBox: false,
+  goldBox: false,
+  aid: 598
 };
 export default async function (importModule, BLUL, GM) {
   await BLUL.addResource('tfjs', ['https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.1/dist/tf.min.js']);
@@ -140,6 +142,135 @@ export default async function (importModule, BLUL, GM) {
     return Util.retry(silverBoxAward);
   }
 
+  const NAME_GOLD_BOX = NAME + '-金宝箱';
+  async function goldBox () {
+    BLUL.debug('TreasureBox.goldBox');
+    let aid = config.aid;
+    const step = 10;
+    let l = 0;
+    let r = 999999;
+    while (l + step < r) {
+      if (await joinActivity(aid)) {
+        let i = 4;
+        while (i > 0 && !await joinActivity(aid + i)) i -= 2;
+        l = Math.max(l, aid + i);
+        aid = l + step;
+      } else {
+        let i = 4;
+        while (i > 0 && await joinActivity(aid - i)) i -= 2;
+        r = Math.min(r, aid - i);
+        aid = r - step;
+      }
+    }
+    for (aid = l; aid < r; aid++) {
+      if (await joinActivity(aid)) continue;
+      config.aid = aid - 1;
+      await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
+    }
+  }
+
+  const joinedSet = new Set();
+  async function joinActivity (aid) {
+    BLUL.debug('TreasureBox.joinActivity');
+    try {
+      const r = await BLUL.Request.monkey({
+        url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getStatus?aid=' + aid,
+        headers: {
+          Origin: 'https://live.bilibili.com',
+          Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+        }
+      });
+      const obj = await r.json();
+      if (obj.code !== 0) {
+        BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
+        return false;
+      }
+      if (!obj.data) return false;
+      if (!joinedSet.has(aid)) {
+        joinedSet.add(aid);
+        const title = obj.data.title;
+        for (const o of obj.data.typeB) {
+          if (o.status === 0 || o.status === -1) {
+            const names = [];
+            for (const g of o.list) {
+              names.push(g.jp_name);
+            }
+            draw(aid, o.round_num, o.join_start_time, o.join_end_time, title, ...names);
+          }
+        }
+      }
+      return true;
+    } catch (error) {
+      BLUL.Logger.error(NAME_GOLD_BOX, error);
+    }
+    return Util.retry(joinActivity);
+  }
+
+  /* eslint-disable camelcase */
+  async function draw (aid, number, join_start_time, join_end_time, title, ...names) {
+    const timeoutDraw = async () => {
+      BLUL.debug('TreasureBox.draw.timeoutDraw');
+      try {
+        const r = await BLUL.Request.monkey({
+          url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/draw',
+          search: {
+            aid,
+            number
+          },
+          headers: {
+            Origin: 'https://live.bilibili.com',
+            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+          }
+        });
+        const obj = await r.json();
+        if (obj.code === 0) {
+          BLUL.Logger.success(NAME_GOLD_BOX, '已参加抽奖 ' + title, '奖品', ...names);
+          setTimeout(timeoutEnd, join_end_time * 1e3 - Date.now());
+        } else {
+          BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
+        }
+      } catch (error) {
+        BLUL.Logger.error(NAME_GOLD_BOX, error);
+        return Util.retry(timeoutDraw);
+      }
+    };
+    const timeoutEnd = async () => {
+      BLUL.debug('TreasureBox.draw.timeoutEnd');
+      try {
+        const r = await BLUL.Request.monkey({
+          url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getWinnerGroupInfo',
+          search: {
+            aid,
+            number
+          },
+          headers: {
+            Origin: 'https://live.bilibili.com',
+            Referer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+          }
+        });
+        const obj = await r.json();
+        if (obj.code === 0) {
+          if (obj.data.groups) {
+            for (const gift of obj.data.groups) {
+              const arr = [];
+              for (const u of gift.list) {
+                arr.push(u.uid + ' ' + u.uname);
+              }
+              BLUL.Logger.info(NAME_GOLD_BOX, '奖品 ' + gift.giftTitle, '中奖人', ...arr);
+            }
+          }
+        } else {
+          BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
+        }
+      } catch (error) {
+        BLUL.Logger.error(NAME_GOLD_BOX, error);
+        return Util.retry(timeoutEnd);
+      }
+    };
+    setTimeout(timeoutDraw, join_start_time * 1e3 - Date.now());
+  }
+  /* eslint-enable camelcase */
+
   async function run () {
     if (!config.treasureBox) return;
     BLUL.debug('TreasureBox.run');
@@ -175,25 +306,47 @@ export default async function (importModule, BLUL, GM) {
       /* eslint-enable camelcase */
       Util.callAtTime(runSilverBox);
     })();
+    (async function runGoldBox () {
+      if (!config.goldBox) return;
+      /* eslint-disable camelcase */
+      if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
+        await goldBox();
+      } else {
+        BLUL.Logger.warn(NAME_SILVER_BOX, '未绑定手机，不能参加宝箱抽奖');
+      }
+      /* eslint-enable camelcase */
+    })();
   }
 
-  BLUL.onupgrade(() => {
+  BLUL.onupgrade(async () => {
+    await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
   });
 
   BLUL.oninit(() => {
     BLUL.Config.addItem('treasureBox', NAME, config.treasureBox, { tag: 'input', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.silverBox', '银瓜子宝箱', config.silverBox, { tag: 'input', help: '领取银瓜子宝箱，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
+    BLUL.Config.addItem('treasureBox.goldBox', '金宝箱', config.silverBox, { tag: 'input', help: '参加金宝箱抽奖(即实物抽奖)，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
+    BLUL.Config.addItem('treasureBox.goldBox.aid', 'aid', config.aid, { tag: 'input', attribute: { type: 'number', readonly: true } });
+
     BLUL.Config.onload(() => {
       config.treasureBox = BLUL.Config.get('treasureBox');
       config.silverBox = BLUL.Config.get('treasureBox.silverBox');
+      config.goldBox = BLUL.Config.get('treasureBox.goldBox');
+      config.aid = BLUL.Config.get('treasureBox.goldBox.aid');
     });
   });
   BLUL.onrun(run);
 
   BLUL.TreasureBox = {
     run,
-    setTip,
-    timing
+    silverBox: {
+      silverBox,
+      setTip,
+      timing
+    },
+    goldBox: {
+      goldBox
+    }
   };
 
   BLUL.debug('Module Loaded: TreasureBox', BLUL.TreasureBox);

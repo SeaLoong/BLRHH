@@ -4,7 +4,7 @@
 (async () => {
   const EULA = await GM.getResourceText('EULA');
   BLUL.NAME = 'BLRHH';
-  if (!await BLUL.run({ debug: true, slient: false, unique: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1] })) {
+  if (!await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1] })) {
     console.error('[BLRHH] BLUL加载失败');
     return;
   }
@@ -26,7 +26,7 @@
     `房间id: ${BLUL.INFO.ROOMID} 短id: ${BLUL.INFO.SHORT_ROOMID} 主播uid: ${BLUL.INFO.ANCHOR_UID}`);
     /* eslint-enable camelcase */
   } catch (error) {
-    BLUL.Logger.error('初始化抽奖信息失败', error);
+    BLUL.Logger.error('初始化用户信息失败', error);
   }
   BLUL.setBase('https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src');
   await importModule('Sign');

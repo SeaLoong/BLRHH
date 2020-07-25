@@ -10,10 +10,12 @@ export default async function (importModule, BLUL, GM) {
   const NAME_MOBILE = NAME + '-移动端';
   const roomidSet = new Set();
   function mobile (roomid = BLUL.INFO.ROOMID) {
+    if (!config.mobile) return;
     BLUL.debug('Heartbeat.mobile');
     if (roomidSet.has(roomid)) return;
     roomidSet.add(roomid);
     const heartbeat = async () => {
+      if (!config.mobile) return;
       if (!roomidSet.has(roomid)) return;
       try {
         const response = await BLUL.Request.monkey({
