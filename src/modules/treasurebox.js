@@ -202,6 +202,7 @@ export default async function (importModule, BLUL, GM) {
           }
         }
       }
+      Util.cancelRetry(joinActivity);
       return true;
     } catch (error) {
       BLUL.Logger.error(NAME_GOLD_BOX, error);
@@ -226,6 +227,7 @@ export default async function (importModule, BLUL, GM) {
         if (obj.code === 0) {
           BLUL.Logger.success(NAME_GOLD_BOX, '已参加抽奖 ' + title, '奖品', ...names);
           setTimeout(timeoutEnd, (join_end_time + 5) * 1e3 - Date.now());
+          Util.cancelRetry(timeoutDraw);
         } else if (obj.message.includes('未开始')) {
           return Util.retry(timeoutDraw);
         } else {
@@ -249,15 +251,17 @@ export default async function (importModule, BLUL, GM) {
         });
         const obj = await r.json();
         if (obj.code === 0) {
-          if (obj.data.groups) {
-            for (const gift of obj.data.groups) {
-              const arr = [];
-              for (const u of gift.list) {
-                arr.push(u.uid + ' ' + u.uname);
-              }
-              BLUL.Logger.info(NAME_GOLD_BOX, '奖品 ' + gift.giftTitle, '中奖人', ...arr);
-            }
+          if (!obj.data.groups) {
+            return Util.retry(timeoutEnd);
           }
+          for (const gift of obj.data.groups) {
+            const arr = [];
+            for (const u of gift.list) {
+              arr.push(u.uid + ' ' + u.uname);
+            }
+            BLUL.Logger.info(NAME_GOLD_BOX, '奖品 ' + gift.giftTitle, '中奖人', ...arr);
+          }
+          Util.cancelRetry(timeoutEnd);
         } else {
           BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
         }
