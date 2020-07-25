@@ -174,7 +174,7 @@ export default async function (importModule, BLUL, GM) {
   async function joinActivity (aid) {
     BLUL.debug('TreasureBox.joinActivity');
     try {
-      const r = await BLUL.Request.monkey({
+      const r = await BLUL.Request.fetch({
         url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getStatus?aid=' + aid,
         referrer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
       });
@@ -213,7 +213,7 @@ export default async function (importModule, BLUL, GM) {
     const timeoutDraw = async () => {
       BLUL.debug('TreasureBox.draw.timeoutDraw');
       try {
-        const r = await BLUL.Request.monkey({
+        const r = await BLUL.Request.fetch({
           url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/draw',
           search: {
             aid,
