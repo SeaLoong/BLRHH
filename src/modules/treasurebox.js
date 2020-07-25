@@ -210,7 +210,7 @@ export default async function (importModule, BLUL, GM) {
   }
 
   /* eslint-disable camelcase */
-  async function draw (aid, number, join_start_time, join_end_time, title, ...names) {
+  function draw (aid, number, join_start_time, join_end_time, title, ...names) {
     const timeoutDraw = async () => {
       BLUL.debug('TreasureBox.draw.timeoutDraw');
       try {
@@ -225,7 +225,9 @@ export default async function (importModule, BLUL, GM) {
         const obj = await r.json();
         if (obj.code === 0) {
           BLUL.Logger.success(NAME_GOLD_BOX, '已参加抽奖 ' + title, '奖品', ...names);
-          setTimeout(timeoutEnd, join_end_time * 1e3 - Date.now());
+          setTimeout(timeoutEnd, (join_end_time + 5) * 1e3 - Date.now());
+        } else if (obj.message.includes('未开始')) {
+          return Util.retry(timeoutDraw);
         } else {
           BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
         }
@@ -264,7 +266,7 @@ export default async function (importModule, BLUL, GM) {
         return Util.retry(timeoutEnd);
       }
     };
-    setTimeout(timeoutDraw, join_start_time * 1e3 - Date.now());
+    setTimeout(timeoutDraw, (join_start_time + 3) * 1e3 - Date.now());
   }
   /* eslint-enable camelcase */
 
