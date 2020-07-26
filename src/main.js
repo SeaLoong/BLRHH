@@ -28,7 +28,7 @@
   } catch (error) {
     BLUL.Logger.error('初始化用户信息失败', error);
   }
-  BLUL.setBase('https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH@dev/src');
+  BLUL.setBase('https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src');
   await importModule('Sign');
   await importModule('Exchange');
   await importModule('TreasureBox');
