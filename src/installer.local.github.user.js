@@ -1,11 +1,12 @@
 // ==UserScript==
-// @name         Bilibili直播间挂机助手alpha
+// @name         Bilibili直播间挂机助手3
 // @namespace    SeaLoong
 // @version      3.0.0
-// @description  Bilibili直播间自动签到，领瓜子，参加抽奖，完成任务，送礼等
+// @description  B站直播间挂机用: 签到，领瓜子，移动端心跳，瓜子换硬币等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/Bilibili-LRHH
 // @supportURL   https://github.com/SeaLoong/Bilibili-LRHH/issues
+// @updateURL    https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/src/installer.local.github.user.js
 // @include      /^https?:\/\/live\.bilibili\.com\/(blanc\/)?\d+.*$/
 // @connect      bilibili.com
 // @connect      *
@@ -22,8 +23,9 @@
 // @grant        GM.unregisterMenuCommand
 // @run-at       document-start
 // @license      MIT License
-// @resource     EULA https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/eula.html
-// @require      https://raw.githubusercontent.com/SeaLoong/BLUL/master/dist/require.js
+// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/src/eula.html
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL/dist/require.js
+// @require      https://cdn.jsdelivr.net/gh/SeaLoong/Bilibili-LRHH/src/main.js
 // @resource     jquery https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js
 // @resource     lodash https://cdn.bootcdn.net/ajax/libs/lodash.js/4.17.15/lodash.min.js
 // @resource     toastr https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.js
@@ -39,10 +41,9 @@
 // @resource     Worker/env https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/worker/env.js
 // @resource     Worker/channel https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/worker/channel.js
 // @resource     AppToken https://raw.githubusercontent.com/SeaLoong/BLUL/master/src/modules/apptoken.js
-// @require      https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/main.js
-// @resource     Sign https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/sign.js
-// @resource     Exchange https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/exchange.js
-// @resource     TreasureBox https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/treasurebox.js
-// @resource     TreasureBox/worker https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/treasurebox/worker.js
-// @resource     Heartbeat https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/dev/src/modules/heartbeat.js
+// @resource     Sign https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/src/modules/sign.js
+// @resource     Exchange https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/src/modules/exchange.js
+// @resource     TreasureBox https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/src/modules/treasurebox.js
+// @resource     TreasureBox/worker https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/src/modules/treasurebox/worker.js
+// @resource     Heartbeat https://raw.githubusercontent.com/SeaLoong/Bilibili-LRHH/master/src/modules/heartbeat.js
 // ==/UserScript==
