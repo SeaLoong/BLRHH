@@ -4,6 +4,7 @@ const config = {
   silverBox: false,
   goldBox: false,
   aid: 598,
+  interval: 60,
   ignoreKeywords: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼']
 };
 export default async function (importModule, BLUL, GM) {
@@ -146,6 +147,7 @@ export default async function (importModule, BLUL, GM) {
   const NAME_GOLD_BOX = NAME + '-金宝箱';
   async function goldBox () {
     BLUL.debug('TreasureBox.goldBox');
+    BLUL.Logger.info(NAME_GOLD_BOX, '正在检查可参加的宝箱抽奖');
     let aid = config.aid;
     const step = 10;
     let l = 0;
@@ -189,7 +191,7 @@ export default async function (importModule, BLUL, GM) {
         joinedSet.add(aid);
         const title = obj.data.title;
         if (config.ignoreKeywords.some(v => title.includes(v))) {
-          BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖 ${title}(aid=${aid})`);
+          BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖: ${title}(aid=${aid})`);
         } else {
           for (const o of obj.data.typeB) {
             if (o.status === 0 || o.status === -1) {
@@ -225,7 +227,7 @@ export default async function (importModule, BLUL, GM) {
         });
         const obj = await r.json();
         if (obj.code === 0) {
-          BLUL.Logger.success(NAME_GOLD_BOX, '已参加抽奖 ' + title, '奖品', ...names);
+          BLUL.Logger.success(NAME_GOLD_BOX, '已参加抽奖: ' + title, '奖品:', ...names);
           setTimeout(timeoutEnd, (join_end_time + 5) * 1e3 - Date.now());
           Util.cancelRetry(timeoutDraw);
         } else if (obj.message.includes('未开始')) {
@@ -259,7 +261,7 @@ export default async function (importModule, BLUL, GM) {
             for (const u of gift.list) {
               arr.push(u.uid + ' ' + u.uname);
             }
-            BLUL.Logger.info(NAME_GOLD_BOX, '奖品 ' + gift.giftTitle, '中奖人', ...arr);
+            BLUL.Logger.info(NAME_GOLD_BOX, '奖品: ' + gift.giftTitle, '中奖人:', ...arr);
           }
           Util.cancelRetry(timeoutEnd);
         } else {
@@ -270,7 +272,11 @@ export default async function (importModule, BLUL, GM) {
         return Util.retry(timeoutEnd);
       }
     };
-    setTimeout(timeoutDraw, (join_start_time + 3) * 1e3 - Date.now());
+    const t = (join_start_time + 3) * 1e3 - Date.now();
+    if (t > 0) {
+      BLUL.Logger.info(NAME_GOLD_BOX, '等待参加: ' + title, '奖品: ', ...names);
+    }
+    setTimeout(timeoutDraw, t);
   }
   /* eslint-enable camelcase */
 
@@ -278,7 +284,7 @@ export default async function (importModule, BLUL, GM) {
     if (!config.treasureBox) return;
     BLUL.debug('TreasureBox.run');
     (async function runSilverBox () {
-      if (!config.silverBox) return;
+      if (!config.treasureBox || !config.silverBox) return;
       if (!tipElement && !timerElement && !$('.draw-box.gift-left-part').length) {
         const box = $('#gift-control-vm div.treasure-box.p-relative').first();
         box.attr('id', 'old_treasure_box');
@@ -310,7 +316,7 @@ export default async function (importModule, BLUL, GM) {
       Util.callAtTime(runSilverBox);
     })();
     (async function runGoldBox () {
-      if (!config.goldBox) return;
+      if (!config.treasureBox || !config.goldBox) return;
       /* eslint-disable camelcase */
       if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
         await goldBox();
@@ -318,6 +324,7 @@ export default async function (importModule, BLUL, GM) {
         BLUL.Logger.warn(NAME_SILVER_BOX, '未绑定手机，不能参加宝箱抽奖');
       }
       /* eslint-enable camelcase */
+      setTimeout(runGoldBox, config.interval * 60e3);
     })();
   }
 
@@ -329,7 +336,8 @@ export default async function (importModule, BLUL, GM) {
     BLUL.Config.addItem('treasureBox', NAME, config.treasureBox, { tag: 'input', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.silverBox', '银瓜子宝箱', config.silverBox, { tag: 'input', help: '领取银瓜子宝箱，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.goldBox', '金宝箱', config.silverBox, { tag: 'input', help: '参加金宝箱抽奖(即实物抽奖)，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
-    BLUL.Config.addItem('treasureBox.goldBox.aid', 'aid', config.aid, { tag: 'input', attribute: { type: 'number', readonly: true } });
+    BLUL.Config.addItem('treasureBox.goldBox.aid', 'aid', config.aid, { tag: 'input', help: '此项只用于存储和显示数据', attribute: { type: 'number', readonly: true } });
+    BLUL.Config.addItem('treasureBox.goldBox.interval', '检查间隔', config.aid, { tag: 'input', help: '设定多久检查一次宝箱抽奖<br>单位为分钟，默认为60', corrector: v => v > 1 ? v : 60, attribute: { type: 'number', placeholder: '单位为分钟，默认为60', min: 1, max: 1440 } });
     BLUL.Config.addItem('treasureBox.goldBox.ignoreKeywords', '忽略关键字', config.ignoreKeywords.join(','), { tag: 'input', help: '忽略含有以下关键字的抽奖，用英文逗号隔开', attribute: { type: 'text' } });
 
     BLUL.Config.onload(() => {
@@ -337,7 +345,9 @@ export default async function (importModule, BLUL, GM) {
       config.silverBox = BLUL.Config.get('treasureBox.silverBox');
       config.goldBox = BLUL.Config.get('treasureBox.goldBox');
       config.aid = BLUL.Config.get('treasureBox.goldBox.aid');
+      config.interval = BLUL.Config.get('treasureBox.goldBox.interval');
       config.ignoreKeywords = BLUL.Config.get('treasureBox.goldBox.ignoreKeywords').split(',').map(v => v.trim());
+      run();
     });
   });
   BLUL.onrun(run);

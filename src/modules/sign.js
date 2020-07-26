@@ -82,7 +82,7 @@ export default async function (importModule, BLUL, GM) {
     if (!config.sign) return;
     BLUL.debug('Sign.run');
     (async function runLive () {
-      if (!config.live) return;
+      if (!config.sign || !config.live) return;
       if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
         if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LIVE) ?? 0)) {
           await live();
@@ -96,7 +96,7 @@ export default async function (importModule, BLUL, GM) {
     })();
     const hourRunLinkGroup = 9;
     (async function runLinkGroup () {
-      if (!config.linkGroup) return;
+      if (!config.sign || !config.linkGroup) return;
       if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_LINKGROUP) ?? 0, hourRunLinkGroup)) {
         await linkGroup();
         await GM.setValue(TIMESTAMP_NAME_LINKGROUP, Date.now());
@@ -119,6 +119,7 @@ export default async function (importModule, BLUL, GM) {
       config.sign = BLUL.Config.get('sign');
       config.live = BLUL.Config.get('sign.live');
       config.linkGroup = BLUL.Config.get('sign.linkGroup');
+      run();
     });
   });
 

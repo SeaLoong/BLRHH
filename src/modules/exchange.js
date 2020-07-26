@@ -74,7 +74,7 @@ export default async function (importModule, BLUL, GM) {
     if (!config.exchange) return;
     BLUL.debug('Exchange.run');
     (async function runSilver2coin () {
-      if (!config.silver2coin) return;
+      if (!config.exchange || !config.silver2coin) return;
       if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_SILVER2COIN) ?? 0)) {
         await silver2coin();
         await GM.setValue(TIMESTAMP_NAME_SILVER2COIN, Date.now());
@@ -83,7 +83,7 @@ export default async function (importModule, BLUL, GM) {
       Util.callAtTime(runSilver2coin);
     })();
     (async function runCoin2silver () {
-      if (!config.coin2silver) return;
+      if (!config.exchange || !config.coin2silver) return;
       if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_COIN2SILVER) ?? 0)) {
         await coin2silver();
         await GM.setValue(TIMESTAMP_NAME_COIN2SILVER, Date.now());
@@ -108,6 +108,7 @@ export default async function (importModule, BLUL, GM) {
       config.silver2coin = BLUL.Config.get('exchange.silver2coin');
       config.coin2silver = BLUL.Config.get('exchange.coin2silver');
       config.quantity = BLUL.Config.get('exchange.coin2silver.quantity');
+      run();
     });
   });
   BLUL.onrun(run);
