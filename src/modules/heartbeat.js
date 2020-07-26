@@ -61,7 +61,6 @@ export default async function (importModule, BLUL, GM) {
       config.heartbeat = BLUL.Config.get('heartbeat');
       config.mobile = BLUL.Config.get('heartbeat.mobile');
       config.mobileInterval = BLUL.Config.get('heartbeat.mobile.interval');
-      run();
     });
   });
   BLUL.onrun(run);

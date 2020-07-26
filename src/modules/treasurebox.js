@@ -347,7 +347,6 @@ export default async function (importModule, BLUL, GM) {
       config.aid = BLUL.Config.get('treasureBox.goldBox.aid');
       config.interval = BLUL.Config.get('treasureBox.goldBox.interval');
       config.ignoreKeywords = BLUL.Config.get('treasureBox.goldBox.ignoreKeywords').split(',').map(v => v.trim());
-      run();
     });
   });
   BLUL.onrun(run);

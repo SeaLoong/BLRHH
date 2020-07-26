@@ -108,7 +108,6 @@ export default async function (importModule, BLUL, GM) {
       config.silver2coin = BLUL.Config.get('exchange.silver2coin');
       config.coin2silver = BLUL.Config.get('exchange.coin2silver');
       config.quantity = BLUL.Config.get('exchange.coin2silver.quantity');
-      run();
     });
   });
   BLUL.onrun(run);

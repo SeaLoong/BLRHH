@@ -119,7 +119,6 @@ export default async function (importModule, BLUL, GM) {
       config.sign = BLUL.Config.get('sign');
       config.live = BLUL.Config.get('sign.live');
       config.linkGroup = BLUL.Config.get('sign.linkGroup');
-      run();
     });
   });
 
