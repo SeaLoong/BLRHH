@@ -23,6 +23,7 @@
 // @grant        GM.unregisterMenuCommand
 // @run-at       document-start
 // @license      MIT License
+// @compatible   chrome 支持80或更高的版本
 // @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/eula.html
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL/dist/require.js
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/main.js

@@ -337,7 +337,7 @@ export default async function (importModule, BLUL, GM) {
     BLUL.Config.addItem('treasureBox.silverBox', '银瓜子宝箱', config.silverBox, { tag: 'input', help: '领取银瓜子宝箱，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.goldBox', '金宝箱', config.silverBox, { tag: 'input', help: '参加金宝箱抽奖(即实物抽奖)，需要绑定手机才能正常使用', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('treasureBox.goldBox.aid', 'aid', config.aid, { tag: 'input', help: '此项只用于存储和显示数据', attribute: { type: 'number', readonly: true } });
-    BLUL.Config.addItem('treasureBox.goldBox.interval', '检查间隔', config.aid, { tag: 'input', help: '设定多久检查一次宝箱抽奖<br>单位为分钟，默认为60', corrector: v => v > 1 ? v : 60, attribute: { type: 'number', placeholder: '单位为分钟，默认为60', min: 1, max: 1440 } });
+    BLUL.Config.addItem('treasureBox.goldBox.interval', '检查间隔', config.interval, { tag: 'input', help: '设定多久检查一次宝箱抽奖<br>单位为分钟，默认为60', corrector: v => v > 1 ? v : 60, attribute: { type: 'number', placeholder: '单位为分钟，默认为60', min: 1, max: 1440 } });
     BLUL.Config.addItem('treasureBox.goldBox.ignoreKeywords', '忽略关键字', config.ignoreKeywords.join(','), { tag: 'input', help: '忽略含有以下关键字的抽奖，用英文逗号隔开', attribute: { type: 'text' } });
 
     BLUL.Config.onload(() => {
