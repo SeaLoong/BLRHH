@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const metaRequireRegExp = /\/\/\s+@require\s+(\S+)\s*/;
+const metaRequireRegExp = /\/\/\s+@require\s+(\S+)\s*/g;
 const srcRegExp = /src\/\S+\.js$/;
 
 const cacheMap = new Map();
@@ -17,15 +17,21 @@ function bundleRequireMeta (path) {
     let metadata = data.slice(0, metaRegExp.lastIndex);
     const remainData = data.slice(metaRegExp.lastIndex);
     const insertData = [];
+    const replaceList = [];
     let result;
     while ((result = metaRequireRegExp.exec(metadata))) {
       const metaRequire = result[0];
+      if (result[1].includes('greasyfork')) continue;
       if (result[1] === 'https://cdn.jsdelivr.net/gh/SeaLoong/BLUL/dist/require.js') {
-        metadata = metadata.replace(new RegExp(metaRequire, 'g'), '');
+        replaceList.push([result[1], 'https://greasyfork.org/scripts/407791-blul/code/BLUL.js']);
+        continue;
       }
       if (!(result = new URL(result[1]).pathname.match(srcRegExp))) continue;
       insertData.push(bundleRequireMeta('./' + result[0]));
-      metadata = metadata.replace(new RegExp(metaRequire, 'g'), '');
+      replaceList.push([metaRequire, '']);
+    }
+    for (const r of replaceList) {
+      metadata = metadata.replace(new RegExp(r[0], 'g'), r[1] || '');
     }
     const nl = '\n'.repeat(2);
     data = metadata + nl + insertData.join(nl) + nl + remainData;
@@ -38,4 +44,4 @@ if (!fs.existsSync('./dist')) {
   fs.mkdirSync('./dist');
 }
 
-fs.writeFileSync('./dist/dist.js', bundleRequireMeta('./src/installer.user.js'));
+fs.writeFileSync('./dist/installer.greasyfork.user.js', bundleRequireMeta('./src/installer.user.js'));
