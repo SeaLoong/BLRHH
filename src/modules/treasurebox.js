@@ -3,7 +3,7 @@ const config = {
   treasureBox: false,
   silverBox: false,
   goldBox: false,
-  aid: 598,
+  aid: 599,
   interval: 60,
   ignoreKeywords: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼']
 };
@@ -165,7 +165,7 @@ export default async function (importModule, BLUL, GM) {
         aid = r - step;
       }
     }
-    for (aid = l; aid < r; aid++) {
+    for (aid = l + 1; aid < r; aid++) {
       if (await joinActivity(aid)) continue;
       config.aid = aid - 1;
       await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
@@ -174,7 +174,6 @@ export default async function (importModule, BLUL, GM) {
   }
 
   const aidStatusMap = new Map();
-  const joinedSet = new Set();
   async function joinActivity (aid) {
     if (aidStatusMap.has(aid)) return aidStatusMap.get(aid);
     BLUL.debug('TreasureBox.joinActivity');
@@ -189,22 +188,21 @@ export default async function (importModule, BLUL, GM) {
         aidStatusMap.set(aid, false);
         return false;
       }
-      aidStatusMap.set(aid, false);
-      if (!obj.data) return false;
-      if (!joinedSet.has(aid)) {
-        joinedSet.add(aid);
-        const title = obj.data.title;
-        if (config.ignoreKeywords.some(v => title.includes(v))) {
-          BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖: ${title}(aid=${aid})`);
-        } else {
-          for (const o of obj.data.typeB) {
-            if (o.status === 0 || o.status === -1) {
-              const names = [];
-              for (const g of o.list) {
-                names.push(g.jp_name);
-              }
-              draw(aid, o.round_num, o.join_start_time, o.join_end_time, title, ...names);
+      if (!obj.data) {
+        aidStatusMap.set(aid, false);
+        return false;
+      }
+      const title = obj.data.title;
+      if (config.ignoreKeywords.some(v => title.includes(v))) {
+        BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖: ${title}(aid=${aid})`);
+      } else {
+        for (const o of obj.data.typeB) {
+          if (o.status === 0 || o.status === -1) {
+            const names = [];
+            for (const g of o.list) {
+              names.push(g.jp_name);
             }
+            draw(aid, o.round_num, o.startTime, o.join_start_time, o.join_end_time, title, ...names);
           }
         }
       }
@@ -218,7 +216,7 @@ export default async function (importModule, BLUL, GM) {
   }
 
   /* eslint-disable camelcase */
-  function draw (aid, number, join_start_time, join_end_time, title, ...names) {
+  function draw (aid, number, startTime, join_start_time, join_end_time, title, ...names) {
     const timeoutDraw = async () => {
       BLUL.debug('TreasureBox.draw.timeoutDraw');
       try {
@@ -279,7 +277,7 @@ export default async function (importModule, BLUL, GM) {
     };
     const t = (join_start_time + 3) * 1e3 - Date.now();
     if (t > 0) {
-      BLUL.Logger.info(NAME_GOLD_BOX, '等待参加: ' + title, '奖品: ', ...names);
+      BLUL.Logger.info(NAME_GOLD_BOX, '等待参加: ' + title, '开始时间: ' + startTime, '奖品: ', ...names);
     }
     setTimeout(timeoutDraw, t);
   }
