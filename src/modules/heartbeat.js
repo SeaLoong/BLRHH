@@ -9,16 +9,14 @@ export default async function (importModule, BLUL, GM) {
 
   const NAME_MOBILE = NAME + '-移动端';
   const roomidSet = new Set();
-  function mobile (roomid = BLUL.INFO.ROOMID) {
-    if (!config.heartbeat || !config.mobile) return;
+  async function mobile (roomid = BLUL.INFO.ROOMID) {
+    if (!config.heartbeat || !config.mobile || roomidSet.has(roomid)) return;
     BLUL.debug('Heartbeat.mobile');
-    if (roomidSet.has(roomid)) return;
     roomidSet.add(roomid);
     const heartbeat = async () => {
-      if (!config.heartbeat || !config.mobile) return;
-      if (!roomidSet.has(roomid)) return;
+      BLUL.debug('Heartbeat.mobile: heartbeat');
       try {
-        const response = await BLUL.Request.monkey({
+        const r = await BLUL.Request.monkey({
           method: 'POST',
           url: 'https://api.live.bilibili.com/heartbeat/v1/OnLine/mobileOnline',
           headers: BLUL.AppToken.headers,
@@ -28,18 +26,20 @@ export default async function (importModule, BLUL, GM) {
             scale: 'xxhdpi'
           }
         });
-        const obj = await response.json();
+        const obj = await r.json();
         if (obj.code !== 0) {
-          BLUL.Logger.warn(NAME_MOBILE, roomid, obj.message);
+          BLUL.Logger.warn(NAME_MOBILE, `roomid=${roomid}`, obj.message);
         }
-        setTimeout(heartbeat, config.mobileInterval * 1e3);
         return Util.cancelRetry(heartbeat);
       } catch (error) {
-        BLUL.Logger.error(NAME_MOBILE, roomid, error);
+        BLUL.Logger.error(NAME_MOBILE, `roomid=${roomid}`, error);
       }
       return Util.retry(heartbeat);
     };
-    heartbeat();
+    while (config.heartbeat && config.mobile && roomidSet.has(roomid)) {
+      await heartbeat();
+      await Util.sleep(config.mobileInterval * 1e3);
+    }
   }
 
   function stopMobile (roomid = BLUL.INFO.ROOMID) {
@@ -50,7 +50,7 @@ export default async function (importModule, BLUL, GM) {
   async function run () {
     if (!config.heartbeat) return;
     BLUL.debug('Heartbeat.run');
-    mobile();
+    await mobile();
   }
 
   BLUL.oninit(() => {

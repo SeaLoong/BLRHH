@@ -173,8 +173,10 @@ export default async function (importModule, BLUL, GM) {
     }
   }
 
+  const aidStatusMap = new Map();
   const joinedSet = new Set();
   async function joinActivity (aid) {
+    if (aidStatusMap.has(aid)) return aidStatusMap.get(aid);
     BLUL.debug('TreasureBox.joinActivity');
     try {
       const r = await BLUL.Request.fetch({
@@ -184,8 +186,10 @@ export default async function (importModule, BLUL, GM) {
       const obj = await r.json();
       if (obj.code !== 0) {
         BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
+        aidStatusMap.set(aid, false);
         return false;
       }
+      aidStatusMap.set(aid, false);
       if (!obj.data) return false;
       if (!joinedSet.has(aid)) {
         joinedSet.add(aid);
@@ -205,9 +209,10 @@ export default async function (importModule, BLUL, GM) {
         }
       }
       Util.cancelRetry(joinActivity);
+      aidStatusMap.set(aid, true);
       return true;
     } catch (error) {
-      BLUL.Logger.error(NAME_GOLD_BOX, error);
+      BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid}`, error);
     }
     return Util.retry(joinActivity);
   }
@@ -236,7 +241,7 @@ export default async function (importModule, BLUL, GM) {
           BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
         }
       } catch (error) {
-        BLUL.Logger.error(NAME_GOLD_BOX, error);
+        BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid},number=${number}`, error);
         return Util.retry(timeoutDraw);
       }
     };
@@ -268,7 +273,7 @@ export default async function (importModule, BLUL, GM) {
           BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
         }
       } catch (error) {
-        BLUL.Logger.error(NAME_GOLD_BOX, error);
+        BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid},number=${number}`, error);
         return Util.retry(timeoutEnd);
       }
     };
