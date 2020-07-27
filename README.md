@@ -1,6 +1,6 @@
 # Bilibili直播间挂机助手3
 
-![Tampermonkey4.10](https://img.shields.io/badge/TamperMonkey4.10-pass-green.svg?longCache=true) ![Chromium80](https://img.shields.io/badge/Chromium80-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/BLRHH.svg)](https://github.com/SeaLoong/BLRHH/issues)
+![Tampermonkey4.10](https://img.shields.io/badge/Tampermonkey4.10-pass-green.svg?longCache=true) ![Chromium80](https://img.shields.io/badge/Chromium80-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/BLRHH.svg)](https://github.com/SeaLoong/BLRHH/issues)
 
 + 该脚本为 Tampermonkey 脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不保证能正常运行。
 + 由于使用了比较新的语言特性，内核版本为 Chromium80 以下的版本无法使用。
