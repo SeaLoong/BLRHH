@@ -24,9 +24,9 @@
 // @run-at       document-start
 // @license      MIT License
 // @compatible   chrome 支持80或更高的版本
-// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/eula.html
-// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL/dist/require.js
-// @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/main.js
+// @resource     EULA https://raw.githubusercontent.com/SeaLoong/BLRHH/master/src/eula.html
+// @require      https://raw.githubusercontent.com/SeaLoong/BLUL/master/dist/require.js
+// @require      https://raw.githubusercontent.com/SeaLoong/BLRHH/master/src/main.js
 // @resource     jquery https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js
 // @resource     lodash https://cdn.bootcdn.net/ajax/libs/lodash.js/4.17.19/lodash.min.js
 // @resource     toastr https://cdn.bootcdn.net/ajax/libs/toastr.js/2.1.4/toastr.min.js
