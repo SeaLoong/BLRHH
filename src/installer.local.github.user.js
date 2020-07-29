@@ -6,7 +6,7 @@
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/BLRHH
 // @supportURL   https://github.com/SeaLoong/BLRHH/issues
-// @updateURL    https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/installer.local.github.user.js
+// @updateURL    https://raw.githubusercontent.com/SeaLoong/BLRHH/master/src/installer.local.github.user.js
 // @include      /^https?:\/\/live\.bilibili\.com\/(blanc\/)?\d+.*$/
 // @connect      bilibili.com
 // @connect      *
