@@ -18,7 +18,7 @@ export default async function (importModule, BLUL, GM) {
     try {
       const r = await BLUL.Request.monkey({
         url: 'https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/dynamic_new',
-        data: {
+        search: {
           uid: BLUL.INFO.UID,
           type_list: 8
         }
@@ -46,7 +46,7 @@ export default async function (importModule, BLUL, GM) {
     try {
       const r = await BLUL.Request.monkey({
         url: 'https://api.bilibili.com/x/report/click/now',
-        data: {
+        search: {
           jsonp: 'jsonp'
         }
       });
