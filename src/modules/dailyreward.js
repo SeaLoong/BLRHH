@@ -18,6 +18,7 @@ export default async function (importModule, BLUL, GM) {
     try {
       const r = await BLUL.Request.monkey({
         url: 'https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/dynamic_new',
+        headers: { Origin: 'https://www.bilibili.com' },
         search: {
           uid: BLUL.INFO.UID,
           type_list: 8
@@ -46,6 +47,7 @@ export default async function (importModule, BLUL, GM) {
     try {
       const r = await BLUL.Request.monkey({
         url: 'https://api.bilibili.com/x/report/click/now',
+        headers: { Origin: 'https://www.bilibili.com' },
         search: {
           jsonp: 'jsonp'
         }
@@ -73,22 +75,23 @@ export default async function (importModule, BLUL, GM) {
     }
     try {
       const { aid, cid } = cards[0].card;
+      const { bvid } = cards[0].desc;
       const r = await BLUL.Request.monkey({
         method: 'POST',
         url: 'https://api.bilibili.com/x/report/web/heartbeat',
+        headers: { Origin: 'https://www.bilibili.com' },
         data: {
           aid: aid,
           cid: cid,
+          bvid: bvid,
           mid: BLUL.INFO.UID,
-          start_ts: Date.now() / 1e3,
+          start_ts: Math.floor(Date.now() / 1e3),
           played_time: 0,
           realtime: 0,
           type: 3,
           play_type: 1, // 1:播放开始，2:播放中
           dt: 2,
-          csrf: BLUL.INFO.CSRF,
-          csrf_token: BLUL.INFO.CSRF,
-          visit_id: BLUL.INFO.VISIT_ID
+          csrf: BLUL.INFO.CSRF
         }
       });
       const obj = await r.json();
@@ -113,7 +116,10 @@ export default async function (importModule, BLUL, GM) {
         BLUL.Logger.warn(NAME_COIN, '没有可用的视频动态');
         return;
       }
-      const r = await BLUL.Request.monkey('https://www.bilibili.com/plus/account/exp.php');
+      const r = await BLUL.Request.monkey({
+        url: 'https://www.bilibili.com/plus/account/exp.php',
+        headers: { Origin: 'https://www.bilibili.com' }
+      });
       const obj = await r.json();
       let count = obj.number / 10;
       let stop = false;
@@ -129,13 +135,12 @@ export default async function (importModule, BLUL, GM) {
             const r = await BLUL.Request.monkey({
               method: 'POST',
               url: 'https://api.bilibili.com/x/web-interface/coin/add',
+              headers: { Origin: 'https://www.bilibili.com' },
               data: {
                 aid: aid,
                 multiply: multiply,
                 cross_domain: true,
-                csrf: BLUL.INFO.CSRF,
-                csrf_token: BLUL.INFO.CSRF,
-                visit_id: BLUL.INFO.VISIT_ID
+                csrf: BLUL.INFO.CSRF
               }
             });
             const obj = await r.json();
@@ -189,12 +194,10 @@ export default async function (importModule, BLUL, GM) {
       const r = await BLUL.Request.monkey({
         method: 'POST',
         url: 'https://api.bilibili.com/x/web-interface/share/add',
+        headers: { Origin: 'https://www.bilibili.com' },
         data: {
           aid: aid,
-          jsonp: 'jsonp',
-          csrf: BLUL.INFO.CSRF,
-          csrf_token: BLUL.INFO.CSRF,
-          visit_id: BLUL.INFO.VISIT_ID
+          csrf: BLUL.INFO.CSRF
         }
       });
       const obj = await r.json();
@@ -243,11 +246,15 @@ export default async function (importModule, BLUL, GM) {
     (async function runCoin () {
       if (!config.dailyReward || !config.coin) return;
       if (Util.isAtTime(await GM.getValue(TIMESTAMP_NAME_COIN) ?? 0)) {
-        if (!cards) await dynamic();
-        await coin();
-        await GM.setValue(TIMESTAMP_NAME_COIN, Date.now());
+        if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
+          if (!cards) await dynamic();
+          await coin();
+          await GM.setValue(TIMESTAMP_NAME_COIN, Date.now());
+          BLUL.Logger.info(NAME_COIN, '今日已完成');
+        } else {
+          BLUL.Logger.warn(NAME_COIN, '未绑定手机，不能投币');
+        }
       }
-      BLUL.Logger.info(NAME_COIN, '今日已完成');
       Util.callAtTime(runCoin);
     })();
 
