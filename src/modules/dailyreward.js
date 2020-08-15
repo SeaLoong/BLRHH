@@ -134,6 +134,7 @@ export default async function (importModule, BLUL, GM) {
               data: {
                 aid: aid,
                 multiply: multiply,
+                select_like: 0,
                 cross_domain: true,
                 csrf: BLUL.INFO.CSRF
               }
