@@ -174,50 +174,52 @@ export default async function (importModule, BLUL, GM) {
   }
 
   const aidStatusMap = new Map();
-  async function joinActivity (aid) {
-    if (aidStatusMap.has(aid)) return aidStatusMap.get(aid);
-    BLUL.debug('TreasureBox.joinActivity');
-    try {
-      const r = await BLUL.Request.fetch({
-        url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getStatus?aid=' + aid,
-        referrer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
-      });
-      const obj = await r.json();
-      if (obj.code !== 0) {
-        BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
-        aidStatusMap.set(aid, false);
-        return false;
-      }
-      if (!obj.data) {
-        aidStatusMap.set(aid, false);
-        return false;
-      }
-      const title = obj.data.title;
-      if (config.ignoreKeywords.some(v => title.includes(v))) {
-        BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖: ${title}(aid=${aid})`);
-      } else {
-        for (const o of obj.data.typeB) {
-          if (o.status === 0 || o.status === -1) {
-            const names = [];
-            for (const g of o.list) {
-              names.push(g.jp_name);
+  function joinActivity (aid) {
+    return (async function tryJoin () {
+      if (aidStatusMap.has(aid)) return aidStatusMap.get(aid);
+      BLUL.debug('TreasureBox.joinActivity');
+      try {
+        const r = await BLUL.Request.fetch({
+          url: 'https://api.live.bilibili.com/xlive/lottery-interface/v2/Box/getStatus?aid=' + aid,
+          referrer: 'https://live.bilibili.com/p/html/live-room-treasurebox/index.html?aid=' + aid
+        });
+        const obj = await r.json();
+        if (obj.code !== 0) {
+          BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
+          aidStatusMap.set(aid, false);
+          return false;
+        }
+        if (!obj.data) {
+          aidStatusMap.set(aid, false);
+          return false;
+        }
+        const title = obj.data.title;
+        if (config.ignoreKeywords.some(v => title.includes(v))) {
+          BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖: ${title}(aid=${aid})`);
+        } else {
+          for (const o of obj.data.typeB) {
+            if (o.status === 0 || o.status === -1) {
+              const names = [];
+              for (const g of o.list) {
+                names.push(g.jp_name);
+              }
+              draw(aid, o.round_num, o.startTime, o.join_start_time, o.join_end_time, title, ...names);
             }
-            draw(aid, o.round_num, o.startTime, o.join_start_time, o.join_end_time, title, ...names);
           }
         }
+        Util.cancelRetry(tryJoin);
+        aidStatusMap.set(aid, true);
+        return true;
+      } catch (error) {
+        BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid}`, error);
       }
-      Util.cancelRetry(joinActivity);
-      aidStatusMap.set(aid, true);
-      return true;
-    } catch (error) {
-      BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid}`, error);
-    }
-    return Util.retry(joinActivity);
+      return Util.retry(tryJoin);
+    })();
   }
 
   /* eslint-disable camelcase */
   function draw (aid, number, startTime, join_start_time, join_end_time, title, ...names) {
-    const timeoutDraw = async () => {
+    async function timeoutDraw () {
       BLUL.debug('TreasureBox.draw.timeoutDraw');
       try {
         const r = await BLUL.Request.fetch({
@@ -242,8 +244,8 @@ export default async function (importModule, BLUL, GM) {
         BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid},number=${number}`, error);
         return Util.retry(timeoutDraw);
       }
-    };
-    const timeoutEnd = async () => {
+    }
+    async function timeoutEnd () {
       BLUL.debug('TreasureBox.draw.timeoutEnd');
       try {
         const r = await BLUL.Request.fetch({
@@ -274,7 +276,7 @@ export default async function (importModule, BLUL, GM) {
         BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid},number=${number}`, error);
         return Util.retry(timeoutEnd);
       }
-    };
+    }
     const t = (join_start_time + 3) * 1e3 - Date.now();
     if (t > 0) {
       BLUL.Logger.info(NAME_GOLD_BOX, '等待参加: ' + title, '开始时间: ' + startTime, '奖品: ', ...names);
