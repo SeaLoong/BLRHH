@@ -16,9 +16,8 @@ export default async function (importModule, BLUL, GM) {
     if (!config.dailyReward) return;
     BLUL.debug('DailyReward.dynamic');
     try {
-      const r = await BLUL.Request.monkey({
+      const r = await BLUL.Request.fetch({
         url: 'https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/dynamic_new',
-        headers: { Origin: 'https://www.bilibili.com' },
         search: {
           uid: BLUL.INFO.UID,
           type_list: 8
@@ -45,9 +44,8 @@ export default async function (importModule, BLUL, GM) {
     if (!config.dailyReward || !config.login) return;
     BLUL.debug('DailyReward.login');
     try {
-      const r = await BLUL.Request.monkey({
+      const r = await BLUL.Request.fetch({
         url: 'https://api.bilibili.com/x/report/click/now',
-        headers: { Origin: 'https://www.bilibili.com' },
         search: {
           jsonp: 'jsonp'
         }
@@ -76,10 +74,9 @@ export default async function (importModule, BLUL, GM) {
     try {
       const { aid, cid } = cards[0].card;
       const { bvid } = cards[0].desc;
-      const r = await BLUL.Request.monkey({
+      const r = await BLUL.Request.fetch({
         method: 'POST',
         url: 'https://api.bilibili.com/x/report/web/heartbeat',
-        headers: { Origin: 'https://www.bilibili.com' },
         data: {
           aid: aid,
           cid: cid,
@@ -116,9 +113,8 @@ export default async function (importModule, BLUL, GM) {
         BLUL.Logger.warn(NAME_COIN, '没有可用的视频动态');
         return;
       }
-      const r = await BLUL.Request.monkey({
-        url: 'https://www.bilibili.com/plus/account/exp.php',
-        headers: { Origin: 'https://www.bilibili.com' }
+      const r = await BLUL.Request.fetch({
+        url: 'https://www.bilibili.com/plus/account/exp.php'
       });
       const obj = await r.json();
       let count = obj.number / 10;
@@ -132,10 +128,9 @@ export default async function (importModule, BLUL, GM) {
           BLUL.debug('DailyReward.coin.tryCoin');
           try {
             const multiply = one ? 1 : Math.min(2, (config.coinNumber - count));
-            const r = await BLUL.Request.monkey({
+            const r = await BLUL.Request.fetch({
               method: 'POST',
               url: 'https://api.bilibili.com/x/web-interface/coin/add',
-              headers: { Origin: 'https://www.bilibili.com' },
               data: {
                 aid: aid,
                 multiply: multiply,
@@ -191,10 +186,9 @@ export default async function (importModule, BLUL, GM) {
     }
     try {
       const { aid } = cards[0].card;
-      const r = await BLUL.Request.monkey({
+      const r = await BLUL.Request.fetch({
         method: 'POST',
         url: 'https://api.bilibili.com/x/web-interface/share/add',
-        headers: { Origin: 'https://www.bilibili.com' },
         data: {
           aid: aid,
           csrf: BLUL.INFO.CSRF
