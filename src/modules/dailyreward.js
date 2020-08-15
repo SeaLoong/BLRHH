@@ -4,7 +4,7 @@ const config = {
   login: true,
   watch: false,
   coin: false,
-  coinNumber: 5,
+  coinNumber: 1,
   share: false
 };
 let cards;
@@ -273,10 +273,10 @@ export default async function (importModule, BLUL, GM) {
   BLUL.oninit(() => {
     BLUL.Config.addItem('dailyReward', NAME, config.dailyReward, { tag: 'input', help: '自动完成主站的每日任务', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('dailyReward.login', '登录', config.login, { tag: 'input', attribute: { type: 'checkbox' } });
-    BLUL.Config.addItem('dailyReward.watch', '观看', config.login, { tag: 'input', attribute: { type: 'checkbox' } });
-    BLUL.Config.addItem('dailyReward.coin', '投币', config.login, { tag: 'input', attribute: { type: 'checkbox' } });
-    BLUL.Config.addItem('dailyReward.coin.number', '数量', config.quantity, { tag: 'input', attribute: { type: 'number', placeholder: '默认为1', min: 1, max: 5 } });
-    BLUL.Config.addItem('dailyReward.share', '分享', config.login, { tag: 'input', attribute: { type: 'checkbox' } });
+    BLUL.Config.addItem('dailyReward.watch', '观看', config.watch, { tag: 'input', attribute: { type: 'checkbox' } });
+    BLUL.Config.addItem('dailyReward.coin', '投币', config.coin, { tag: 'input', attribute: { type: 'checkbox' } });
+    BLUL.Config.addItem('dailyReward.coin.number', '数量', config.coinNumber, { tag: 'input', attribute: { type: 'number', placeholder: '默认为1', min: 1, max: 5 } });
+    BLUL.Config.addItem('dailyReward.share', '分享', config.share, { tag: 'input', attribute: { type: 'checkbox' } });
 
     BLUL.Config.onload(() => {
       config.dailyReward = BLUL.Config.get('dailyReward');
