@@ -145,6 +145,7 @@ export default async function (importModule, BLUL, GM) {
   }
 
   const NAME_GOLD_BOX = NAME + '-金宝箱';
+  const aidStatusMap = new Map();
   async function goldBox () {
     BLUL.debug('TreasureBox.goldBox');
     BLUL.Logger.info(NAME_GOLD_BOX, '正在检查可参加的宝箱抽奖');
@@ -161,9 +162,9 @@ export default async function (importModule, BLUL, GM) {
     }
     config.aid = aid;
     await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
+    aidStatusMap.clear();
   }
 
-  const aidStatusMap = new Map();
   function joinActivity (aid) {
     return (async function tryJoin () {
       if (aidStatusMap.has(aid)) return aidStatusMap.get(aid);
