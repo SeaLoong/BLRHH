@@ -3,7 +3,7 @@ const config = {
   treasureBox: false,
   silverBox: false,
   goldBox: false,
-  aid: 599,
+  aid: 626,
   interval: 60,
   ignoreKeywords: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼']
 };
@@ -149,28 +149,18 @@ export default async function (importModule, BLUL, GM) {
     BLUL.debug('TreasureBox.goldBox');
     BLUL.Logger.info(NAME_GOLD_BOX, '正在检查可参加的宝箱抽奖');
     let aid = config.aid;
-    const step = 10;
+    const step = 8;
     let l = 0;
-    let r = 999999;
-    while (l + step < r) {
+    while (aid > l) {
       if (await joinActivity(aid)) {
-        let i = 4;
-        while (i > 0 && !await joinActivity(aid + i)) i -= 2;
-        l = Math.max(l, aid + i);
-        aid = l + step;
+        l = Math.max(l, aid);
+        aid += Math.floor(step);
       } else {
-        let i = 4;
-        while (i > 0 && await joinActivity(aid - i)) i -= 2;
-        r = Math.min(r, aid - i);
-        aid = r - step;
+        aid--;
       }
     }
-    for (aid = l + 1; aid < r; aid++) {
-      if (await joinActivity(aid)) continue;
-      config.aid = aid - 1;
-      await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
-      break;
-    }
+    config.aid = aid;
+    await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
   }
 
   const aidStatusMap = new Map();
@@ -193,6 +183,7 @@ export default async function (importModule, BLUL, GM) {
           aidStatusMap.set(aid, false);
           return false;
         }
+        let joinTime = 0;
         const title = obj.data.title;
         if (config.ignoreKeywords.some(v => title.includes(v))) {
           BLUL.Logger.info(NAME_GOLD_BOX, `忽略抽奖: ${title}(aid=${aid})`);
@@ -203,13 +194,15 @@ export default async function (importModule, BLUL, GM) {
               for (const g of o.list) {
                 names.push(g.jp_name);
               }
+              joinTime = Math.max(joinTime, o.join_end_time);
               draw(aid, o.round_num, o.startTime, o.join_start_time, o.join_end_time, title, ...names);
             }
           }
         }
         Util.cancelRetry(tryJoin);
-        aidStatusMap.set(aid, true);
-        return true;
+        const rt = joinTime * 1e3 <= Date.now();
+        aidStatusMap.set(aid, rt);
+        return rt;
       } catch (error) {
         BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid}`, error);
       }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手3
 // @namespace    SeaLoong
-// @version      3.0.0
+// @version      3.1.0
 // @description  B站直播间挂机用: 签到，领瓜子，移动端心跳，瓜子换硬币等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/BLRHH
@@ -24,7 +24,8 @@
 // @run-at       document-start
 // @license      MIT License
 // @compatible   chrome 支持80或更高的版本
-// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/eula.html
+// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/eula.html
+// @resource     NOTICE https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/notice.html
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLUL/dist/require.js
 // @require      https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/main.js
 // @resource     jquery https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js
@@ -47,4 +48,5 @@
 // @resource     TreasureBox https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/modules/treasurebox.js
 // @resource     TreasureBox/worker https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/modules/treasurebox/worker.js
 // @resource     Heartbeat https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/modules/heartbeat.js
+// @resource     DailyReward https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/modules/dailyreward.js
 // ==/UserScript==
