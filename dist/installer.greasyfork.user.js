@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bilibili直播间挂机助手3
 // @namespace    SeaLoong
-// @version      3.0.0
+// @version      3.1.0
 // @description  B站直播间挂机用: 签到，领瓜子，移动端心跳，瓜子换硬币等
 // @author       SeaLoong
 // @homepageURL  https://github.com/SeaLoong/BLRHH
@@ -24,7 +24,8 @@
 // @run-at       document-start
 // @license      MIT License
 // @compatible   chrome 支持80或更高的版本
-// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/src/eula.html
+// @resource     EULA https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/eula.html
+// @resource     NOTICE https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/notice.html
 // @require      https://greasyfork.org/scripts/407791-blul/code/BLUL.js
 // ==/UserScript==
 
@@ -33,8 +34,9 @@
 
 (async () => {
   const EULA = await GM.getResourceText('EULA');
+  const NOTICE = await GM.getResourceText('NOTICE');
   BLUL.NAME = 'BLRHH';
-  if (!await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1] })) {
+  if (!await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1], NOTICE: NOTICE })) {
     console.error('[BLRHH] BLUL加载失败');
     return;
   }
@@ -63,6 +65,7 @@
   await importModule('Exchange');
   await importModule('TreasureBox');
   await importModule('Heartbeat');
+  await importModule('DailyReward');
 })();
 
 
