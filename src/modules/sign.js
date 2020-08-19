@@ -11,13 +11,16 @@ export default async function (importModule, BLUL, GM) {
   async function live () {
     BLUL.debug('Sign.live');
     try {
-      const response = await BLUL.Request.fetch('https://api.live.bilibili.com/sign/doSign');
+      const response = await BLUL.Request.fetch('https://api.live.bilibili.com/xlive/web-ucenter/v1/sign/DoSign');
       const obj = await response.json();
       if (obj.code === 0) {
         BLUL.Logger.success(NAME_LIVE, obj.data.text);
         return Util.cancelRetry(live);
       } else if (obj.code === 1011040 || obj.message.includes('已签到')) {
         BLUL.Logger.info(NAME_LIVE, obj.message);
+        return Util.cancelRetry(live);
+      } else if (obj.code === 1001) {
+        BLUL.Logger.warn(NAME_LIVE, '未绑定手机，不能签到');
         return Util.cancelRetry(live);
       }
       BLUL.Logger.warn(NAME_LIVE, obj.message);

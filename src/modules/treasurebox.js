@@ -123,8 +123,9 @@ export default async function (importModule, BLUL, GM) {
           Util.cancelRetry(silverBoxAward);
           return silverBox();
         case -800: // -800：未绑定手机
+        case 1001:
           setTip('未绑定<br>手机');
-          BLUL.Logger.warn(NAME_SILVER_BOX, obj.message);
+          BLUL.Logger.warn(NAME_SILVER_BOX, '未绑定手机，不能领取银瓜子');
           return Util.cancelRetry(silverBoxAward);
         case 400: // 400: 访问被拒绝
           setTip('访问<br>被拒绝');

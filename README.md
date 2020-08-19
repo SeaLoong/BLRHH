@@ -1,9 +1,9 @@
 # Bilibili直播间挂机助手3
 
-![Tampermonkey4.10](https://img.shields.io/badge/Tampermonkey4.10-pass-green.svg?longCache=true) ![Chromium80](https://img.shields.io/badge/Chromium80-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/BLRHH.svg)](https://github.com/SeaLoong/BLRHH/issues)
+![Tampermonkey4.10](https://img.shields.io/badge/Tampermonkey4.10-pass-green.svg?longCache=true) ![Chromium80](https://img.shields.io/badge/Chromium80-pass-green.svg?longCache=true) ![Firefox72](https://img.shields.io/badge/Firefox72-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/BLRHH.svg)](https://github.com/SeaLoong/BLRHH/issues)
 
 + 该脚本为 Tampermonkey 脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不保证能正常运行。
-+ 由于使用了比较新的语言特性，内核版本为 Chromium80 以下的版本无法使用。
++ 由于使用了比较新的语言特性，内核版本为 Chromium80 或 Firefox72 以下的版本无法使用。
 + 在 Tampermonkey 脚本设置中需要将此脚本的设置 “仅在顶层页面（框架）运行” 设置为否(默认为否)才使脚本在特殊直播间运行。
 
 ----------------------------------
@@ -34,6 +34,10 @@
 + 兑换
   + 银瓜子兑换硬币
   + 硬币兑换银瓜子
++ 每日奖励（主站）
+  + 签到
+  + 观看
+  + 分享
 
 ----------------------------------
 
@@ -58,6 +62,9 @@
 
 ## 更新日志
 
++ 3.1.2 (2020-08-19)
+  + 优化提示。
+  + 支持在Firefox中使用原先不能使用的功能。
 + 3.1.1 (2020-08-19)
   + 修复金宝箱抽奖算法问题。
   + 增加部分主站每日奖励功能。
