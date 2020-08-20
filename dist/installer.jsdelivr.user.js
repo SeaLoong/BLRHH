@@ -273,7 +273,7 @@ var BLUL;
       BLUL.INFO.CSRF = Util.getCookie('bili_jct');
       if (!BLUL.INFO.CSRF) {
         if (!slient) {
-          BLUL.Toast.warn('你还没有登录呢~');
+          BLUL.Toast.warn('你��没有登录呢~');
         }
         await unregisterMenuCmd();
         return false;
