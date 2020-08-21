@@ -56,7 +56,11 @@
 
 ## 开源许可证
 
-[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg?longCache=true)](https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/LICENSE)
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg?longCache=true)](https://github.com/SeaLoong/BLRHH/blob/master/LICENSE)
+
++ 本项目中使用到的库
+  + [BLUL](https://github.com/SeaLoong/BLUL) - [![MIT License](https://img.shields.io/badge/License-MIT-green.svg?longCache=true)](https://github.com/SeaLoong/BLUL/blob/master/LICENSE)
+  + [tfjs](https://github.com/tensorflow/tfjs) - [![Apache-2.0 License](https://img.shields.io/badge/License-Apache--2.0-blue.svg?longCache=true)](https://github.com/tensorflow/tfjs/blob/master/LICENSE)
 
 ----------------------------------
 
