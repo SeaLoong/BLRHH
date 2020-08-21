@@ -12,7 +12,7 @@
 
 1. 安装 **油猴插件**(Tampermonkey/Greasemonkey/Violentmonkey等)，可以参考 [GreasyFork](https://greasyfork.org/zh-CN) 首页说明。
 2. 安装插件，可从以下两种方式选择安装：
-   + 点击 [安装脚本(github)](https://raw.githubusercontent.com/SeaLoong/BLRHH/master/dist/installer.github.user.js) 或 [安装脚本(jsdelivr)](https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/dist/installer.jsdelivr.user.js) ，脚本管理器会弹出安装脚本页面，即可从Github更新脚本。
+   + 点击 [安装脚本(github)](https://raw.githubusercontent.com/SeaLoong/BLRHH/dist/installer.github.user.js) 或 [安装脚本(jsdelivr)](https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH@dist/installer.jsdelivr.user.js) ，脚本管理器会弹出安装脚本页面，即可从Github更新脚本。
      + 如果没有出现脚本管理器的安装页面，则需要将代码复制下来。然后从脚本管理器中新建一个脚本，将自动生成的内容删除，粘贴复制的代码并保存。
    + 进入 [Bilibili直播间挂机助手](https://greasyfork.org/zh-CN/scripts/37095-bilibili%E7%9B%B4%E6%92%AD%E9%97%B4%E6%8C%82%E6%9C%BA%E5%8A%A9%E6%89%8B) 页面，点击 **安装此脚本** 即可从 GreasyFork 更新脚本。
 3. 进入直播间页面，右上方多出如 "弹幕" "日志" "设置" 等选项，选择自己需要的功能，保存即可。
