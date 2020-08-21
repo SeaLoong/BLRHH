@@ -213,7 +213,12 @@ export default async function (importModule, BLUL, GM) {
   }
 
   /* eslint-disable camelcase */
+  const drawMap = new Map();
   function draw (aid, number, startTime, join_start_time, join_end_time, title, ...names) {
+    if (!drawMap.has(aid)) drawMap.set(aid, new Set());
+    const set = drawMap.get(aid);
+    if (set.has(number)) return;
+    set.add(number);
     async function timeoutDraw () {
       BLUL.debug('TreasureBox.draw.timeoutDraw');
       try {
