@@ -5,7 +5,7 @@
   const EULA = await GM.getResourceText('EULA');
   const NOTICE = await GM.getResourceText('NOTICE');
   BLUL.NAME = 'BLRHH';
-  if (!await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1], NOTICE: NOTICE })) {
+  if (!await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, loadInSpecial: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1], NOTICE: NOTICE })) {
     console.error('[BLRHH] BLUL加载失败');
     return;
   }
