@@ -5,9 +5,20 @@
   const EULA = await GM.getResourceText('EULA');
   const NOTICE = await GM.getResourceText('NOTICE');
   BLUL.NAME = 'BLRHH';
-  if (!await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, loadInSpecial: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1], NOTICE: NOTICE })) {
-    console.error('[BLRHH] BLUL加载失败');
-    return;
+  const result = await BLUL.run({ debug: await GM.getValue('debug'), slient: false, unique: true, login: true, EULA: EULA, EULA_VERSION: EULA.match(/\[v(.+?)\]/)[1], NOTICE: NOTICE });
+  switch (result) {
+    case 0:
+      break;
+    case 1:
+      return;
+    case 2:
+      return;
+    case 3:
+      (BLUL.Logger ?? console).warn('脚本运行需要登录，当前未登录');
+      return;
+    case 4:
+      (BLUL.Logger ?? console).warn('未同意EULA，脚本将不会运行');
+      return;
   }
   BLUL.Logger.info('脚本信息', `运行环境: ${BLUL.ENVIRONMENT} ${BLUL.ENVIRONMENT_VERSION}`, `版本: ${BLUL.VERSION}`);
   const { importModule } = BLUL;

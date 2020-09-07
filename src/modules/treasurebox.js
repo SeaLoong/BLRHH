@@ -3,21 +3,19 @@ const config = {
   treasureBox: false,
   silverBox: false,
   goldBox: false,
-  aid: 626,
+  aid: 630,
   interval: 60,
   ignoreKeywords: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼']
 };
 export default async function (importModule, BLUL, GM) {
-  await BLUL.addResource('tfjs', ['https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.1/dist/tf.min.js']);
-  await BLUL.addResource('TreasureBox_Model', ['https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/models/treasurebox_captcha/model.json', 'https://raw.githubusercontent.com/SeaLoong/BLRHH/dev/models/treasurebox_captcha/model.json']);
   const Util = BLUL.Util;
 
-  const worker = await BLUL.Worker.importModule('TreasureBox/worker');
+  let worker;
 
   let tipElement;
   let timerElement;
-  const canvas = $('<canvas style="display:none" width="120" height="40"></canvas>')[0];
-  const ctx = canvas.getContext('2d');
+  let canvas;
+  let ctx;
 
   let loadImageResolveFn;
   const image = new Image(120, 40);
@@ -291,6 +289,9 @@ export default async function (importModule, BLUL, GM) {
     (async function runSilverBox () {
       if (!config.treasureBox || !config.silverBox) return;
       if (!tipElement && !timerElement && !$('.draw-box.gift-left-part').length) {
+        await BLUL.addResource('tfjs', ['https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.1/dist/tf.min.js']);
+        await BLUL.addResource('TreasureBox_Model', ['https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/models/treasurebox_captcha/model.json', 'https://raw.githubusercontent.com/SeaLoong/BLRHH/dev/models/treasurebox_captcha/model.json']);
+
         const box = $('#gift-control-vm div.treasure-box.p-relative').first();
         box.attr('id', 'old_treasure_box');
         box.hide();
@@ -307,6 +308,9 @@ export default async function (importModule, BLUL, GM) {
         box.after(div);
         div.append(tipElement);
         tipElement.after(timerElement);
+        worker = await BLUL.Worker.importModule('TreasureBox/worker');
+        canvas = $('<canvas style="display:none" width="120" height="40"></canvas>')[0];
+        ctx = canvas.getContext('2d');
       }
       /* eslint-disable camelcase */
       if (!BLUL.INFO?.InfoByUser?.info || BLUL.INFO.InfoByUser.info.mobile_verify) {
