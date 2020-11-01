@@ -145,10 +145,21 @@ export default async function (importModule, BLUL, GM) {
   }
 
   const NAME_GOLD_BOX = NAME + '-金宝箱';
+  const joinedSet = new Set();
   const aidStatusMap = new Map();
   async function goldBox () {
     BLUL.debug('TreasureBox.goldBox');
     BLUL.Logger.info(NAME_GOLD_BOX, '正在检查可参加的宝箱抽奖');
+    let joinTime = 0;
+    for (const k in config.cache) {
+      for (const o of config.cache[k].typeB) {
+        joinTime = Math.max(joinTime, o.join_end_time);
+      }
+      if (joinTime * 1e3 <= Date.now()) {
+        delete config.cache[k];
+        aidStatusMap.set(parseInt(k, 10), 1);
+      }
+    }
     let aid = config.aid;
     let cnt = 0;
     const startedList = [];
@@ -171,15 +182,6 @@ export default async function (importModule, BLUL, GM) {
     if (lastAid === Number.MAX_SAFE_INTEGER) lastAid = startedList.reduce((m, v) => Math.max(m, v), 0) + 1;
     config.aid = Math.max(config.aid, lastAid);
     await BLUL.Config.set('treasureBox.goldBox.aid', config.aid);
-    let joinTime = 0;
-    for (const k in config.cache) {
-      for (const o of config.cache[k].typeB) {
-        joinTime = Math.max(joinTime, o.join_end_time);
-      }
-      if (joinTime * 1e3 <= Date.now()) {
-        delete config.cache[k];
-      }
-    }
     await BLUL.Config.set('treasureBox.goldBox.cache', JSON.stringify(config.cache));
     aidStatusMap.clear();
   }
@@ -201,11 +203,13 @@ export default async function (importModule, BLUL, GM) {
           if (obj.code !== 0) {
             BLUL.Logger.warn(NAME_GOLD_BOX, obj.message);
             aidStatusMap.set(aid, 0);
+            Util.cancelRetry(tryJoin);
             return 0;
           }
           data = obj.data;
           if (!data) {
             aidStatusMap.set(aid, 2);
+            Util.cancelRetry(tryJoin);
             return 2;
           }
         }
@@ -217,7 +221,7 @@ export default async function (importModule, BLUL, GM) {
         }
         for (const o of data.typeB) {
           joinTime = Math.max(joinTime, o.join_end_time);
-          if (!ignore && (o.status === 0 || o.status === -1)) {
+          if (!joinedSet.has(aid) && !ignore && (o.status === 0 || o.status === -1)) {
             const names = [];
             for (const g of o.list) {
               names.push(g.jp_name);
@@ -225,7 +229,7 @@ export default async function (importModule, BLUL, GM) {
             draw(aid, o.round_num, o.startTime, o.join_start_time, o.join_end_time, title, ...names);
           }
         }
-        Util.cancelRetry(tryJoin);
+        joinedSet.add(aid);
         const ret = joinTime * 1e3 <= Date.now() ? 1 : 0;
         if (ret === 0) {
           config.cache[aid] = data;
@@ -233,6 +237,7 @@ export default async function (importModule, BLUL, GM) {
           delete config.cache[aid];
         }
         aidStatusMap.set(aid, ret);
+        Util.cancelRetry(tryJoin);
         return ret;
       } catch (error) {
         BLUL.Logger.error(NAME_GOLD_BOX, `aid=${aid}`, error);
