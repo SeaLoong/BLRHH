@@ -291,7 +291,7 @@ export default async function (importModule, BLUL, GM) {
     BLUL.Config.addItem('dailyReward.login', '登录', config.login, { tag: 'input', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('dailyReward.watch', '观看', config.watch, { tag: 'input', attribute: { type: 'checkbox' } });
     BLUL.Config.addItem('dailyReward.coin', '投币', config.coin, { tag: 'input', attribute: { type: 'checkbox' } });
-    BLUL.Config.addItem('dailyReward.coin.number', '数量', config.coinNumber, { tag: 'input', attribute: { type: 'number', placeholder: '默认为1', min: 1, max: 5 } });
+    BLUL.Config.addItem('dailyReward.coin.number', '数量', config.coinNumber, { tag: 'input', attribute: { type: 'number', placeholder: '默认为5', min: 1, max: 5 } });
     BLUL.Config.addItem('dailyReward.share', '分享', config.share, { tag: 'input', attribute: { type: 'checkbox' } });
 
     BLUL.Config.onload(() => {
