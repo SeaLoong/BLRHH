@@ -4,7 +4,7 @@ const config = {
   login: true,
   watch: false,
   coin: false,
-  coinNumber: 1,
+  coinNumber: 5,
   share: false
 };
 let cards;
@@ -13,7 +13,7 @@ export default async function (importModule, BLUL, GM) {
 
   const NAME_DYNAMIC = NAME + '-获取动态视频';
   async function dynamic () {
-    if (!config.dailyReward) return;
+    if (!config.dailyReward) return Util.cancelRetry(dynamic);
     BLUL.debug('DailyReward.dynamic');
     try {
       const r = await BLUL.Request.fetch({
@@ -41,7 +41,7 @@ export default async function (importModule, BLUL, GM) {
 
   const NAME_LOGIN = NAME + '-登录';
   async function login () {
-    if (!config.dailyReward || !config.login) return;
+    if (!config.dailyReward || !config.login) return Util.cancelRetry(login);
     BLUL.debug('DailyReward.login');
     try {
       const r = await BLUL.Request.fetch({
@@ -65,11 +65,13 @@ export default async function (importModule, BLUL, GM) {
 
   const NAME_WATCH = NAME + '-观看';
   async function watch () {
-    if (!config.dailyReward || !config.watch) return;
+    if (!config.dailyReward || !config.watch) return Util.cancelRetry(watch);
     BLUL.debug('DailyReward.watch');
     if (!cards?.length) {
-      BLUL.Logger.warn(NAME_WATCH, '没有可用的视频动态');
-      return Util.cancelRetry(watch);
+      Util.cancelRetry(watch);
+      BLUL.Logger.warn(NAME_WATCH, '没有可用的视频动态，10分钟后将重试');
+      await Util.sleep(600e3);
+      return watch();
     }
     try {
       const { aid, cid } = cards[0].card;
@@ -106,17 +108,25 @@ export default async function (importModule, BLUL, GM) {
 
   const NAME_COIN = NAME + '-投币';
   async function coin () {
-    if (!config.dailyReward || !config.coin) return;
+    if (!config.dailyReward || !config.coin) return Util.cancelRetry(coin);
     try {
       BLUL.debug('DailyReward.coin');
       if (!cards?.length) {
-        BLUL.Logger.warn(NAME_COIN, '没有可用的视频动态');
-        return;
+        Util.cancelRetry(coin);
+        BLUL.Logger.warn(NAME_COIN, '没有可用的视频动态，10分钟后将重试');
+        await Util.sleep(600e3);
+        return coin();
       }
       const r = await BLUL.Request.fetch({
         url: 'https://www.bilibili.com/plus/account/exp.php'
       });
       const obj = await r.json();
+      if (!('number' in obj)) {
+        Util.cancelRetry(coin);
+        BLUL.Logger.error(NAME_COIN, '获取今日已投币经验失败，10分钟后将重试');
+        await Util.sleep(600e3);
+        return coin();
+      }
       let count = obj.number / 10;
       let stop = false;
       for (const { card } of cards) {
@@ -128,16 +138,18 @@ export default async function (importModule, BLUL, GM) {
           BLUL.debug('DailyReward.coin.tryCoin');
           try {
             const multiply = one ? 1 : Math.min(2, (config.coinNumber - count));
-            const r = await BLUL.Request.fetch({
+            const r = await BLUL.Request.monkey({
               method: 'POST',
-              url: 'https://api.bilibili.com/x/web-interface/coin/add',
-              data: {
+              url: 'https://app.bilibili.com/x/v2/view/coin/add',
+              headers: BLUL.AppToken.headers,
+              data: BLUL.AppToken.sign({
+                access_key: await BLUL.AppToken.getAccessToken(),
                 aid: aid,
+                avtype: 1,
+                c_locale: 'zh_CN',
                 multiply: multiply,
-                select_like: 0,
-                cross_domain: true,
-                csrf: BLUL.INFO.CSRF
-              }
+                select_like: 0
+              })
             });
             const obj = await r.json();
             if (obj.code === 0) {
@@ -166,8 +178,8 @@ export default async function (importModule, BLUL, GM) {
       }
       Util.cancelRetry(coin);
       if (!stop && config.coinNumber > count) {
-        BLUL.Logger.warn(NAME_COIN, '可投币的视频动态不足');
-        await Util.sleep(300e3);
+        BLUL.Logger.warn(NAME_COIN, '可投币的视频动态不足，10分钟后将重试');
+        await Util.sleep(600e3);
         return coin();
       }
       return;
@@ -179,11 +191,13 @@ export default async function (importModule, BLUL, GM) {
 
   const NAME_SHARE = NAME + '-分享';
   async function share () {
-    if (!config.dailyReward || !config.share) return;
+    if (!config.dailyReward || !config.share) return Util.cancelRetry(share);
     BLUL.debug('DailyReward.share');
     if (!cards?.length) {
-      BLUL.Logger.warn(NAME_SHARE, '没有可用的视频动态');
-      return Util.cancelRetry(share);
+      Util.cancelRetry(share);
+      BLUL.Logger.warn(NAME_SHARE, '没有可用的视频动态，10分钟后将重试');
+      await Util.sleep(600e3);
+      return share();
     }
     try {
       const { aid } = cards[0].card;

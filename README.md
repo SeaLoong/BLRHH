@@ -66,8 +66,8 @@
 
 ## 更新日志
 
-+ 3.1.6 (2020-11-01)
-  + 优化金宝箱参加算法。
++ 3.1.7 (2020-11-06)
+  + 增加每日奖励-投币功能。
 
 [完整日志](https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/update-log.md)
 
