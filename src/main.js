@@ -46,4 +46,5 @@
   await importModule('TreasureBox');
   await importModule('Heartbeat');
   await importModule('DailyReward');
+  await importModule('AvoidDetection');
 })();
