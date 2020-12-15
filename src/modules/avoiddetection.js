@@ -4,15 +4,36 @@ const config = {
   interval: 5
 };
 export default async function (importModule, BLUL, GM) {
+  function mouseMove () {
+    if (!config.avoidDetection) return;
+    BLUL.debug('AvoidDetection.mouseMove');
+    document.dispatchEvent(new MouseEvent('mousemove', {
+      screenX: Math.floor(Math.random() * screen.availWidth),
+      screenY: Math.floor(Math.random() * screen.availHeight),
+      clientX: Math.floor(Math.random() * window.innerWidth),
+      clientY: Math.floor(Math.random() * window.innerHeight),
+      ctrlKey: Math.random() > 0.8,
+      shiftKey: Math.random() > 0.8,
+      altKey: Math.random() > 0.9,
+      metaKey: false,
+      button: 0,
+      buttons: 0,
+      relatedTarget: null,
+      region: null,
+      detail: 0,
+      view: window,
+      sourceCapabilities: window.InputDeviceCapabilities ? new window.InputDeviceCapabilities({ fireTouchEvents: false }) : null,
+      bubbles: true,
+      cancelable: true,
+      composed: true
+    }));
+    setTimeout(mouseMove, config.interval * 60e3);
+  }
   function run () {
     if (!config.avoidDetection) return;
     BLUL.debug('AvoidDetection.run');
-    window.dispatchEvent(new MouseEvent('mousemove', {
-      bubbles: true,
-      cancelable: true,
-      view: window
-    }));
-    setTimeout(run, config.interval * 60e3);
+    BLUL.removeAllListener('visibilitychange');
+    mouseMove();
   }
 
   BLUL.oninit(() => {

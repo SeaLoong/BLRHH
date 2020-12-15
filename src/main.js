@@ -10,15 +10,19 @@
     case 0:
       break;
     case 1:
-      return;
+      break;
     case 2:
-      return;
+      break;
     case 3:
       (BLUL.Logger ?? console).warn('脚本运行需要登录，当前未登录');
-      return;
+      break;
     case 4:
       (BLUL.Logger ?? console).warn('未同意EULA，脚本将不会运行');
-      return;
+      break;
+  }
+  if (result !== 0) {
+    BLUL.recover();
+    return;
   }
   BLUL.Logger.info('脚本信息', `运行环境: ${BLUL.ENVIRONMENT} ${BLUL.ENVIRONMENT_VERSION}`, `版本: ${BLUL.VERSION}`);
   const { importModule } = BLUL;

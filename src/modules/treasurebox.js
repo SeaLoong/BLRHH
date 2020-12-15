@@ -3,7 +3,7 @@ const config = {
   treasureBox: false,
   silverBox: false,
   goldBox: false,
-  aid: 660,
+  aid: 683,
   cache: {},
   interval: 60,
   ignoreKeywords: ['test', 'encrypt', '测试', '钓鱼', '加密', '炸鱼']
@@ -164,15 +164,18 @@ export default async function (importModule, BLUL, GM) {
     let cnt = 0;
     const startedList = [];
     const waitList = [];
-    while (cnt < 8) {
+    const maxCnt = 2 + Math.round(Math.random() * 6);
+    while (cnt < maxCnt) {
       switch (await joinActivity(aid)) {
         case 2:
           cnt++;
           break;
         case 1:
+          cnt--;
           startedList.push(aid);
           break;
         case 0:
+          cnt--;
           waitList.push(aid);
           break;
       }
