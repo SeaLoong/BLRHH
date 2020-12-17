@@ -1,5 +1,7 @@
 # Bilibili直播间挂机助手3
 
++ [Github项目地址](https://github.com/SeaLoong/BLRHH)
+
 ![Tampermonkey4.10](https://img.shields.io/badge/Tampermonkey4.10-pass-green.svg?longCache=true) ![Chromium80](https://img.shields.io/badge/Chromium80-pass-green.svg?longCache=true) ![Firefox72](https://img.shields.io/badge/Firefox72-pass-green.svg?longCache=true) [![Issues](https://img.shields.io/github/issues/SeaLoong/BLRHH.svg)](https://github.com/SeaLoong/BLRHH/issues)
 
 + 该脚本为 Tampermonkey 脚本，只在该环境下测试通过，使用其它脚本插件来加载此脚本的，不保证能正常运行。
@@ -68,9 +70,8 @@
 
 ## 更新日志
 
-+ 3.1.9 (2020-12-15)
-  + 修复避免挂机检测功能无效的问题。
-  + 优化金宝箱参加算法。
++ 3.1.10 (2020-12-17)
+  + 修复在检测到重复运行后会导致直播间页面异常的问题。
 
 [完整日志](https://cdn.jsdelivr.net/gh/SeaLoong/BLRHH/update-log.md)
 
