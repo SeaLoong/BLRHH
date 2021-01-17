@@ -31,16 +31,44 @@ export default async function (importModule, BLUL, GM) {
   }
 
   const NAME_LINKGROUP = NAME + '-应援团';
+  async function getMedalInfo () {
+    BLUL.debug('Sign.getMedalInfo');
+    if (BLUL.INFO.fansMedalList) return;
+    let totalpages = 1;
+    let page = 1;
+    const fansMedalList = [];
+    while (page <= totalpages) {
+      const response = await BLUL.Request.fetch(`http://api.live.bilibili.com/fans_medal/v5/live_fans_medal/iApiMedal?page=${page}&pageSize=100`);
+      const obj = await response.json();
+      if (obj.code === 0 && obj.data) {
+        fansMedalList.concat(obj.data.fansMedalList);
+        totalpages = obj.data.pageinfo.totalpages;
+      } else {
+        BLUL.Logger.warn(NAME_LINKGROUP, obj.message);
+      }
+      page++;
+    }
+    BLUL.INFO.fansMedalList = fansMedalList;
+  }
+
   async function linkGroup () {
     BLUL.debug('Sign.linkGroup');
     try {
+      await getMedalInfo();
       const response = await BLUL.Request.fetch('https://api.vc.bilibili.com/link_group/v1/member/my_groups');
       const obj = await response.json();
-      if (obj.code === 0) {
+      if (obj.code === 0 && obj.data) {
         /* eslint-disable camelcase */
+        const fullLevelMedalTargetIds = new Set();
+        for (const { level, target_id } of BLUL.INFO.fansMedalList) {
+          if (level === 20 || level === 40) {
+            fullLevelMedalTargetIds.add(target_id);
+          }
+        }
         const promises = [];
         for (const { owner_uid, group_id } of obj.data.list) {
           if (owner_uid === BLUL.INFO.UID) continue; // 自己不能给自己的应援团应援
+          if (fullLevelMedalTargetIds.has(owner_uid)) continue; // 跳过满级牌子对应的应援团
           const signOneLinkGroup = async () => {
             try {
               const msg = `应援团(group_id=${group_id},owner_uid=${owner_uid})`;
