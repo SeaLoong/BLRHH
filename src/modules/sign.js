@@ -36,12 +36,12 @@ export default async function (importModule, BLUL, GM) {
     if (BLUL.INFO.fansMedalList) return;
     let totalpages = 1;
     let page = 1;
-    const fansMedalList = [];
+    let fansMedalList = [];
     while (page <= totalpages) {
       const response = await BLUL.Request.fetch(`http://api.live.bilibili.com/fans_medal/v5/live_fans_medal/iApiMedal?page=${page}&pageSize=100`);
       const obj = await response.json();
       if (obj.code === 0 && obj.data) {
-        fansMedalList.concat(obj.data.fansMedalList);
+        fansMedalList = fansMedalList.concat(obj.data.fansMedalList);
         totalpages = obj.data.pageinfo.totalpages;
       } else {
         BLUL.Logger.warn(NAME_LINKGROUP, obj.message);
